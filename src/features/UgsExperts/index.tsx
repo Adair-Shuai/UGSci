@@ -1,5 +1,6 @@
 // UGS-MODIFY: UGS-015 储气库专家市场页 - 主页面
 import { BUILTIN_AGENTS, getAgentRuntimeConfig, type RuntimeContext } from '@lobechat/builtin-agents';
+import { PageHeader } from '@/features/UgsShared';
 import { useWorkspaceAwareNavigate } from '@/features/Workspace/useWorkspaceAwareNavigate';
 import { chatGroupService } from '@/services/chatGroup';
 import { type GroupMemberConfig, type SupervisorConfig } from '@/services/chatGroup';
@@ -121,15 +122,11 @@ const UgsExpertsPage: FC = () => {
 
   return (
     <div style={{ padding: '24px 32px', maxWidth: 1200, margin: '0 auto' }}>
-      {/* 页头 */}
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 600, color: '#1f1f1f', margin: 0 }}>
-          🛢️ UGSci 储气库专家市场
-        </h1>
-        <p style={{ color: '#888', fontSize: 13, marginTop: 4 }}>
-          13 位储气库领域专家 + 5 个预置专家团，点击召唤即进入专属对话
-        </p>
-      </div>
+      <PageHeader
+        description="13 位储气库领域专家 + 5 个预置专家团，点击召唤即进入专属对话"
+        emoji="🛢️"
+        title="UGSci 储气库专家市场"
+      />
 
       {/* 专家区 */}
       <div style={{ marginBottom: 32 }}>

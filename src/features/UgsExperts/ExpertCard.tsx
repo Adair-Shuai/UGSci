@@ -13,7 +13,7 @@ interface ExpertCardProps {
 const ExpertCard = memo<ExpertCardProps>(({ expert, loading, onClick }) => {
   return (
     <Card
-      hoverable
+      hoverable={!!onClick}
       loading={loading}
       onClick={onClick}
       size="small"
@@ -21,7 +21,7 @@ const ExpertCard = memo<ExpertCardProps>(({ expert, loading, onClick }) => {
         borderColor: '#e8e8e8',
         cursor: onClick ? 'pointer' : 'default',
         height: '100%',
-        transition: 'all 0.2s',
+        transition: 'all 0.2s ease',
       }}
       styles={{ body: { padding: 14 } }}
     >
