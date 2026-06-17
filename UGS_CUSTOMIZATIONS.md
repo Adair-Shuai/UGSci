@@ -38,9 +38,10 @@
 | UGS-009b | 2026-06-17 | fix | `packages/builtin-agents/src/agents/ugs-capacity/systemRole.ts` | 修复嵌入 SY/T 7686 规范时遗留的重复闭合反引号（第136行多余 `` `; ``），导致 vite code-inspector 插件解析报 "Missing semicolon" 语法错误、首页白屏 | 无 |
 | UGS-014 | 2026-06-17 | config | `.env` | FEATURE_FLAGS=-cloud_promotion,-workspace,+knowledge_base（2026-06-17 更新：恢复 market 社区功能，去掉 -market） | 无 |
 | UGS-010 | 2026-06-17 | modify | `src/routes/(main)/home/_layout/Header/index.tsx`, `src/routes/(main)/home/_layout/Footer/index.tsx` | 将账户模块 `<User />` 从顶部 Header 移至底部 Footer，紧挨问号（帮助中心）图标左侧；Header 不再显示用户信息（回退为面包屑导航） | 低 |
-| UGS-010b | 2026-06-17 | modify+new | `src/routes/(main)/home/_layout/Header/index.tsx`, `src/routes/(main)/home/_layout/Header/components/UGSciLogo.tsx` | 在 Header 左上角放置 UGSci 文字 Logo（"UG" 跟随文字色，"Sci" 用品牌主色 colorPrimary）；新建 UGSciLogo 组件 | 无 |
+| UGS-010b | 2026-06-17 | modify+new | `src/routes/(main)/home/_layout/Header/index.tsx`, `src/components/Branding/UGSciLogo.tsx` | 在 Header 左上角放置 UGSci 文字 Logo（"UG" 跟随文字色，"Sci" 用品牌主色 colorPrimary）；UGSciLogo 组件移至 `src/components/Branding/` 共享位置 | 无 |
 | UGS-010c | 2026-06-17 | modify | `src/features/User/UserPanel/index.tsx` | 移除 Popover 硬编码的 `inset-block-start/inset-inline-start`（原为左上角固定坐标），改为由 antd placement="topLeft" 自动定位，使弹窗跟随底部 User 按钮位置弹出 | 无 |
 | UGS-008b | 2026-06-17 | modify | `src/layout/SPAGlobalProvider/index.tsx`, `src/layout/GlobalProvider/AppTheme.tsx` | 底层 colorPrimary 修复：①SPAGlobalProvider 传 `defaultPrimaryColor='geekblue'` 让 @lobehub/ui algorithm 生成蓝色色阶；②AppTheme 用 `customToken` 回调在 algorithm 之后精确覆盖 `colorPrimary: '#2563EB'`；③移除 token.colorPrimary（会被 algorithm mapToken 覆盖，无效）；④UGSciLogo 改回用 `cssVar.colorPrimary` | 无 |
+| UGS-010d | 2026-06-17 | modify | `src/features/NavPanel/SideBarHeaderLayout.tsx` | 面包屑默认首页项从 HomeIcon 改为 UGSciLogo，使所有二级菜单（设置/社区/资源/记忆等）左上角统一显示 UGSci Logo 而非小房子 | 无 |
 
 ## 临时 Workaround（不提交 git，仅记录）
 

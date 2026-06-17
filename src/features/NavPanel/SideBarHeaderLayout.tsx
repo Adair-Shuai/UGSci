@@ -4,11 +4,12 @@ import { Flexbox, Icon, Text } from '@lobehub/ui';
 import type { BreadcrumbProps } from 'antd';
 import { Breadcrumb } from 'antd';
 import { createStaticStyles } from 'antd-style';
-import { ChevronRightIcon, HomeIcon } from 'lucide-react';
+import { ChevronRightIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { memo } from 'react';
 import { flushSync } from 'react-dom';
 
+import { UGSciLogo } from '@/components/Branding';
 import { DESKTOP_HEADER_ICON_SMALL_SIZE } from '@/const/layoutTokens';
 import { useWorkspaceAwareNavigate } from '@/features/Workspace/useWorkspaceAwareNavigate';
 import { isModifierClick } from '@/utils/navigation';
@@ -94,7 +95,7 @@ const SideBarHeaderLayout = memo<SideBarHeaderLayoutProps>(
           items={[
             homeItem ?? {
               href: '/',
-              title: <Icon icon={HomeIcon} />,
+              title: <UGSciLogo size={20} />,
             },
             ...breadcrumb,
           ].map((item) => ({

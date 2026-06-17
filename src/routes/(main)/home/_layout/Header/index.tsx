@@ -2,11 +2,11 @@
 
 import { memo } from 'react';
 
+import { UGSciLogo } from '@/components/Branding';
 import SideBarHeaderLayout from '@/features/NavPanel/SideBarHeaderLayout';
 
 import InboxButton from './components/InboxButton';
 import Nav from './components/Nav';
-import UGSciLogo from './components/UGSciLogo';
 
 // UGS-MODIFY: UGS-010 move <User /> from header to footer (next to help icon)
 // UGS-MODIFY: UGS-010b place UGSci text logo in the top-left corner
