@@ -10,7 +10,7 @@ import { AppConfigContext } from 'antd/es/app/context';
 import { createStaticStyles, cx, useTheme } from 'antd-style';
 import * as m from 'motion/react-m';
 import { type ReactNode } from 'react';
-import { memo, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 
 import AntdStaticMethods from '@/components/AntdStaticMethods';
 import Link from '@/components/Link';
@@ -153,17 +153,22 @@ const AppTheme = memo<AppThemeProps>(
 
     const currentAppearence = isDark ? 'dark' : 'light';
 
+    // UGS-MODIFY: UGS-008 在 @lobehub/ui 的 algorithm 之后精确覆盖 colorPrimary 为品牌色 #2563EB
+    // customToken 在 antd-style 中作为 aliasToken 的最后一层覆盖，能覆盖 algorithm 生成的 colorPrimary
+    const ugsciCustomToken = useCallback(() => ({ colorPrimary: '#2563EB' }), []);
+
     return (
       <AppConfigContext value={appConfig}>
         <ThemeProvider
           appearance={currentAppearence}
           className={cx(styles.app, styles.scrollbar, styles.scrollbarPolyfill)}
-          defaultAppearance={currentAppearence}
-          defaultThemeMode={currentAppearence}
           customTheme={{
             neutralColor: neutralColor ?? defaultNeutralColor,
             primaryColor: primaryColor ?? defaultPrimaryColor,
           }}
+          customToken={ugsciCustomToken}
+          defaultAppearance={currentAppearence}
+          defaultThemeMode={currentAppearence}
           theme={{
             cssVar: { key: 'lobe-vars' },
             token: {
@@ -172,8 +177,6 @@ const AppTheme = memo<AppThemeProps>(
                 : undefined,
               motion: animationMode !== 'disabled',
               motionUnit: animationMode === 'agile' ? 0.05 : 0.1,
-              // UGS-MODIFY: UGS-008 UGSci brand colors
-              colorPrimary: '#2563EB',
               ...(isDark ? { colorBgBase: '#121E30' } : {}),
             },
           }}

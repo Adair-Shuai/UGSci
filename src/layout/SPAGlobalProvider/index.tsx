@@ -47,7 +47,8 @@ const SPAGlobalProvider = memo<PropsWithChildren>(({ children }) => {
 
   return (
     <Locale defaultLang={locale}>
-      <AppTheme>
+      {/* UGS-MODIFY: UGS-008 defaultPrimaryColor='geekblue' → 蓝色色阶，customToken 精确覆盖为 #2563EB */}
+      <AppTheme defaultPrimaryColor={'geekblue'}>
         <ServerConfigStoreProvider
           featureFlags={serverConfig?.featureFlags}
           isMobile={isMobile}
