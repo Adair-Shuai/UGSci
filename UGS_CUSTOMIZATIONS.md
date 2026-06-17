@@ -37,6 +37,7 @@
 | UGS-009 | 2026-06-17 | modify+new | `packages/builtin-agents/src/types.ts`, `index.ts`, `agents/ugs-*/` | 13 个储气库领域专家 agent（库容评估/产能评价/库容参数/注采运行/智能调峰/配产配注/BPINN/PVT/产量不稳定/测井解释/数值模拟/完整性评价/文献写作） | 低 |
 | UGS-009b | 2026-06-17 | fix | `packages/builtin-agents/src/agents/ugs-capacity/systemRole.ts` | 修复嵌入 SY/T 7686 规范时遗留的重复闭合反引号（第136行多余 `` `; ``），导致 vite code-inspector 插件解析报 "Missing semicolon" 语法错误、首页白屏 | 无 |
 | UGS-014 | 2026-06-17 | config | `.env` | FEATURE_FLAGS=-market,-cloud_promotion,-workspace,+knowledge_base | 无 |
+| UGS-010 | 2026-06-17 | modify | `src/routes/(main)/home/_layout/Header/index.tsx`, `src/routes/(main)/home/_layout/Footer/index.tsx` | 将账户模块 `<User />` 从顶部 Header 移至底部 Footer，紧挨问号（帮助中心）图标左侧；Header 不再显示用户信息（回退为面包屑导航） | 低 |
 
 ## 临时 Workaround（不提交 git，仅记录）
 

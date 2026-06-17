@@ -38,6 +38,7 @@ import { useServerConfigStore } from '@/store/serverConfig';
 import { useUserStore } from '@/store/user';
 import { userGeneralSettingsSelectors } from '@/store/user/slices/settings/selectors/general';
 
+import User from '../Header/components/User';
 import { resolveFooterPromotionState } from './promotionPipeline';
 
 const AGENT_ONBOARDING_PROMO_SLUG = 'agent-onboarding-promo-v1';
@@ -354,6 +355,8 @@ const Footer = memo(() => {
       {footer.layout === 'expanded' ? (
         <Flexbox horizontal align={'center'} gap={2} justify={'space-between'} padding={8}>
           <Flexbox horizontal align={'center'} flex={1} gap={2}>
+            {/* UGS-MODIFY: UGS-010 move User account module from header to footer */}
+            <User />
             <DropdownMenu items={helpMenuItems} placement="topLeft">
               <ActionIcon
                 aria-label={t('userPanel.help')}
@@ -375,6 +378,8 @@ const Footer = memo(() => {
         </Flexbox>
       ) : (
         <Flexbox horizontal align={'center'} gap={2} padding={8}>
+          {/* UGS-MODIFY: UGS-010 move User account module from header to footer */}
+          <User />
           <DropdownMenu items={helpMenuItems} placement="topLeft">
             <ActionIcon aria-label={t('userPanel.help')} icon={CircleHelp} size={16} />
           </DropdownMenu>
