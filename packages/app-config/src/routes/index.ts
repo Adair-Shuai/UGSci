@@ -7,6 +7,7 @@ import {
   ListTodoIcon,
   Settings,
   ShapesIcon,
+  Users,
   Video,
 } from 'lucide-react';
 
@@ -116,6 +117,17 @@ export const NAVIGATION_ROUTES: NavigationRoute[] = [
     keywordsKey: 'cmdk.keywords.settings',
     path: '/settings',
     pathPrefix: '/settings',
+  },
+  // UGS-MODIFY: UGS-015 储气库专家市场
+  {
+    cmdkKey: 'cmdk.ugsExperts',
+    electronKey: 'navigation.ugsExperts',
+    icon: Users,
+    id: 'ugs-experts',
+    keywords: ['experts', 'agents', 'storage', 'gas', 'ugs', '储气库', '专家'],
+    keywordsKey: 'cmdk.keywords.ugsExperts',
+    path: '/ugs-experts',
+    pathPrefix: '/ugs-experts',
   },
 ];
 

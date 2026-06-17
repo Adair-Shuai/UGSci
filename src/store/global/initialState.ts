@@ -18,6 +18,8 @@ export enum SidebarTabKey {
   Resource = 'resource',
   Setting = 'settings',
   Tasks = 'tasks',
+  // UGS-MODIFY: UGS-015
+  UgsExperts = 'ugs-experts',
   Video = 'video',
 }
 

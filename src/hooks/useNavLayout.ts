@@ -66,6 +66,13 @@ export const useNavLayout = (): NavLayout => {
           title: t('tab.pages'),
           url: '/page',
         },
+        // UGS-MODIFY: UGS-015 储气库专家市场
+        {
+          icon: getRouteById('ugs-experts')!.icon,
+          key: SidebarTabKey.UgsExperts,
+          title: t('tab.ugsExperts'),
+          url: '/ugs-experts',
+        },
       ] as NavItem[],
     [t, toggleCommandMenu],
   );

@@ -8,6 +8,7 @@ import {
   LibraryBigIcon,
   Settings,
   ShapesIcon,
+  Users,
 } from 'lucide-react';
 import type { RouteObject } from 'react-router-dom';
 
@@ -23,7 +24,11 @@ import DesktopOnboarding from '@/routes/(desktop)/desktop-onboarding';
 // Layouts — sync import (Electron local, no network overhead)
 import DesktopMainLayout from '@/routes/(main)/_layout';
 import ImagePage from '@/routes/(main)/(create)/image';
+// UGS-MODIFY: UGS-015
+import UgsExpertsPage from '@/routes/(main)/ugs-experts';
 import DesktopImageLayout from '@/routes/(main)/(create)/image/_layout';
+// UGS-MODIFY: UGS-015
+import DesktopUgsExpertsLayout from '@/routes/(main)/ugs-experts/_layout';
 import VideoPage from '@/routes/(main)/(create)/video';
 import DesktopVideoLayout from '@/routes/(main)/(create)/video/_layout';
 import TaskWorkspaceLayout from '@/routes/(main)/(task-workspace)/_layout';
@@ -478,6 +483,22 @@ export const sharedMainAreaChildren: RouteObject[] = [
     element: <DesktopImageLayout />,
     errorElement: <ErrorBoundary />,
     path: 'image',
+  },
+
+  // UGS-MODIFY: UGS-015 储气库专家市场
+  {
+    children: [
+      {
+        element: <UgsExpertsPage />,
+        handle: {
+          meta: routeMeta({ icon: Users, titleKey: 'navigation.ugsExperts' }),
+        },
+        index: true,
+      },
+    ],
+    element: <DesktopUgsExpertsLayout />,
+    errorElement: <ErrorBoundary />,
+    path: 'ugs-experts',
   },
 
   ...BusinessDesktopRoutesWithMainLayout,

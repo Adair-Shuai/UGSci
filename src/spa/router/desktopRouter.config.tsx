@@ -8,6 +8,7 @@ import {
   LibraryBigIcon,
   Settings,
   ShapesIcon,
+  Users,
 } from 'lucide-react';
 import { type RouteObject } from 'react-router-dom';
 
@@ -529,6 +530,28 @@ export const sharedMainAreaChildren: RouteObject[] = [
     ),
     errorElement: <ErrorBoundary />,
     path: 'image',
+  },
+
+  // UGS-MODIFY: UGS-015 储气库专家市场
+  {
+    children: [
+      {
+        element: dynamicElement(
+          () => import('@/routes/(main)/ugs-experts'),
+          'Desktop > UgsExperts',
+        ),
+        handle: {
+          meta: routeMeta({ icon: Users, titleKey: 'navigation.ugsExperts' }),
+        },
+        index: true,
+      },
+    ],
+    element: dynamicLayout(
+      () => import('@/routes/(main)/ugs-experts/_layout'),
+      'Desktop > UgsExperts > Layout',
+    ),
+    errorElement: <ErrorBoundary />,
+    path: 'ugs-experts',
   },
 
   ...BusinessDesktopRoutesWithMainLayout,
