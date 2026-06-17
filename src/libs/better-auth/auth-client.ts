@@ -3,6 +3,8 @@ import {
   genericOAuthClient,
   inferAdditionalFields,
   magicLinkClient,
+  // UGS-MODIFY: UGS-005 phone number client plugin
+  phoneNumberClient,
 } from 'better-auth/client/plugins';
 import { createAuthClient } from 'better-auth/react';
 
@@ -22,6 +24,8 @@ export const {
   signUp,
   unlinkAccount,
   useSession,
+  // UGS-MODIFY: UGS-005 expose phoneNumber methods
+  phoneNumber,
 } = createAuthClient({
   plugins: [
     adminClient(),
@@ -29,5 +33,7 @@ export const {
     genericOAuthClient(),
     // Always include magicLinkClient - server will reject if not enabled
     magicLinkClient(),
+    // UGS-MODIFY: UGS-005 phone number client plugin
+    phoneNumberClient(),
   ],
 });

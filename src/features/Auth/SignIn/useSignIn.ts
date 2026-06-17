@@ -10,7 +10,7 @@ import { useBusinessSignin } from '@/business/client/hooks/useBusinessSignin';
 import { message } from '@/components/AntdStaticMethods';
 import { useAuthServerConfigStore } from '@/features/AuthShell';
 import { trackLoginOrSignupClicked } from '@/features/User/UserLoginOrSignup/trackLoginOrSignupClicked';
-import { requestPasswordReset, signIn } from '@/libs/better-auth/auth-client';
+import { requestPasswordReset, signIn, phoneNumber } from '@/libs/better-auth/auth-client';
 import { isBuiltinProvider, normalizeProviderId } from '@/libs/better-auth/utils/client';
 import { buildOnboardingRedirectUrl, sanitizeRedirectPath } from '@/utils/onboardingRedirect';
 
@@ -19,6 +19,8 @@ import { EMAIL_REGEX, USERNAME_REGEX } from './SignInEmailStep';
 const LAST_AUTH_PROVIDER_KEY = 'lobehub:auth:last-provider:v1';
 
 type Step = 'email' | 'password';
+// UGS-MODIFY: UGS-005 add phone sign-in mode
+type SignInMode = 'phone' | 'email';
 
 interface SignInFormValues {
   email: string;
@@ -44,6 +46,11 @@ export const useSignIn = () => {
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
   const [isSocialOnly, setIsSocialOnly] = useState(false);
+  // UGS-MODIFY: UGS-005 phone sign-in state
+  const [mode, setMode] = useState<SignInMode>('phone');
+  const [otpSending, setOtpSending] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [countdown, setCountdown] = useState(0);
   const [lastAuthProvider] = useState(() => {
     try {
       return localStorage.getItem(LAST_AUTH_PROVIDER_KEY);
@@ -59,6 +66,13 @@ export const useSignIn = () => {
     const emailParam = searchParams.get('email');
     if (emailParam) form.setFieldValue('email', emailParam);
   }, [searchParams, form]);
+
+  // UGS-MODIFY: UGS-005 OTP countdown timer
+  useEffect(() => {
+    if (countdown <= 0) return;
+    const timer = setTimeout(() => setCountdown((c) => c - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [countdown]);
 
   const handleSendMagicLink = async (targetEmail?: string) => {
     try {
@@ -296,6 +310,58 @@ export const useSignIn = () => {
     }
   };
 
+  // UGS-MODIFY: UGS-005 phone OTP send & verify
+  const handleSendOtp = async (phone: string) => {
+    setOtpSending(true);
+    try {
+      const { error } = await phoneNumber.sendOtp({ phoneNumber: phone.trim() });
+      if (error) {
+        message.error(error.message || t('ugs.phoneSignin.sendError', { defaultValue: '验证码发送失败' }));
+        return;
+      }
+      setOtpSent(true);
+      setCountdown(60);
+      message.success(t('ugs.phoneSignin.sent', { defaultValue: '验证码已发送，开发模式请查看服务端控制台' }));
+    } catch (error) {
+      console.error('Send OTP error:', error);
+      message.error(t('ugs.phoneSignin.sendError', { defaultValue: '验证码发送失败' }));
+    } finally {
+      setOtpSending(false);
+    }
+  };
+
+  const handleVerifyOtp = async (phone: string, code: string) => {
+    setLoading(true);
+    try {
+      const callbackUrl = searchParams.get('callbackUrl') || '/';
+      const { error } = await phoneNumber.verify({
+        code,
+        phoneNumber: phone.trim(),
+      });
+      if (error) {
+        message.error(error.message || t('ugs.phoneSignin.verifyError', { defaultValue: '验证失败' }));
+        return;
+      }
+      window.location.href = sanitizeRedirectPath(callbackUrl);
+    } catch (error) {
+      console.error('Verify OTP error:', error);
+      message.error(t('ugs.phoneSignin.verifyError', { defaultValue: '验证失败' }));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSwitchToEmail = () => {
+    setMode('email');
+    setOtpSent(false);
+  };
+
+  const handleSwitchToPhone = () => {
+    setMode('phone');
+    setStep('email');
+    setIsSocialOnly(false);
+  };
+
   const resolvedProviders = ENABLE_BUSINESS_FEATURES ? ssoProviders : oAuthSSOProviders;
   const sortedProviders = lastAuthProvider
     ? [...resolvedProviders].sort((a, b) => {
@@ -322,5 +388,14 @@ export const useSignIn = () => {
     serverConfigInit: ENABLE_BUSINESS_FEATURES ? true : serverConfigInit,
     socialLoading,
     step,
+    // UGS-MODIFY: UGS-005 phone sign-in
+    mode,
+    otpSending,
+    otpSent,
+    countdown,
+    handleSendOtp,
+    handleVerifyOtp,
+    handleSwitchToEmail,
+    handleSwitchToPhone,
   };
 };

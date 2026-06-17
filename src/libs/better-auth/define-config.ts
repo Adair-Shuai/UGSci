@@ -7,7 +7,7 @@ import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { verifyPassword as defaultVerifyPassword } from 'better-auth/crypto';
 import { type BetterAuthOptions } from 'better-auth/minimal';
 import { betterAuth } from 'better-auth/minimal';
-import { admin, emailOTP, genericOAuth, magicLink } from 'better-auth/plugins';
+import { admin, emailOTP, genericOAuth, magicLink, phoneNumber } from 'better-auth/plugins';
 import { type BetterAuthPlugin } from 'better-auth/types';
 import { ProxyAgent, setGlobalDispatcher } from 'undici';
 
@@ -223,6 +223,8 @@ export function defineConfig(customOptions: CustomBetterAuthOptions) {
         image: 'avatar',
         // NOTE: use drizzle filed instead of db field, so use fullName instead of full_name
         name: 'fullName',
+        // UGS-MODIFY: UGS-005 map phoneNumber plugin field to existing db column
+        phoneNumber: 'phone',
       },
       modelName: 'users',
     },
@@ -257,6 +259,22 @@ export function defineConfig(customOptions: CustomBetterAuthOptions) {
       emailWhitelist(),
       expo(),
       admin(),
+      // UGS-MODIFY: UGS-005 phone number login plugin
+      phoneNumber({
+        expiresIn: OTP_EXPIRES_IN,
+        otpLength: 6,
+        // Dev: log OTP to console. Prod: integrate SMS provider here.
+        sendOTP: async ({ phoneNumber: phone, code }) => {
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`[UGS Phone OTP] ${phone}: ${code}`);
+          }
+          // TODO prod: integrate SMS provider (e.g. Twilio / 阿里云短信)
+        },
+        signUpOnVerification: {
+          getTempEmail: (phone) => `${phone}@ugs.local`,
+          getTempName: (phone) => phone,
+        },
+      }),
       // Email OTP plugin for mobile verification
       emailOTP({
         expiresIn: OTP_EXPIRES_IN,
