@@ -1,7 +1,7 @@
 {
-  "name": "@lobehub/lobehub",
+  "name": "@ugsci/desktop",
   "version": "2.2.4",
-  "description": "LobeHub - an open-source,comprehensive AI Agent framework that supports speech synthesis, multimodal, and extensible Function Call plugin system. Supports one-click free deployment of your private ChatGPT/LLM web application.",
+  "description": "UGSci 储气智脑 — 储气库领域智能体平台，基于 LobeHub 框架二次开发",
   "keywords": [
     "framework",
     "chatbot",

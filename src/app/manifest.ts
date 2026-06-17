@@ -4,8 +4,8 @@ const manifest = async (): Promise<MetadataRoute.Manifest> => {
   // Skip heavy module compilation in development
   if (process.env.NODE_ENV === 'development') {
     return {
-      background_color: '#000000',
-      description: 'LobeHub Development',
+      background_color: '#121E30',
+      description: 'UGSci 储气智脑 — 储气库领域智能体平台',
       display: 'standalone',
       icons: [
         {
@@ -14,10 +14,10 @@ const manifest = async (): Promise<MetadataRoute.Manifest> => {
           type: 'image/png',
         },
       ],
-      name: 'LobeHub',
-      short_name: 'LobeHub',
+      name: 'UGSci 储气智脑',
+      short_name: 'UGSci',
       start_url: '/',
-      theme_color: '#000000',
+      theme_color: '#2563EB',
     };
   }
 

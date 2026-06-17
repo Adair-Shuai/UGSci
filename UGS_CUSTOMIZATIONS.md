@@ -33,6 +33,9 @@
 | UGS-005 | 2026-06-17 | modify+new | `src/libs/better-auth/define-config.ts`, `auth-client.ts`, `src/features/Auth/SignIn/*` | 手机号验证码登录（phoneNumber 插件+前端UI+模式切换） | 中 |
 | UGS-006 | 2026-06-17 | modify | `vite.config.ts` | vite dev 中间件：auth 路由（/signin, /signup 等）返回 index.auth.html 而非 index.html，解决 dev 模式下 auth 页面 404 | 低 |
 | UGS-007 | 2026-06-17 | modify | `packages/database/src/schemas/user.ts`, `packages/database/src/models/user.ts`, `apps/server/src/services/user/index.ts`, `scripts/clerk-to-betterauth/index.ts` | drizzle 字段 phone→phoneNumber（DB 列名不变），让 better-auth phoneNumber 插件 schema 校验通过 | 中 |
+| UGS-008 | 2026-06-17 | modify | `packages/business/const/src/branding.ts`, `index.html`, `src/app/manifest.ts`, `package.json`, `src/layout/GlobalProvider/AppTheme.tsx` | 品牌定制：LobeHub→UGSci 储气智脑，主题色 #121E30/#2563EB，文字 Logo | 低 |
+| UGS-009 | 2026-06-17 | modify+new | `packages/builtin-agents/src/types.ts`, `index.ts`, `agents/ugs-*/` | 13 个储气库领域专家 agent（库容评估/产能评价/库容参数/注采运行/智能调峰/配产配注/BPINN/PVT/产量不稳定/测井解释/数值模拟/完整性评价/文献写作） | 低 |
+| UGS-014 | 2026-06-17 | config | `.env` | FEATURE_FLAGS=-market,-cloud_promotion,-workspace,+knowledge_base | 无 |
 
 ## 临时 Workaround（不提交 git，仅记录）
 

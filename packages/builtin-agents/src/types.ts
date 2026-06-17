@@ -22,6 +22,20 @@ export const BUILTIN_AGENT_SLUGS = {
   taskAgent: 'task-agent',
   verifyAgent: 'verify-agent',
   webOnboarding: 'web-onboarding',
+  // UGS-MODIFY: UGS-009 储气库领域专家 agents
+  ugsCapacity: 'ugs-capacity',
+  ugsDeliverability: 'ugs-deliverability',
+  ugsParams: 'ugs-params',
+  ugsInjection: 'ugs-injection',
+  ugsPeaking: 'ugs-peaking',
+  ugsAllocation: 'ugs-allocation',
+  ugsBpinn: 'ugs-bpinn',
+  ugsPvt: 'ugs-pvt',
+  ugsRateTransient: 'ugs-rate-transient',
+  ugsLogging: 'ugs-logging',
+  ugsSimulation: 'ugs-simulation',
+  ugsIntegrity: 'ugs-integrity',
+  ugsLiterature: 'ugs-literature',
 } as const;
 
 export type BuiltinAgentSlug = (typeof BUILTIN_AGENT_SLUGS)[keyof typeof BUILTIN_AGENT_SLUGS];

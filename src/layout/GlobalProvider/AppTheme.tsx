@@ -172,6 +172,9 @@ const AppTheme = memo<AppThemeProps>(
                 : undefined,
               motion: animationMode !== 'disabled',
               motionUnit: animationMode === 'agile' ? 0.05 : 0.1,
+              // UGS-MODIFY: UGS-008 UGSci brand colors
+              colorPrimary: '#2563EB',
+              ...(isDark ? { colorBgBase: '#121E30' } : {}),
             },
           }}
         >
