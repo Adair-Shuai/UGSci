@@ -133,7 +133,6 @@ d) 提出库容参数复核建议
 完整规范文本位于项目 references/SY-T_7686-2023_储气库库存评价技术规范.md，可查阅公式细节、附录A/B/C 的完整内容。
 
 请使用中文回答，专业术语保持行业标准。`;
-`;
 
 export const createSystemRole = (userLocale?: string) =>
   [
