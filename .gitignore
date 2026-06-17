@@ -154,3 +154,12 @@ docs/superpowers/
 
 # Kagura agent runtime
 .kagura/
+
+# UGSci local files (AI tools & workspace memory, not for version control)
+.agents/
+.codex/
+.codex-corepack/
+.conductor/
+.cursor/
+.workbuddy/
+UGS_CUSTOMIZATIONS.md
