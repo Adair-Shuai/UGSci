@@ -7,7 +7,26 @@ import { useTranslation } from 'react-i18next';
 import AuthCard from '@/features/AuthCard';
 import { AuthAgreement } from '@/features/AuthShell';
 
+/** 默认区号（中国大陆） */
+export const DEFAULT_COUNTRY_CODE = '+86';
+/** 11 位中国大陆手机号 */
+const CN_MOBILE_REGEX = /^1[3-9]\d{9}$/;
+/** 已带国际区号的号码 */
 export const PHONE_REGEX = /^\+?[1-9]\d{6,14}$/;
+
+/**
+ * 把用户输入规范化为带国际区号的格式。
+ * - 纯 11 位中国手机号（1xxxxxxxxxx）→ +861xxxxxxxxxx
+ * - 已带 + 的号码 → 原样返回
+ * - 其他 → 补 +86 前缀
+ */
+export const normalizePhone = (raw: string): string => {
+  const trimmed = raw.trim().replace(/[\s-]/g, '');
+  if (!trimmed) return trimmed;
+  if (trimmed.startsWith('+')) return trimmed;
+  if (CN_MOBILE_REGEX.test(trimmed)) return `${DEFAULT_COUNTRY_CODE}${trimmed}`;
+  return `${DEFAULT_COUNTRY_CODE}${trimmed}`;
+};
 
 export interface SignInPhoneStepProps {
   loading: boolean;
@@ -43,8 +62,8 @@ export const SignInPhoneStep = ({
 
   const handleSendOtp = async () => {
     try {
-      const phone = await form.validateFields(['phone']).then((v) => v.phone);
-      if (phone) await onSendOtp(phone);
+      const raw = await form.validateFields(['phone']).then((v) => v.phone);
+      if (raw) await onSendOtp(normalizePhone(raw));
     } catch {
       // validation error
     }
@@ -57,7 +76,7 @@ export const SignInPhoneStep = ({
       <Form
         form={form}
         layout="vertical"
-        onFinish={(values) => onVerify(values.phone, values.code)}
+        onFinish={(values) => onVerify(normalizePhone(values.phone), values.code)}
       >
         <Form.Item
           name="phone"
@@ -66,10 +85,11 @@ export const SignInPhoneStep = ({
             {
               validator: (_, value) => {
                 if (!value) return Promise.resolve();
-                const trimmed = (value as string).trim();
-                if (PHONE_REGEX.test(trimmed)) return Promise.resolve();
+                const trimmed = (value as string).trim().replace(/[\s-]/g, '');
+                // 接受：纯 11 位中国手机号，或已带国际区号的号码
+                if (CN_MOBILE_REGEX.test(trimmed) || PHONE_REGEX.test(trimmed)) return Promise.resolve();
                 return Promise.reject(
-                  new Error(t('ugs.phoneSignin.phoneInvalid', { defaultValue: '手机号格式不正确，需含国际区号如 +86' })),
+                  new Error(t('ugs.phoneSignin.phoneInvalid', { defaultValue: '请输入正确的手机号' })),
                 );
               },
             },
@@ -77,7 +97,8 @@ export const SignInPhoneStep = ({
           style={{ marginBottom: 12 }}
         >
           <Input
-            placeholder={t('ugs.phoneSignin.phonePlaceholder', { defaultValue: '+86 138xxxx0000' })}
+            addonBefore={DEFAULT_COUNTRY_CODE}
+            placeholder={t('ugs.phoneSignin.phonePlaceholder', { defaultValue: '138xxxx0000' })}
             ref={phoneInputRef}
             size="large"
             style={{ padding: 6 }}
