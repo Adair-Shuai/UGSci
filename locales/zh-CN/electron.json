@@ -64,6 +64,8 @@
   "navigation.task": "任务",
   "navigation.tasks": "任务",
   "navigation.ugsExperts": "UGS 专家",
+  "navigation.ugsCapabilities": "UGS 能力",
+  "navigation.ugsSkills": "UGS 技能",
   "navigation.unpin": "取消固定",
   "notification.finishChatGeneration": "AI 消息已生成完毕",
   "proxy.auth": "需要认证",

@@ -8,7 +8,10 @@ import {
   LibraryBigIcon,
   Settings,
   ShapesIcon,
+  Sparkles,
   Users,
+  Video,
+  Wrench,
 } from 'lucide-react';
 import type { RouteObject } from 'react-router-dom';
 
@@ -26,9 +29,15 @@ import DesktopMainLayout from '@/routes/(main)/_layout';
 import ImagePage from '@/routes/(main)/(create)/image';
 // UGS-MODIFY: UGS-015
 import UgsExpertsPage from '@/routes/(main)/ugs-experts';
+// UGS-MODIFY: UGS-016/017
+import UgsCapabilitiesPage from '@/routes/(main)/ugs-capabilities';
+import UgsSkillsPage from '@/routes/(main)/ugs-skills';
 import DesktopImageLayout from '@/routes/(main)/(create)/image/_layout';
 // UGS-MODIFY: UGS-015
 import DesktopUgsExpertsLayout from '@/routes/(main)/ugs-experts/_layout';
+// UGS-MODIFY: UGS-016/017
+import DesktopUgsCapabilitiesLayout from '@/routes/(main)/ugs-capabilities/_layout';
+import DesktopUgsSkillsLayout from '@/routes/(main)/ugs-skills/_layout';
 import VideoPage from '@/routes/(main)/(create)/video';
 import DesktopVideoLayout from '@/routes/(main)/(create)/video/_layout';
 import TaskWorkspaceLayout from '@/routes/(main)/(task-workspace)/_layout';
@@ -499,6 +508,38 @@ export const sharedMainAreaChildren: RouteObject[] = [
     element: <DesktopUgsExpertsLayout />,
     errorElement: <ErrorBoundary />,
     path: 'ugs-experts',
+  },
+
+  // UGS-MODIFY: UGS-016 能力中心
+  {
+    children: [
+      {
+        element: <UgsCapabilitiesPage />,
+        handle: {
+          meta: routeMeta({ icon: Wrench, titleKey: 'navigation.ugsCapabilities' }),
+        },
+        index: true,
+      },
+    ],
+    element: <DesktopUgsCapabilitiesLayout />,
+    errorElement: <ErrorBoundary />,
+    path: 'ugs-capabilities',
+  },
+
+  // UGS-MODIFY: UGS-017 技能中心
+  {
+    children: [
+      {
+        element: <UgsSkillsPage />,
+        handle: {
+          meta: routeMeta({ icon: Sparkles, titleKey: 'navigation.ugsSkills' }),
+        },
+        index: true,
+      },
+    ],
+    element: <DesktopUgsSkillsLayout />,
+    errorElement: <ErrorBoundary />,
+    path: 'ugs-skills',
   },
 
   ...BusinessDesktopRoutesWithMainLayout,

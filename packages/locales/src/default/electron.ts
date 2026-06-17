@@ -31,6 +31,8 @@ export default {
   'navigation.task': 'Task',
   'navigation.tasks': 'Tasks',
   'navigation.ugsExperts': 'UGS Experts',
+  'navigation.ugsCapabilities': 'UGS Capabilities',
+  'navigation.ugsSkills': 'UGS Skills',
   'navigation.unpin': 'Unpin',
   'fleet.addColumn': 'Add column',
   'fleet.createTask': 'Create task',

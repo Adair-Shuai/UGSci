@@ -1,14 +1,17 @@
 import { type LucideIcon } from 'lucide-react';
 import {
   BrainCircuit,
+  Cpu,
   FilePenIcon,
   Image,
   LibraryBigIcon,
   ListTodoIcon,
   Settings,
   ShapesIcon,
+  Sparkles,
   Users,
   Video,
+  Wrench,
 } from 'lucide-react';
 
 export interface NavigationRoute {
@@ -118,7 +121,7 @@ export const NAVIGATION_ROUTES: NavigationRoute[] = [
     path: '/settings',
     pathPrefix: '/settings',
   },
-  // UGS-MODIFY: UGS-015 储气库专家市场
+  // UGS-MODIFY: UGS-015 储气库专家市场 + 能力中心 + 技能中心
   {
     cmdkKey: 'cmdk.ugsExperts',
     electronKey: 'navigation.ugsExperts',
@@ -128,6 +131,26 @@ export const NAVIGATION_ROUTES: NavigationRoute[] = [
     keywordsKey: 'cmdk.keywords.ugsExperts',
     path: '/ugs-experts',
     pathPrefix: '/ugs-experts',
+  },
+  {
+    cmdkKey: 'cmdk.ugsCapabilities',
+    electronKey: 'navigation.ugsCapabilities',
+    icon: Wrench,
+    id: 'ugs-capabilities',
+    keywords: ['capabilities', 'mcp', 'neqsim', 'pyrestoolbox', '能力', '工具'],
+    keywordsKey: 'cmdk.keywords.ugsCapabilities',
+    path: '/ugs-capabilities',
+    pathPrefix: '/ugs-capabilities',
+  },
+  {
+    cmdkKey: 'cmdk.ugsSkills',
+    electronKey: 'navigation.ugsSkills',
+    icon: Sparkles,
+    id: 'ugs-skills',
+    keywords: ['skills', 'pvt', 'material balance', '技能'],
+    keywordsKey: 'cmdk.keywords.ugsSkills',
+    path: '/ugs-skills',
+    pathPrefix: '/ugs-skills',
   },
 ];
 

@@ -8,7 +8,10 @@ import {
   LibraryBigIcon,
   Settings,
   ShapesIcon,
+  Sparkles,
   Users,
+  Video,
+  Wrench,
 } from 'lucide-react';
 import { type RouteObject } from 'react-router-dom';
 
@@ -552,6 +555,50 @@ export const sharedMainAreaChildren: RouteObject[] = [
     ),
     errorElement: <ErrorBoundary />,
     path: 'ugs-experts',
+  },
+
+  // UGS-MODIFY: UGS-016 能力中心
+  {
+    children: [
+      {
+        element: dynamicElement(
+          () => import('@/routes/(main)/ugs-capabilities'),
+          'Desktop > UgsCapabilities',
+        ),
+        handle: {
+          meta: routeMeta({ icon: Wrench, titleKey: 'navigation.ugsCapabilities' }),
+        },
+        index: true,
+      },
+    ],
+    element: dynamicLayout(
+      () => import('@/routes/(main)/ugs-capabilities/_layout'),
+      'Desktop > UgsCapabilities > Layout',
+    ),
+    errorElement: <ErrorBoundary />,
+    path: 'ugs-capabilities',
+  },
+
+  // UGS-MODIFY: UGS-017 技能中心
+  {
+    children: [
+      {
+        element: dynamicElement(
+          () => import('@/routes/(main)/ugs-skills'),
+          'Desktop > UgsSkills',
+        ),
+        handle: {
+          meta: routeMeta({ icon: Sparkles, titleKey: 'navigation.ugsSkills' }),
+        },
+        index: true,
+      },
+    ],
+    element: dynamicLayout(
+      () => import('@/routes/(main)/ugs-skills/_layout'),
+      'Desktop > UgsSkills > Layout',
+    ),
+    errorElement: <ErrorBoundary />,
+    path: 'ugs-skills',
   },
 
   ...BusinessDesktopRoutesWithMainLayout,
