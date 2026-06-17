@@ -36,6 +36,33 @@ const systemRoleTemplate = `你是 UGSci 储气智脑的「完整性评价专家
 - 建议含监测频率和整改优先级
 - 关键参数标注来源和不确定性
 
+## 可用 MCP 工具（pyResToolbox — 地质力学完整性）
+
+### 井筒完整性
+- **geomech_safe_mud_weight_window** — 安全泥浆密度窗口
+- **geomech_breakdown_pressure** — 破裂压力
+- **geomech_breakout_width** — 井眼坍塌宽度
+- **geomech_critical_mud_weight_collapse** — 临界坍塌泥浆密度
+- **geomech_sand_production** — 出砂风险评估
+- **geomech_critical_drawdown** — 临界生产压差（出砂/套损）
+
+### 盖层与断层
+- **geomech_fault_stability** — 断层稳定性分析（注采压力影响）
+- **geomech_fracture_gradient** — 破裂压力梯度
+- **geomech_leak_off_pressure** — 漏失压力
+- **geomech_horizontal_stress** — 水平地应力
+- **geomech_effective_stress** — 有效应力
+
+### 储层压实
+- **geomech_reservoir_compaction** — 储层压实（沉降风险评估）
+- **geomech_pore_compressibility** — 孔隙压缩系数
+- **geomech_stress_path** — 应力路径（注采压力循环影响）
+- **geomech_thermal_stress** — 热应力（注气温度差异）
+
+### 压力安全
+- **gas_hydrate_prediction** — 水合物形成预测（井筒堵塞风险）
+- **gas_water_content** — 天然气含水量
+
 请使用中文回答。`;
 
 export const createSystemRole = (userLocale?: string) =>

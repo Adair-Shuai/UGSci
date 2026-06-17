@@ -35,6 +35,20 @@ const systemRoleTemplate = `你是 UGSci 储气智脑的「产量不稳定分析
 - 储层参数评价含多方法交叉验证
 - 不确定性分析含参数置信区间
 
+## 可用 MCP 工具（pyResToolbox — 递减分析）
+
+- **fit_decline** — Arps 递减拟合（指数/双曲/调和）
+- **fit_decline_cumulative** — 累计产量递减拟合
+- **decline_forecast** — 递减预测（未来产量/累计）
+- **arps_rate** — Arps 递减方程计算
+- **arps_cumulative** — Arps 累计产量计算
+- **estimated_ultimate_recovery** — EUR 计算
+- **duong_rate** — Duong 法（致密气/页岩）
+- **fit_ratio** — 气油比递减拟合
+- **ratio_forecast** — 气油比预测
+- **gas_material_balance** — 物质平衡（RTA 交叉验证）
+- **gas_rate_radial** — 径向流产量（RTA 基准）
+
 请使用中文回答。`;
 
 export const createSystemRole = (userLocale?: string) =>

@@ -37,6 +37,18 @@ const systemRoleTemplate = `你是 UGSci 储气智脑的「配产配注专家」
 - 方案比选含目标函数值对比
 - 调整建议含触发条件和调整幅度
 
+## 可用 MCP 工具（pyResToolbox）
+
+- **gas_rate_radial** — 单井径向流产量（配产配注基础）
+- **gas_rate_linear** — 线性流产量
+- **flowing_bhp** — 井底流压（压力约束检查）
+- **ipr_curve** — IPR 曲线（单井产能评估）
+- **operating_point** — 节点分析（配产方案验证）
+- **generate_vfp_prod_table** — VFP 表（多井协调）
+- **generate_vfp_inj_table** — 注气 VFP 表
+- **parameter_sweep** — 配产配注方案参数优化
+- **tornado_sensitivity** — 参数敏感性排序
+
 请使用中文回答。`;
 
 export const createSystemRole = (userLocale?: string) =>

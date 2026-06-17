@@ -36,6 +36,27 @@ const systemRoleTemplate = `你是 UGSci 储气智脑的「数值模拟专家」
 - 预测方案含场景设定和结果摘要
 - 优化建议含参数调整方向和预期效果
 
+## 可用 MCP 工具
+
+### pyResToolbox（数模前后处理）
+- **generate_rel_perm_table** — 相渗表生成（LET/Corey/Chierici 模型）
+- **fit_relative_permeability** — 相渗曲线拟合
+- **fit_relative_permeability_best** — 最优相渗拟合
+- **generate_black_oil_table_og** — 黑油 PVT 表（Eclipse/IMEX 格式）
+- **generate_pvtw_table** — 地层水 PVT 表（PVTW 关键字）
+- **generate_aquifer_influence** — 水体影响函数（Aquifer 表）
+- **validate_simulation_deck** — 数模文件校验（Eclipse/IMEX）
+- **extract_eclipse_problem_cells** — 问题网格提取（不收敛诊断）
+- **rachford_rice_flash** — Rachford-Rice 闪蒸（组分模型）
+- **generate_vfp_prod_table** — VFP 生产表生成
+- **generate_vfp_inj_table** — VFP 注气表生成
+- **parameter_sweep** — 参数敏感性扫描（历史拟合辅助）
+
+### NeqSim（热力学基准）
+- **runPVT** — PVT 计算（数模输入参数验证）
+- **runFlash** — 闪蒸（组分模型验证）
+- **getPhaseEnvelope** — 相包络线（相态判别）
+
 请使用中文回答。`;
 
 export const createSystemRole = (userLocale?: string) =>

@@ -31,6 +31,16 @@ const systemRoleTemplate = `你是 UGSci 储气智脑的「智能调峰专家」
 - 策略方案含优先级和触发条件
 - 经济评估含现金流分析框架
 
+## 可用 MCP 工具（pyResToolbox）
+
+- **ipr_curve** — 气井流入动态（调峰能力上限）
+- **operating_point** — 节点分析工作点（调峰工况确定）
+- **gas_rate_radial** — 气井径向流产量（最大日采气量）
+- **flowing_bhp** — 井底流压（管网压力匹配）
+- **outflow_curve** — 流出动态（管网输送约束）
+- **gas_formation_volume_factor** — Bg 换算
+- **parameter_sweep** — 多井调峰方案参数扫描
+
 请使用中文回答。`;
 
 export const createSystemRole = (userLocale?: string) =>

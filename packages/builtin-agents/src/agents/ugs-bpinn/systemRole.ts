@@ -33,6 +33,20 @@ const systemRoleTemplate = `你是 UGSci 储气智脑的「BPINN 机理研究专
 - 方法论对比用表格
 - 可行性评估含数据需求/计算量/预期精度
 
+## 可用 MCP 工具
+
+### NeqSim（热力学验证）
+- **runPVT** — PVT 相态计算（BPINN 结果验证基准）
+- **runFlash** — 闪蒸计算（相平衡验证）
+- **getPhaseEnvelope** — 相包络线（BPINN 预测对比）
+- **getPropertyTable** — 物性表（训练数据生成）
+
+### pyResToolbox（工程验证）
+- **gas_z_factor** — Z 因子（BPINN 预测 vs 经验公式对比）
+- **gas_compressibility** — 压缩系数
+- **geomech_pore_compressibility** — 孔隙压缩系数（应力-渗流耦合验证）
+- **geomech_reservoir_compaction** — 储层压实（地质力学约束）
+
 请使用中文回答。`;
 
 export const createSystemRole = (userLocale?: string) =>

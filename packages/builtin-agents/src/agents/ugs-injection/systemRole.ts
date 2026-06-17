@@ -31,6 +31,17 @@ const systemRoleTemplate = `你是 UGSci 储气智脑的「注采运行专家」
 - 工况判别给出判据和置信度
 - 优化建议含预期效果量化
 
+## 可用 MCP 工具（pyResToolbox）
+
+- **gas_z_factor** — 偏差因子（注采气量换算）
+- **gas_formation_volume_factor** — 体积系数 Bg（地面/地下气量转换）
+- **gas_compressibility** — 天然气压缩系数（压力响应分析）
+- **gas_viscosity** — 天然气粘度（流量计算）
+- **gas_density** — 天然气密度
+- **flowing_bhp** — 井底流压计算
+- **gas_pseudopressure** — 拟压力（高级注采分析）
+- **parameter_sweep** — 注采参数敏感性扫描
+
 请使用中文回答。`;
 
 export const createSystemRole = (userLocale?: string) =>
