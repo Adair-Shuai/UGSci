@@ -31,6 +31,7 @@
 | UGS-003 | 2026-06-17 | config | `.env` | 本地开发环境配置（PostgreSQL 连接、密钥）。不提交 git | 无 |
 | UGS-004 | 2026-06-17 | new-file | `UGS_CUSTOMIZATIONS.md` | 本登记表 | 无 |
 | UGS-005 | 2026-06-17 | modify+new | `src/libs/better-auth/define-config.ts`, `auth-client.ts`, `src/features/Auth/SignIn/*` | 手机号验证码登录（phoneNumber 插件+前端UI+模式切换） | 中 |
+| UGS-006 | 2026-06-17 | modify | `vite.config.ts` | vite dev 中间件：auth 路由（/signin, /signup 等）返回 index.auth.html 而非 index.html，解决 dev 模式下 auth 页面 404 | 低 |
 
 ## 临时 Workaround（不提交 git，仅记录）
 
@@ -54,3 +55,9 @@
 **后端验证：** `POST /api/auth/phone-number/send-otp` 返回 `{"message":"code sent"}`，OTP 验证码打印到 Next.js 控制台。
 
 **待办：** 生产环境需在 `sendOTP` 里对接 SMS 服务商（Twilio / 阿里云短信 / 腾讯云短信）。
+
+## UGS-006 详情：vite dev auth 路由分流
+
+**问题：** LobeHub 有两个 SPA 入口——`index.html`（主应用，`entry.web.tsx` → `desktopRoutes`）和 `index.auth.html`（auth 页面，`entry.auth.tsx` → `authRoutes`）。生产环境 Next.js 按路径自动分流，但 vite dev 模式下只有一个 dev server，默认所有路由返回 `index.html`，导致 `/signin` 等路由在客户端找不到匹配 → 404。
+
+**修复：** 在 `vite.config.ts` 添加 `ugs-auth-html-router` 中间件插件，拦截 auth 路由（`/signin`, `/signup`, `/verify-email`, `/reset-password`, `/auth-error`, `/market-auth-callback`, `/oauth/*`），返回 `index.auth.html` 的内容（经 `transformIndexHtml` 注入 HMR client）。API/trpc/oidc/webapi 和静态资源请求不受影响。

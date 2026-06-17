@@ -101,6 +101,60 @@ const openExternalBrowser = async (
   });
 };
 
+// UGS-MODIFY: UGS-006 vite dev middleware — serve index.auth.html for auth routes
+// In production, Next.js routes /signin, /signup, etc. to the auth SPA build.
+// In dev, the single vite dev server defaults to index.html (desktop routes).
+// This middleware intercepts auth routes and serves index.auth.html instead,
+// so both the main app and auth pages work from one dev server.
+const AUTH_ROUTE_PATTERNS = [
+  /^\/signin(?:\/|$|\?)/,
+  /^\/signup(?:\/|$|\?)/,
+  /^\/verify-email(?:\/|$|\?)/,
+  /^\/reset-password(?:\/|$|\?)/,
+  /^\/auth-error(?:\/|$|\?)/,
+  /^\/market-auth-callback(?:\/|$|\?)/,
+  /^\/oauth\//,
+];
+
+const ugsAuthHtmlRouter: PluginOption | null =
+  isDev && !isAuth && !isMobile
+    ? {
+        configureServer(server: ViteDevServer) {
+          server.middlewares.use(async (req, res, next) => {
+            if (req.method !== 'GET') return next();
+
+            const rawUrl = req.url || '';
+            const pathname = rawUrl.split('?')[0];
+
+            // Skip API / asset / vite-internal requests
+            if (
+              pathname.startsWith('/api/') ||
+              pathname.startsWith('/trpc/') ||
+              pathname.startsWith('/oidc/') ||
+              pathname.startsWith('/webapi/') ||
+              pathname.startsWith('/@') ||
+              pathname.startsWith('/node_modules/')
+            ) {
+              return next();
+            }
+
+            if (!AUTH_ROUTE_PATTERNS.some((p) => p.test(pathname))) return next();
+
+            try {
+              const authHtmlPath = path.resolve(__dirname, 'index.auth.html');
+              let html = fs.readFileSync(authHtmlPath, 'utf-8');
+              html = await server.transformIndexHtml(rawUrl, html);
+              res.setHeader('Content-Type', 'text/html; charset=utf-8');
+              res.end(html);
+            } catch (err) {
+              next(err);
+            }
+          });
+        },
+        name: 'ugs-auth-html-router',
+      }
+    : null;
+
 export default defineConfig({
   base: isDev ? '/' : process.env.VITE_CDN_BASE || (isAuth ? '/_spa-auth/' : '/_spa/'),
   build: {
@@ -125,6 +179,8 @@ export default defineConfig({
   },
   optimizeDeps: sharedOptimizeDeps,
   plugins: [
+    // UGS-MODIFY: UGS-006 serve index.auth.html for auth routes in dev
+    ugsAuthHtmlRouter,
     vercelSkewProtection(),
     viteEnvRestartKeys(['APP_URL']),
     enableViteDevTools &&
