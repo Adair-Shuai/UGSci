@@ -3,7 +3,7 @@
 import { Flexbox, Icon, Text } from '@lobehub/ui';
 import type { BreadcrumbProps } from 'antd';
 import { Breadcrumb } from 'antd';
-import { createStaticStyles } from 'antd-style';
+import { createStaticStyles, cssVar } from 'antd-style';
 import { ChevronRightIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { memo } from 'react';
@@ -69,51 +69,60 @@ const SideBarHeaderLayout = memo<SideBarHeaderLayoutProps>(
   }) => {
     const navigate = useWorkspaceAwareNavigate();
     // UGS-MODIFY: UGS-010d 统一所有页面左上角显示 UGSci Logo（首页和二级菜单一致）
+    // 不再走 antd Breadcrumb 包裹（breadcrumb-link 的 colorTextDescription 会覆盖 Logo 的 colorText，
+    // 且 paddingInline=6 造成位置偏移）。改为：始终在 Flexbox 内直接渲染 UGSciLogo，后接分隔符+面包屑文本。
     const logoNode = <UGSciLogo size={28} />;
-    const leftContent = left ? (
+
+    // 渲染非首页的面包屑条目（不含 home 项，home 由 logoNode 替代）
+    const breadcrumbNodes =
+      breadcrumb && breadcrumb.length > 0 ? (
+        <>
+          <Icon color={cssVar.colorTextDescription} icon={ChevronRightIcon} size={14} />
+          <Breadcrumb
+            className={styles.breadcrumb}
+            items={breadcrumb.map((item) => ({
+              ...item,
+              onClick: (event) => {
+                if (isModifierClick(event)) return;
+                const href = item.href;
+                if (href) {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  // eslint-disable-next-line @eslint-react/dom/no-flush-sync
+                  flushSync(() => navigate(href));
+                }
+              },
+            }))}
+          />
+        </>
+      ) : null;
+
+    const leftContent = (
       <Flexbox
         horizontal
         align={'center'}
         flex={1}
-        gap={2}
+        gap={4}
         style={{
           overflow: 'hidden',
+          paddingInline: 2,
         }}
       >
         {showBack && <BackButton size={DESKTOP_HEADER_ICON_SMALL_SIZE} to={backTo} />}
-        {left && typeof left === 'string' ? (
-          <Text ellipsis fontSize={16} weight={500}>
-            {left}
-          </Text>
+        {left ? (
+          typeof left === 'string' ? (
+            <Text ellipsis fontSize={16} weight={500}>
+              {left}
+            </Text>
+          ) : (
+            left
+          )
         ) : (
-          left
+          <>
+            {logoNode}
+            {breadcrumbNodes}
+          </>
         )}
-      </Flexbox>
-    ) : (
-      <Flexbox flex={1} paddingInline={6}>
-        <Breadcrumb
-          className={styles.breadcrumb}
-          separator={<Icon icon={ChevronRightIcon} />}
-          items={[
-            homeItem ?? {
-              href: '/',
-              title: logoNode,
-            },
-            ...breadcrumb,
-          ].map((item) => ({
-            ...item,
-            onClick: (event) => {
-              if (isModifierClick(event)) return;
-              const href = item.href;
-              if (href) {
-                event.preventDefault();
-                event.stopPropagation();
-                // eslint-disable-next-line @eslint-react/dom/no-flush-sync
-                flushSync(() => navigate(href));
-              }
-            },
-          }))}
-        />
       </Flexbox>
     );
 
