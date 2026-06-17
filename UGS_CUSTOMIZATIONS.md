@@ -32,6 +32,7 @@
 | UGS-004 | 2026-06-17 | new-file | `UGS_CUSTOMIZATIONS.md` | 本登记表 | 无 |
 | UGS-005 | 2026-06-17 | modify+new | `src/libs/better-auth/define-config.ts`, `auth-client.ts`, `src/features/Auth/SignIn/*` | 手机号验证码登录（phoneNumber 插件+前端UI+模式切换） | 中 |
 | UGS-006 | 2026-06-17 | modify | `vite.config.ts` | vite dev 中间件：auth 路由（/signin, /signup 等）返回 index.auth.html 而非 index.html，解决 dev 模式下 auth 页面 404 | 低 |
+| UGS-007 | 2026-06-17 | modify | `packages/database/src/schemas/user.ts`, `packages/database/src/models/user.ts`, `apps/server/src/services/user/index.ts`, `scripts/clerk-to-betterauth/index.ts` | drizzle 字段 phone→phoneNumber（DB 列名不变），让 better-auth phoneNumber 插件 schema 校验通过 | 中 |
 
 ## 临时 Workaround（不提交 git，仅记录）
 
