@@ -95,7 +95,7 @@ const SideBarHeaderLayout = memo<SideBarHeaderLayoutProps>(
           items={[
             homeItem ?? {
               href: '/',
-              title: <UGSciLogo size={20} />,
+              title: <UGSciLogo size={28} />,
             },
             ...breadcrumb,
           ].map((item) => ({
