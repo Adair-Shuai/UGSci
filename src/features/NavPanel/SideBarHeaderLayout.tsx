@@ -68,6 +68,8 @@ const SideBarHeaderLayout = memo<SideBarHeaderLayoutProps>(
     showTogglePanelButton = true,
   }) => {
     const navigate = useWorkspaceAwareNavigate();
+    // UGS-MODIFY: UGS-010d 统一所有页面左上角显示 UGSci Logo（首页和二级菜单一致）
+    const logoNode = <UGSciLogo size={28} />;
     const leftContent = left ? (
       <Flexbox
         horizontal
@@ -95,7 +97,7 @@ const SideBarHeaderLayout = memo<SideBarHeaderLayoutProps>(
           items={[
             homeItem ?? {
               href: '/',
-              title: <UGSciLogo size={28} />,
+              title: logoNode,
             },
             ...breadcrumb,
           ].map((item) => ({
