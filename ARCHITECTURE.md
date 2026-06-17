@@ -675,6 +675,30 @@ services/xxx.ts
 
 <!-- 在此追加每次修改记录，最新的放最上面 -->
 
+### [2026-06-17] 建立 Fork 工作流与三层分支结构
+
+**修改类型**：chore / docs
+**影响范围**：仓库根（git 配置）、`.gitignore`、`ARCHITECTURE.md`、`UPSTREAM_SYNC.md`
+
+**变更内容**：
+- 从源码解压状态初始化为 git 仓库，配置双 remote（origin=Adair-Shuai/lobehub fork，upstream=lobehub/lobehub）
+- 创建三层分支：`canary`（1:1 镜像 upstream/canary，跟踪 upstream）、`ugs/custom`（定制基线，跟踪 origin）
+- `.gitignore` 追加 UGSci 本地文件忽略段（`.agents/` `.codex/` `.codex-corepack/` `.conductor/` `.cursor/` `.workbuddy/` `UGS_CUSTOMIZATIONS.md`）
+- 新增 `ARCHITECTURE.md`（系统架构说明）与 `UPSTREAM_SYNC.md`（上游同步策略）
+- 首个定制提交 `80e53b7a76` 推送到 `origin/ugs/custom`
+
+**原因**：
+- 建立规范的 fork 同步工作流，确保后续二次开发可与上游持续同步
+- 在未改动 LobeHub 本体前建立工作流，成本最低
+
+**关联文件**：
+- `.gitignore` — 追加 UGSci local 段
+- `ARCHITECTURE.md` — 新增（系统架构文档）
+- `UPSTREAM_SYNC.md` — 新增（同步策略文档）
+
+**破坏性变更**：否
+**验证方式**：`git remote -v` / `git branch -vv` / `git status` 全部通过
+
 ---
 
 *本文档由架构分析生成，后续随项目演进持续更新。若发现文档与代码不符，以代码为准并同步修正本文档。*
