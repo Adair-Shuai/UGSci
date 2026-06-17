@@ -175,7 +175,8 @@ describe('UserModel', () => {
         where: eq(users.id, userId),
       });
 
-      expect(updated?.phone).toBeNull();
+      // UGS-MODIFY: UGS-005 phone→phoneNumber (drizzle field renamed)
+      expect(updated?.phoneNumber).toBeNull();
     });
 
     it('should normalize empty string username to null', async () => {

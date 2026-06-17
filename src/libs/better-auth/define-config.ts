@@ -223,8 +223,7 @@ export function defineConfig(customOptions: CustomBetterAuthOptions) {
         image: 'avatar',
         // NOTE: use drizzle filed instead of db field, so use fullName instead of full_name
         name: 'fullName',
-        // UGS-MODIFY: UGS-005 map phoneNumber plugin field to existing db column
-        phoneNumber: 'phone',
+        // UGS-MODIFY: UGS-005 phoneNumber field now matches drizzle field directly (renamed phone→phoneNumber)
       },
       modelName: 'users',
     },

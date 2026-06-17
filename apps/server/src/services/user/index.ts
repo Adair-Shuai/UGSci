@@ -39,7 +39,8 @@ export class UserService {
       email: user.email ?? undefined,
       firstName: user.firstName ?? undefined,
       lastName: user.lastName ?? undefined,
-      phone: user.phone ?? undefined,
+      // UGS-MODIFY: UGS-005 phone→phoneNumber (drizzle field renamed)
+      phone: user.phoneNumber ?? undefined,
       username: user.username ?? undefined,
     });
     analytics?.track({

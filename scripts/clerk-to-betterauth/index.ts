@@ -211,7 +211,8 @@ async function migrateFromClerk() {
               emailVerified: sql`excluded.email_verified`,
               firstName: sql`excluded.first_name`,
               lastName: sql`excluded.last_name`,
-              phone: sql`excluded.phone`,
+              // UGS-MODIFY: UGS-005 phone→phoneNumber (drizzle field renamed, DB column stays 'phone')
+              phoneNumber: sql`excluded.phone`,
               phoneNumberVerified: sql`excluded.phone_number_verified`,
               role: sql`excluded.role`,
               twoFactorEnabled: sql`excluded.two_factor_enabled`,
