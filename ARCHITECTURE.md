@@ -675,7 +675,43 @@ services/xxx.ts
 
 <!-- 在此追加每次修改记录，最新的放最上面 -->
 
-### [2026-06-17] 建立 Fork 工作流与三层分支结构
+### [2026-06-18] UGS 市场弹窗 API 500 优雅降级
+
+**修改类型**：fix / ux
+**影响范围**：`src/features/UgsMarket/UgsMarketContent.tsx`
+
+**变更内容**：
+- `renderList`：拆分 `isLoading || !data` 为独立的 loading 判断和 error 判断，错误时显示友好提示而非骨架
+- `MarketDetailContent`：同理拆分，错误时显示「详情暂不可用」
+- SWR 响应新增 `error` 字段解构用于区分 loading/error/empty 三态
+
+**原因**：自托管环境无法访问 `market.lobehub.com`，所有 market API 返回 500。之前 error 和 empty 都被当作 loading 显示骨架，用户看到永久 loading
+
+**破坏性变更**：否
+
+### [2026-06-18] 修复 useClientDataSWR onErrorRetry 参数索引错误导致详情页无限加载
+
+**修改类型**：fix
+**影响范围**：`src/libs/swr/index.ts`（核心 SWR 基础设施）、`src/features/UgsMarket/UgsMarketContent.tsx`（UGS 市场弹窗）
+
+**变更内容**：
+- `src/libs/swr/index.ts`：`useClientDataSWR` 的 `onErrorRetry` 回调中，将 `...args` + 数字索引改为具名参数 `(error, _key, _config, revalidate, opts)`
+  - **根因**：SWR v2.x `onErrorRetry` 签名是 `(error, key, config, revalidate, opts)` 共 5 个参数。原代码用 `args[2]` 取 revalidate（实际是 config 对象），`args[3]` 取 retryCount（实际是 revalidate 函数 → undefined）
+  - **影响**：所有使用 `useClientDataSWR` 且首次 fetch 失败的页面（如社区市场 detail 页）会永远卡在 loading
+- `src/features/UgsMarket/UgsMarketContent.tsx`：`MarketDetailContent` 改为只拉取当前 type 对应的详情 hook（避免同时触发 agent/skill/mcp 三个 SWR 请求）
+- `LESSONS_LEARNED.md`：新增 INC-005 复盘记录 + 对应检查清单
+
+**原因**：
+- 用户反馈技能市场、能力市场点击卡片后详情页一直加载不出来
+- 上游 LobeHub（canary 分支）同样存在此 bug，UGS fork 一并修复
+
+**关联文件**：
+- `LESSONS_LEARNED.md` — 新增 INC-005
+- `src/features/UgsMarket/UgsMarketContent.tsx` — MarketDetailContent 优化
+- `node_modules/swr/dist/_internal/types.d.mts` — SWR 签名验证源
+
+**破坏性变更**：否
+**验证方式**：`bun run type-check` 通过（无新增错误）；`grep -A 5 "onErrorRetry" node_modules/swr/dist/_internal/types.d.mts` 确认签名
 
 **修改类型**：chore / docs
 **影响范围**：仓库根（git 配置）、`.gitignore`、`ARCHITECTURE.md`、`UPSTREAM_SYNC.md`

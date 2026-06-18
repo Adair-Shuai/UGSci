@@ -138,25 +138,26 @@ export default {
   'telemetry.agreement':
     'All data collected is anonymous and used solely to improve the product experience. By continuing, you confirm that you understand and agree to the <terms>Terms and Conditions</terms> and <privacy>Privacy Policy</privacy>.',
   'telemetry.desc':
-    'I’m your Agent concierge—here to help you think, create, and manage Agents and Groups.',
+    'Welcome to <brand>UGSci</brand> — the intelligent workspace for underground gas storage and energy systems',
   'telemetry.helpImprove': 'Help improve {{appName}}',
   'telemetry.next': "Let's get started",
   'telemetry.privacy': 'Privacy Policy',
   'telemetry.rows.collaborate.desc':
-    'Here, people and Agents work, learn, and evolve together—letting productivity flow naturally.',
-  'telemetry.rows.collaborate.title': 'Collaborate · Evolve with Intelligence',
-  'telemetry.rows.create.desc': 'From idea to action. Just think it, and your Agent is born.',
-  'telemetry.rows.create.title': 'Create · Turn Inspiration into Reality',
+    'Unifies numerical simulation, engineering computation, databases, and analytics\nMakes complex computation as natural as a conversation',
+  'telemetry.rows.collaborate.title': 'Capability · Connecting Professional Tools',
+  'telemetry.rows.create.desc':
+    'Integrates reservoir engineering, seepage mechanics, and geological modeling\nPuts domain-expert capabilities at your fingertips',
+  'telemetry.rows.create.title': 'Cognition · Pooling Domain Expertise',
   'telemetry.rows.evolve.desc':
-    'Every interaction helps me understand you better—not just in response, but in comprehension.',
-  'telemetry.rows.evolve.title': 'Evolve · The More You Use, the Better I Know You',
+    'From analysis and forecasting to decision-making, intelligent collaboration advances the full workflow\nTurns complex engineering problems into efficient outcomes',
+  'telemetry.rows.evolve.title': 'Execution · Driving the Task Loop to Closure',
   'telemetry.rows.privacy.desc':
-    'We use anonymized data to continuously improve the experience. You can change this anytime in your privacy preferences.',
+    'We use anonymized data to continuously improve the platform experience. You can change this anytime in your privacy preferences.',
   'telemetry.rows.privacy.title': "Let's Make {{appName}} Even Better Together",
   'telemetry.terms': 'Terms of Service',
-  'telemetry.title': "Hey there, I'm {{name}}",
-  'telemetry.title2': 'Nice to meet you~',
-  'telemetry.title3': "Loooobe! Let's get started!",
+  'telemetry.title': 'Ready when you are',
+  'telemetry.title2': 'Cognition · Capability · Execution',
+  'telemetry.title3': 'Turning complex engineering into efficient outcomes',
   'title': 'Welcome to {{appName}}',
   'username.desc': 'Tell us what we should call you',
   'username.hint': 'You can change this anytime in settings',

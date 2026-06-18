@@ -4,6 +4,8 @@
 // 不触碰任何 store（agentStore / toolStore / mcpStore），不新增后端表结构。
 // 遵循项目 selector 风格：纯函数 + 可柯里化，便于在组件中直接调用与 memoize。
 
+import { type AvailableAgentItem } from '@/services/agent';
+
 import {
   type ExpertCategory,
   type ExpertMeta,
@@ -128,3 +130,49 @@ export const selectTeamsByExpertSlug = (slug: string) =>
 
 /** 默认数据源（供页面直接消费） */
 export const ALL_EXPERTS = UGS_EXPERTS;
+
+/**
+ * 把用户自建助理（AvailableAgentItem）映射为 ExpertMeta，归入 'custom' 分类。
+ *
+ * 用户从「专家市场」(`/community`) 添加助理，或在专家广场点击「自定义专家」
+ * 创建新助理后，availableAgents 会变化，本函数把新助理合并进专家列表，
+ * 实现「添加后专家广场自动新增卡片」的闭环。
+ *
+ * 映射规则：
+ * - slug 用 agentId（用户助理没有 slug，用 id 代替作为唯一键）
+ * - avatar / name / description 来自 AvailableAgentItem
+ * - category 固定 'custom'
+ * - skills / tags / workflowSteps 留空（用户助理没有这些展示元数据）
+ * - planned = false（已创建的助理都是上线的）
+ * - isCustom 标记，供 ExpertCard / handleChat 分支处理
+ */
+export const mapUserAgentToExpert = (agent: AvailableAgentItem): ExpertMeta => ({
+  avatar: agent.avatar ?? '🧑‍🔬',
+  category: 'custom',
+  description: agent.description ?? '用户自定义专家',
+  // 用字段名标记这是用户助理（供 index.tsx 的 handleChat 分支判断）
+  isCustom: true,
+  name: agent.title ?? '自定义专家',
+  recommendedTools: [],
+  skills: [],
+  slug: agent.id, // 用户助理用 agentId 作为 slug
+  tags: ['自定义'],
+  title: '自定义专家',
+  workflowSteps: [],
+});
+
+/**
+ * 合并 UGS 预置专家 + 用户自建助理。
+ * 去重：如果用户助理的 id 与 UGS 预置 slug 相同（理论上不会），保留预置。
+ */
+export const mergeExpertsAndUserAgents = (
+  experts: ExpertMeta[],
+  userAgents: AvailableAgentItem[] | undefined,
+): ExpertMeta[] => {
+  if (!userAgents || userAgents.length === 0) return experts;
+  const presetSlugs = new Set(experts.map((e) => e.slug));
+  const customExperts = userAgents
+    .filter((a) => !presetSlugs.has(a.id))
+    .map(mapUserAgentToExpert);
+  return [...experts, ...customExperts];
+};

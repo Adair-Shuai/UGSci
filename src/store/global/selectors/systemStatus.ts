@@ -69,10 +69,10 @@ export const SIDEBAR_SPACER_ID = '__spacer__';
 export const DEFAULT_SIDEBAR_ITEMS: string[] = [
   'tasks',
   'pages',
-  // UGS-MODIFY: UGS-015 储气库专家市场 + 能力中心 + 技能中心
-  'ugs-experts',
+  // UGS-MODIFY: UGS-015 储气库能力中心 + 技能中心 + 专家市场（顺序：能力→技能→专家）
   'ugs-capabilities',
   'ugs-skills',
+  'ugs-experts',
   'recents',
   'agent',
   SIDEBAR_SPACER_ID,

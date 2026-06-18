@@ -20,6 +20,11 @@ const DeferredStoreInitialization = memo<DeferredStoreInitializationProps>(({ is
   useInitAiProviderKeyVaults(isLogin, isSyncActive);
   useFetchPersona(isLogin);
 
+  // UGS-MODIFY: prefetch installed plugins at startup so UGS pages
+  // (capabilities/skills/experts) don't render with empty lists on first visit
+  const useFetchInstalledPlugins = useToolStore((s) => s.useFetchInstalledPlugins);
+  useFetchInstalledPlugins(Boolean(isLogin));
+
   // Load custom connectors so the classic chat path can expose their tools.
   const fetchConnectors = useToolStore((s) => s.fetchConnectors);
   const isConnectorsInit = useToolStore((s) => s.isConnectorsInit);

@@ -50,6 +50,8 @@ export interface BuiltinAgentPersistConfig {
   model?: string;
   /** Default provider */
   provider?: string;
+  /** Display title stored in agents.title (UGS-MODIFY: added to avoid "Custom Agent" fallback) */
+  title?: string;
 }
 
 /**

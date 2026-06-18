@@ -726,6 +726,7 @@ export class AgentModel {
             model: persistConfig.model,
             provider: persistConfig.provider,
             slug: persistConfig.slug,
+            title: persistConfig.title, // UGS-MODIFY: persist title 避免显示"自定义助理"
             virtual: true,
           },
         ),

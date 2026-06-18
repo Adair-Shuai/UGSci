@@ -8,7 +8,19 @@ packages:
 onlyBuiltDependencies:
   - '@google/genai'
   - '@lobehub/editor'
+  - '@napi-rs/canvas'
   - '@vercel/speed-insights'
+  - core-js
+  - electron
+  - electron-builder
+  - electron-winstaller
+  - es5-ext
+  - esbuild
+  - get-windows
+  - node-mac-permissions
+  - protobufjs
+  - sharp
+  - unrs-resolver
 
 overrides:
   jose: ^6.1.3

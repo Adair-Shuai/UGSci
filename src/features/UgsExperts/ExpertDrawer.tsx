@@ -1,7 +1,9 @@
 // UGS-MODIFY: UGS-015 专家广场 — 专家详情 Drawer（5 Tab）
 // Tabs: Profile / Skills / Tools / Team / Workflows
 // 复用现有 toolStore（只读 connectorList）展示关联工具，不修改任何 store / 编辑器组件。
+// 视觉与能力中心统一：createStaticStyles + cssVar（深浅色自动适配）
 import { MessageSquarePlus } from 'lucide-react';
+import { createStaticStyles } from 'antd-style';
 import { Avatar, Button, Drawer, Empty, List, Steps, Tabs, Tag, Typography } from 'antd';
 import { type FC, useMemo, useState } from 'react';
 
@@ -12,6 +14,85 @@ import { selectTeamsByExpertSlug } from './expertSelectors';
 import { type ExpertMeta, EXPERT_CATEGORIES, UGS_EXPERTS } from './ugsExpertsData';
 
 const { Paragraph, Text, Title } = Typography;
+
+const styles = createStaticStyles(({ css, cssVar }) => ({
+  drawerBody: css`
+    .ant-drawer-body {
+      background: ${cssVar.colorBgLayout};
+    }
+  `,
+  sectionLabel: css`
+    color: ${cssVar.colorTextTertiary};
+    font-size: 12px;
+  `,
+  sectionBody: css`
+    color: ${cssVar.colorTextSecondary};
+    font-size: 13px;
+    margin-top: 4px;
+  `,
+  name: css`
+    color: ${cssVar.colorText} !important;
+  `,
+  title: css`
+    color: ${cssVar.colorPrimary};
+    font-size: 13px;
+  `,
+  description: css`
+    color: ${cssVar.colorTextSecondary};
+    font-size: 13px;
+    margin-top: 4px;
+    margin-bottom: 0;
+  `,
+  tag: css`
+    background: ${cssVar.colorFillTertiary};
+    border-color: transparent;
+    color: ${cssVar.colorTextSecondary};
+  `,
+  skillNumber: css`
+    background: ${cssVar.colorPrimary};
+    color: #fff;
+    font-size: 12px;
+    flex-shrink: 0;
+  `,
+  skillText: css`
+    color: ${cssVar.colorText};
+    font-size: 13px;
+  `,
+  listItem: css`
+    border-bottom: 1px dashed ${cssVar.colorBorderSecondary} !important;
+  `,
+  toolName: css`
+    color: ${cssVar.colorText};
+    font-size: 13px;
+  `,
+  toolMeta: css`
+    color: ${cssVar.colorTextTertiary};
+    font-size: 11px;
+    margin-top: 4px;
+  `,
+  teamName: css`
+    color: ${cssVar.colorText};
+    font-size: 13px;
+    font-weight: 500;
+  `,
+  teamDesc: css`
+    color: ${cssVar.colorTextSecondary};
+    font-size: 12px;
+    margin: 6px 0;
+  `,
+  workflowStepTitle: css`
+    color: ${cssVar.colorText};
+    font-size: 13px;
+  `,
+  workflowStepDesc: css`
+    color: ${cssVar.colorTextTertiary};
+    font-size: 12px;
+  `,
+  emptyHint: css`
+    color: ${cssVar.colorTextTertiary};
+    font-size: 12px;
+  `,
+}));
 
 interface ExpertDrawerProps {
   expert: ExpertMeta | null;
@@ -57,14 +138,14 @@ const ExpertDrawer: FC<ExpertDrawerProps> = ({ expert, loading, onClose, onChat,
   const profileTab = (
     <div style={{ padding: '4px 4px 16px' }}>
       <div style={{ alignItems: 'center', display: 'flex', gap: 14, marginBottom: 16 }}>
-        <Avatar size={56} style={{ background: '#f0f5ff', color: '#185FA5', fontSize: 30 }}>
+        <Avatar size={56} style={{ background: 'var(--colorFillTertiary)', color: 'var(--colorPrimary)', fontSize: 30 }}>
           {expert.avatar}
         </Avatar>
         <div>
-          <Title level={5} style={{ color: '#1f1f1f', margin: 0 }}>
+          <Title className={styles.name} level={5} style={{ margin: 0 }}>
             {expert.name}
           </Title>
-          <Text style={{ color: '#185FA5', fontSize: 13 }}>{expert.title}</Text>
+          <span className={styles.title}>{expert.title}</span>
           <div style={{ marginTop: 4 }}>
             <Tag color="blue" style={{ fontSize: 11, margin: 0 }}>
               {catMeta.icon} {catMeta.label}
@@ -74,24 +155,15 @@ const ExpertDrawer: FC<ExpertDrawerProps> = ({ expert, loading, onClose, onChat,
       </div>
 
       <div style={{ marginBottom: 16 }}>
-        <Text type="secondary" style={{ fontSize: 12 }}>
-          专家简介
-        </Text>
-        <Paragraph style={{ color: '#595959', fontSize: 13, marginTop: 4, marginBottom: 0 }}>
-          {expert.description}
-        </Paragraph>
+        <Text className={styles.sectionLabel}>专家简介</Text>
+        <Paragraph className={styles.description}>{expert.description}</Paragraph>
       </div>
 
       <div style={{ marginBottom: 16 }}>
-        <Text type="secondary" style={{ fontSize: 12 }}>
-          技能标签
-        </Text>
+        <Text className={styles.sectionLabel}>技能标签</Text>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
           {expert.tags.map((tag) => (
-            <Tag
-              key={tag}
-              style={{ background: '#f0f5ff', borderColor: '#d6e4ff', color: '#185FA5' }}
-            >
+            <Tag key={tag} className={styles.tag}>
               {tag}
             </Tag>
           ))}
@@ -99,16 +171,16 @@ const ExpertDrawer: FC<ExpertDrawerProps> = ({ expert, loading, onClose, onChat,
       </div>
 
       <div>
-        <Text type="secondary" style={{ fontSize: 12 }}>
+        <Text className={styles.sectionLabel}>
           能力概览（{expert.skills.length} 项技能 · {expert.recommendedTools.length} 项工具 ·{' '}
           {expert.workflowSteps.length} 步工作流）
         </Text>
         <List
           dataSource={expert.skills}
-          renderItem={(s, i) => (
-            <List.Item style={{ padding: '6px 0', borderBottom: '1px dashed #f0f0f0' }}>
-              <Text style={{ color: '#595959', fontSize: 13 }}>
-                <Text style={{ color: '#185FA5', marginRight: 8 }}>·</Text>
+          renderItem={(s) => (
+            <List.Item className={styles.listItem} style={{ padding: '6px 0' }}>
+              <Text className={styles.skillText}>
+                <span style={{ color: 'var(--colorPrimary)', marginRight: 8 }}>·</span>
                 {s}
               </Text>
             </List.Item>
@@ -123,30 +195,23 @@ const ExpertDrawer: FC<ExpertDrawerProps> = ({ expert, loading, onClose, onChat,
   // ===== Skills Tab =====
   const skillsTab = (
     <div style={{ padding: '4px 4px 16px' }}>
-      <Text type="secondary" style={{ fontSize: 12 }}>
-        核心能力点
-      </Text>
+      <Text className={styles.sectionLabel}>核心能力点</Text>
       <List
         dataSource={expert.skills}
         renderItem={(s, i) => (
           <List.Item style={{ padding: '10px 0' }}>
             <div style={{ alignItems: 'center', display: 'flex', gap: 10, width: '100%' }}>
-              <Avatar
-                size={28}
-                style={{ background: '#185FA5', color: '#fff', fontSize: 12, flexShrink: 0 }}
-              >
+              <Avatar className={styles.skillNumber} size={28}>
                 {i + 1}
               </Avatar>
-              <Text style={{ color: '#1f1f1f', fontSize: 13 }}>{s}</Text>
+              <Text className={styles.skillText}>{s}</Text>
             </div>
           </List.Item>
         )}
         style={{ marginTop: 8 }}
       />
       <div style={{ marginTop: 16 }}>
-        <Text type="secondary" style={{ fontSize: 12 }}>
-          标签
-        </Text>
+        <Text className={styles.sectionLabel}>标签</Text>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
           {expert.tags.map((tag) => (
             <Tag key={tag} color="blue">
@@ -161,16 +226,10 @@ const ExpertDrawer: FC<ExpertDrawerProps> = ({ expert, loading, onClose, onChat,
   // ===== Tools Tab =====
   const toolsTab = (
     <div style={{ padding: '4px 4px 16px' }}>
-      <Text type="secondary" style={{ fontSize: 12 }}>
-        关联能力 / 工具（来自能力中心）
-      </Text>
+      <Text className={styles.sectionLabel}>关联能力 / 工具（来自能力中心）</Text>
       {matchedTools.length === 0 ? (
         <Empty
-          description={
-            <span style={{ color: '#888', fontSize: 12 }}>
-              该专家为知识型专家，暂无关联外部工具
-            </span>
-          }
+          description={<span className={styles.emptyHint}>该专家为知识型专家，暂无关联外部工具</span>}
           image={Empty.PRESENTED_IMAGE_SIMPLE}
           style={{ marginTop: 24 }}
         />
@@ -181,7 +240,7 @@ const ExpertDrawer: FC<ExpertDrawerProps> = ({ expert, loading, onClose, onChat,
             <List.Item style={{ padding: '12px 0' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
                 <div>
-                  <Text style={{ color: '#1f1f1f', fontSize: 13 }}>{t.name}</Text>
+                  <Text className={styles.toolName}>{t.name}</Text>
                   <div>
                     <Text code style={{ fontSize: 11 }}>
                       {t.identifier}
@@ -192,7 +251,7 @@ const ExpertDrawer: FC<ExpertDrawerProps> = ({ expert, loading, onClose, onChat,
                   <Tag color={t.connected ? 'success' : 'default'} style={{ margin: 0 }}>
                     {t.connected ? '已连接' : '未连接'}
                   </Tag>
-                  <div style={{ color: '#888', fontSize: 11, marginTop: 4 }}>
+                  <div className={styles.toolMeta}>
                     {t.functionCount > 0 ? `${t.functionCount} 个功能` : '—'}
                   </div>
                 </div>
@@ -208,14 +267,10 @@ const ExpertDrawer: FC<ExpertDrawerProps> = ({ expert, loading, onClose, onChat,
   // ===== Team Tab =====
   const teamTab = (
     <div style={{ padding: '4px 4px 16px' }}>
-      <Text type="secondary" style={{ fontSize: 12 }}>
-        该专家参与的专家团（Team Relations）
-      </Text>
+      <Text className={styles.sectionLabel}>该专家参与的专家团（Team Relations）</Text>
       {teams.length === 0 ? (
         <Empty
-          description={
-            <span style={{ color: '#888', fontSize: 12 }}>该专家暂未加入任何预置专家团</span>
-          }
+          description={<span className={styles.emptyHint}>该专家暂未加入任何预置专家团</span>}
           image={Empty.PRESENTED_IMAGE_SIMPLE}
           style={{ marginTop: 24 }}
         />
@@ -227,15 +282,9 @@ const ExpertDrawer: FC<ExpertDrawerProps> = ({ expert, loading, onClose, onChat,
               <div style={{ width: '100%' }}>
                 <div style={{ alignItems: 'center', display: 'flex', gap: 8 }}>
                   <span style={{ fontSize: 18 }}>👥</span>
-                  <Text style={{ color: '#1f1f1f', fontSize: 13, fontWeight: 500 }}>
-                    {team.name}
-                  </Text>
+                  <Text className={styles.teamName}>{team.name}</Text>
                 </div>
-                <Paragraph
-                  style={{ color: '#595959', fontSize: 12, margin: '6px 0 6px' }}
-                >
-                  {team.description}
-                </Paragraph>
+                <Paragraph className={styles.teamDesc}>{team.description}</Paragraph>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                   {team.memberSlugs.map((slug) => (
                     <Tag
@@ -259,15 +308,13 @@ const ExpertDrawer: FC<ExpertDrawerProps> = ({ expert, loading, onClose, onChat,
   // ===== Workflows Tab =====
   const workflowsTab = (
     <div style={{ padding: '4px 4px 16px' }}>
-      <Text type="secondary" style={{ fontSize: 12 }}>
-        标准工作流（{expert.workflowSteps.length} 步）
-      </Text>
+      <Text className={styles.sectionLabel}>标准工作流（{expert.workflowSteps.length} 步）</Text>
       <Steps
         current={expert.workflowSteps.length - 1}
         direction="vertical"
         items={expert.workflowSteps.map((step, i) => ({
-          description: <span style={{ color: '#888', fontSize: 12 }}>{`第 ${i + 1} 步`}</span>,
-          title: <span style={{ color: '#1f1f1f', fontSize: 13 }}>{step}</span>,
+          description: <span className={styles.workflowStepDesc}>{`第 ${i + 1} 步`}</span>,
+          title: <span className={styles.workflowStepTitle}>{step}</span>,
         }))}
         size="small"
         style={{ marginTop: 16 }}
@@ -297,13 +344,13 @@ const ExpertDrawer: FC<ExpertDrawerProps> = ({ expert, loading, onClose, onChat,
 
   return (
     <Drawer
+      className={styles.drawerBody}
       extra={
         <Button
           disabled={isPlanned}
           icon={<MessageSquarePlus size={14} />}
           loading={loading}
           onClick={onChat}
-          style={{ background: '#2563EB', borderColor: '#2563EB' }}
           type="primary"
         >
           进入对话
@@ -314,7 +361,7 @@ const ExpertDrawer: FC<ExpertDrawerProps> = ({ expert, loading, onClose, onChat,
       title={
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: 20 }}>{expert.avatar}</span>
-          <span>{expert.name}</span>
+          <span style={{ color: 'var(--colorText)' }}>{expert.name}</span>
         </div>
       }
       width={520}

@@ -8,6 +8,8 @@ import { cssVar } from 'antd-style';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { BRANDING_NAME } from '@lobechat/business-const';
+
 import { useTTS } from '@/hooks/useTTS';
 import { type TTSServer } from '@/types/agent';
 
@@ -26,7 +28,7 @@ const SelectWithTTSPreview = ({
   const [error, setError] = useState<ChatMessageError>();
   const [voice, setVoice] = useState<string>(value);
   const { t } = useTranslation('welcome');
-  const PREVIEW_TEXT = ['Lobe Chat', t('slogan.title'), t('slogan.desc1')].join('. ');
+  const PREVIEW_TEXT = [BRANDING_NAME, t('slogan.title'), t('slogan.desc1')].join('. ');
 
   const setDefaultError = useCallback(
     (err?: any) => {

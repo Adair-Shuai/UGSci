@@ -43,6 +43,10 @@
 | UGS-008b | 2026-06-17 | modify | `src/layout/SPAGlobalProvider/index.tsx`, `src/layout/GlobalProvider/AppTheme.tsx` | 底层 colorPrimary 修复：①SPAGlobalProvider 传 `defaultPrimaryColor='geekblue'` 让 @lobehub/ui algorithm 生成蓝色色阶；②AppTheme 用 `customToken` 回调在 algorithm 之后精确覆盖 `colorPrimary: '#2563EB'`；③移除 token.colorPrimary（会被 algorithm mapToken 覆盖，无效）；④UGSciLogo 改回用 `cssVar.colorPrimary` | 无 |
 | UGS-010d | 2026-06-17 | modify | `src/features/NavPanel/SideBarHeaderLayout.tsx` | 面包屑默认首页项从 HomeIcon 改为 UGSciLogo，使所有二级菜单（设置/社区/资源/记忆等）左上角统一显示 UGSci Logo 而非小房子；提取 logoNode 为 const 避免每次 render 重建 | 无 |
 | UGS-010e | 2026-06-17 | modify+new | `packages/const/src/meta.ts`, `packages/database/src/models/agent.ts`, `src/routes/(main)/home/_layout/Body/InboxEntry.tsx`, `InboxItem.tsx`, `packages/locales/src/default/chat.ts`, `public/avatars/ugs-ai.png` | 默认助手从 "Lobe AI" 改名为 "UGS AI"，头像从 lobe-ai.png 改为 ugs-ai.png（蓝色储气罐卡通角色，品牌色 #121E30/#2563EB） | 无 |
+| UGS-015 | 2026-06-18 | new-file+modify | `src/features/UgsExperts/`（新增 `ugsExpertsData.ts`/`expertSelectors.ts`/`ExpertCard.tsx`/`ExpertDrawer.tsx`/`index.tsx`/`TeamCard.tsx`），`src/routes/(main)/ugs-experts/`，`src/store/global/selectors/systemStatus.ts` | 储气库专家广场页：4列 Grid Card + 分类筛选 + 搜索 + Drawer(5 Tab) + 专家团召唤；仅展示层重构复用 agentStore/toolStore；菜单顺序改为能力→技能→专家 | 低 |
+| UGS-015b | 2026-06-18 | modify | `packages/builtin-agents/src/agents/ugs-*/index.ts`（13 个文件） | 给所有 ugs-* agent 添加 `persist: { model: DEFAULT_MODEL, provider: DEFAULT_PROVIDER }`，修复 getBuiltinAgent 创建的 agent 记录缺少 model/provider 导致显示"自定义助理" | 无 |
+| UGS-015c | 2026-06-18 | new-file+modify | `apps/server/src/services/file/impls/local.ts`（新增），`apps/server/src/services/file/impls/index.ts`（修改） | 新增 `LocalFileImpl`（node:fs 本地存储），`createFileServiceModule` 检测 S3 四环境变量齐全才用 S3，否则 fallback 到本地，修复本地开发 "S3 environment variables are not set" 错误 | 低 |
+| UGS-018 | 2026-06-18 | new-file | `LESSONS_LEARNED.md` | 事故复盘与规避清单文档：记录 INC-001（agents 表级联删除误判）、INC-002（lucide-react 导出未验证）、INC-003（菜单顺序修改位置误判）；AGENTS.md 顶部加必读指引 | 无 |
 
 ## 临时 Workaround（不提交 git，仅记录）
 

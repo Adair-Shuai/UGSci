@@ -57,6 +57,10 @@ export interface SidebarItemConfig {
 const ALL_SIDEBAR_ITEMS: SidebarItemConfig[] = [
   { id: 'tasks', labelKey: 'tab.tasks', routeId: 'tasks' },
   { id: 'pages', labelKey: 'tab.pages', routeId: 'page' },
+  // UGS-MODIFY: UGS-015 register UGS sidebar items in customization panel
+  { id: 'ugs-capabilities', labelKey: 'tab.ugsCapabilities', routeId: 'ugs-capabilities' },
+  { id: 'ugs-skills', labelKey: 'tab.ugsSkills', routeId: 'ugs-skills' },
+  { id: 'ugs-experts', labelKey: 'tab.ugsExperts', routeId: 'ugs-experts' },
   { id: 'recents', labelKey: 'recents' },
   { alwaysVisible: true, id: 'agent', labelKey: 'navPanel.agent' },
   { id: 'image', labelKey: 'tab.generation', routeId: 'image' },

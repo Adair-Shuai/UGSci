@@ -2,6 +2,8 @@
 
 Guidelines for using AI coding agents in this LobeHub repository.
 
+> **⚠️ 必读**：在给出任何数据库操作建议、删除数据、导入第三方依赖、修改 UI 顺序之前，**必须先查阅 [LESSONS_LEARNED.md](./LESSONS_LEARNED.md)**，确认是否重蹈历史覆辙。该文件记录了历次事故复盘与规避清单。
+
 ## Tech Stack
 
 - Next.js 16 + React 19 + TypeScript

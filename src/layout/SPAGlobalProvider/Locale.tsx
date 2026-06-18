@@ -6,29 +6,46 @@ import { isRtlLang } from 'rtl-detect';
 
 import Editor from '@/layout/GlobalProvider/Editor';
 import { createI18nNext } from '@/locales/create';
-import type { DayjsLocaleGlobEntry } from '@/utils/dayjsLocale';
-import { loadDayjsLocaleModule, normalizeDayjsLocale } from '@/utils/dayjsLocale';
+import { normalizeDayjsLocale } from '@/utils/dayjsLocale';
 import { getAntdLocale } from '@/utils/locale';
 
-const dayjsLocaleLoaders = import.meta.glob<{ default: ILocale }>(
-  '/node_modules/dayjs/locale/{ar,bg,de,en,es,fa,fr,it,ja,ko,nl,pl,pt-br,ru,tr,vi,zh-cn,zh-tw}.js',
-) as Record<string, DayjsLocaleGlobEntry>;
+// Use direct dynamic imports (not import.meta.glob) to ensure Vite's dependency
+// pre-bundling properly resolves dayjs as a shared instance inside locale files.
+// import.meta.glob with absolute /node_modules/ paths bypasses optimizeDeps,
+// causing require("dayjs") inside UMD locale files to resolve to a different
+// (undefined) instance, producing "Cannot read properties of undefined (reading 'locale')".
+const DAYJS_LOCALE_IMPORTS: Record<string, () => Promise<{ default: ILocale }>> = {
+  ar: () => import('dayjs/locale/ar'),
+  bg: () => import('dayjs/locale/bg'),
+  de: () => import('dayjs/locale/de'),
+  en: () => import('dayjs/locale/en'),
+  es: () => import('dayjs/locale/es'),
+  fa: () => import('dayjs/locale/fa'),
+  fr: () => import('dayjs/locale/fr'),
+  it: () => import('dayjs/locale/it'),
+  ja: () => import('dayjs/locale/ja'),
+  ko: () => import('dayjs/locale/ko'),
+  nl: () => import('dayjs/locale/nl'),
+  pl: () => import('dayjs/locale/pl'),
+  'pt-br': () => import('dayjs/locale/pt-br'),
+  ru: () => import('dayjs/locale/ru'),
+  tr: () => import('dayjs/locale/tr'),
+  vi: () => import('dayjs/locale/vi'),
+  'zh-cn': () => import('dayjs/locale/zh-cn'),
+  'zh-tw': () => import('dayjs/locale/zh-tw'),
+};
 
 const updateDayjs = async (lang: string) => {
   const locale = normalizeDayjsLocale(lang);
-  const key = `/node_modules/dayjs/locale/${locale}.js`;
-  const loader = dayjsLocaleLoaders[key] ?? dayjsLocaleLoaders['/node_modules/dayjs/locale/en.js'];
+  const loader = DAYJS_LOCALE_IMPORTS[locale] ?? DAYJS_LOCALE_IMPORTS.en;
 
   try {
-    const mod = await loadDayjsLocaleModule(loader);
-
+    const mod = await loader();
     dayjs.locale(mod.default);
   } catch (error) {
     console.error('error', error);
     console.error(`dayjs locale for ${lang} not found, fallback to en`);
-    const fallback = await loadDayjsLocaleModule(
-      dayjsLocaleLoaders['/node_modules/dayjs/locale/en.js']!,
-    );
+    const fallback = await DAYJS_LOCALE_IMPORTS.en();
     dayjs.locale(fallback.default);
   }
 };

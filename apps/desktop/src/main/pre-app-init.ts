@@ -10,6 +10,6 @@ import * as electronIs from 'electron-is';
 // IndexedDB would collide if both shared the packaged-app's userData dir. Pin dev to
 // a sibling directory so prod sessions stay clean.
 if (electronIs.dev()) {
-  app.setName('lobehub-desktop-dev');
-  app.setPath('userData', path.join(app.getPath('appData'), 'lobehub-desktop-dev'));
+  app.setName('ugsci-desktop-dev');
+  app.setPath('userData', path.join(app.getPath('appData'), 'ugsci-desktop-dev'));
 }

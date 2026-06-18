@@ -1,6 +1,7 @@
 'use client';
 
 import { TITLE_BAR_HEIGHT } from '@lobechat/desktop-bridge';
+import { COPYRIGHT } from '@lobechat/business-const';
 import { Center, Flexbox, Text } from '@lobehub/ui';
 import { Divider } from 'antd';
 import { css, cx } from 'antd-style';
@@ -52,7 +53,7 @@ const OnboardingContainer: FC<PropsWithChildren> = ({ children }) => {
           </Flexbox>
           <Center padding={24}>
             <Text align={'center'} type={'secondary'}>
-              © 2026 LobeHub. All rights reserved.
+              {COPYRIGHT}
             </Text>
           </Center>
         </Flexbox>

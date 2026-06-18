@@ -76,6 +76,8 @@ export interface ExpertMeta {
   workflowSteps: string[];
   /** 是否为规划中占位（无对应 builtin agent） */
   planned?: boolean;
+  /** 是否为用户自建助理（来自 availableAgents，非 BUILTIN_AGENTS） */
+  isCustom?: boolean;
 }
 
 export interface ExpertTeamMeta {

@@ -6,6 +6,7 @@ import { getAllScopePermissions, getScopePermissions } from '@/utils/rbac';
 import { AgentController } from '../controllers/agent.controller';
 import { requireAuth } from '../middleware/auth';
 import { requireAnyPermission } from '../middleware/permission-check';
+import { readLimiter, strictLimiter, writeLimiter } from '../middleware/rate-limit';
 import { PaginationQuerySchema } from '../types';
 import {
   AgentIdParamSchema,
@@ -23,6 +24,7 @@ const AgentRoutes = new Hono();
  */
 AgentRoutes.get(
   '/',
+  readLimiter,
   requireAuth,
   requireAnyPermission(
     getScopePermissions('AGENT_READ', ['ALL', 'OWNER']),
@@ -42,6 +44,7 @@ AgentRoutes.get(
  */
 AgentRoutes.post(
   '/',
+  strictLimiter,
   requireAuth,
   requireAnyPermission(
     getAllScopePermissions('AGENT_CREATE'),
@@ -61,6 +64,7 @@ AgentRoutes.post(
  */
 AgentRoutes.get(
   '/:id',
+  readLimiter,
   requireAuth,
   requireAnyPermission(
     getAllScopePermissions('AGENT_READ'),
@@ -80,6 +84,7 @@ AgentRoutes.get(
  */
 AgentRoutes.patch(
   '/:id',
+  writeLimiter,
   requireAuth,
   requireAnyPermission(
     getAllScopePermissions('AGENT_UPDATE'),
@@ -100,6 +105,7 @@ AgentRoutes.patch(
  */
 AgentRoutes.delete(
   '/:id',
+  strictLimiter,
   requireAuth,
   requireAnyPermission(
     getAllScopePermissions('AGENT_DELETE'),

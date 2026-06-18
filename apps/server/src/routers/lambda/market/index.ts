@@ -9,6 +9,14 @@ import { marketUserInfo, serverDatabase } from '@/libs/trpc/lambda/middleware';
 import { DiscoverService } from '@/server/services/discover';
 import { MarketService } from '@/server/services/market';
 import {
+  getLocalAssistantCategories,
+  getLocalAssistantDetail,
+  getLocalAssistantList,
+  getLocalMcpCategories,
+  getLocalMcpDetail,
+  getLocalMcpList,
+} from '@/server/services/market/localMarketData';
+import {
   AssistantSorts,
   McpConnectionType,
   McpSorts,
@@ -78,10 +86,7 @@ export const marketRouter = router({
         return await ctx.discoverService.getAgentsByPlugin(input);
       } catch (error) {
         log('Error fetching agents by plugin: %O', error);
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to fetch agents by plugin',
-        });
+        return { items: [], totalCount: 0, currentPage: 1, pageSize: 20 };
       }
     }),
 
@@ -102,11 +107,8 @@ export const marketRouter = router({
       try {
         return await ctx.discoverService.getAssistantCategories(input);
       } catch (error) {
-        log('Error fetching assistant categories: %O', error);
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to fetch assistant categories',
-        });
+        log('Error fetching assistant categories (using local data): %O', error);
+        return getLocalAssistantCategories();
       }
     }),
 
@@ -125,11 +127,10 @@ export const marketRouter = router({
       try {
         return await ctx.discoverService.getAssistantDetail(input);
       } catch (error) {
-        log('Error fetching assistants detail: %O', error);
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to fetch assistants detail',
-        });
+        log('Error fetching assistants detail (trying local): %O', error);
+        const local = getLocalAssistantDetail(input.identifier);
+        if (local) return local;
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Assistant not found' });
       }
     }),
 
@@ -148,10 +149,7 @@ export const marketRouter = router({
         return await ctx.discoverService.getAssistantIdentifiers(input);
       } catch (error) {
         log('Error fetching assistant identifiers: %O', error);
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to fetch assistant identifiers',
-        });
+        return [];
       }
     }),
 
@@ -179,11 +177,8 @@ export const marketRouter = router({
       try {
         return await ctx.discoverService.getAssistantList(input);
       } catch (error) {
-        log('Error fetching assistant list: %O', error);
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to fetch assistant list',
-        });
+        log('Error fetching assistant list (using local data): %O', error);
+        return getLocalAssistantList();
       }
     }),
 
@@ -204,10 +199,7 @@ export const marketRouter = router({
         return await ctx.discoverService.getGroupAgentCategories(input);
       } catch (error) {
         log('Error fetching group agent categories: %O', error);
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to fetch group agent categories',
-        });
+        return [];
       }
     }),
 
@@ -226,10 +218,7 @@ export const marketRouter = router({
         return await ctx.discoverService.getGroupAgentDetail(input);
       } catch (error) {
         log('Error fetching group agent detail: %O', error);
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to fetch group agent detail',
-        });
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'group agent detail not available (market unreachable)' });
       }
     }),
 
@@ -240,10 +229,7 @@ export const marketRouter = router({
       return await ctx.discoverService.getGroupAgentIdentifiers();
     } catch (error) {
       log('Error fetching group agent identifiers: %O', error);
-      throw new TRPCError({
-        code: 'INTERNAL_SERVER_ERROR',
-        message: 'Failed to fetch group agent identifiers',
-      });
+      return [];
     }
   }),
 
@@ -269,10 +255,7 @@ export const marketRouter = router({
         return await ctx.discoverService.getGroupAgentList(input);
       } catch (error) {
         log('Error fetching group agent list: %O', error);
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to fetch group agent list',
-        });
+        return { items: [], totalCount: 0, currentPage: 1, pageSize: 20 };
       }
     }),
 
@@ -290,10 +273,7 @@ export const marketRouter = router({
         return await ctx.discoverService.getLegacyPluginList(input);
       } catch (error) {
         log('Error fetching legacy plugin list: %O', error);
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to fetch plugin list',
-        });
+        return [];
       }
     }),
 
@@ -313,11 +293,8 @@ export const marketRouter = router({
       try {
         return await ctx.discoverService.getMcpCategories(input);
       } catch (error) {
-        log('Error fetching mcp categories: %O', error);
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to fetch mcp categories',
-        });
+        log('Error fetching mcp categories (using local data): %O', error);
+        return getLocalMcpCategories();
       }
     }),
 
@@ -335,10 +312,12 @@ export const marketRouter = router({
       try {
         return await ctx.discoverService.getMcpDetail(input);
       } catch (error) {
-        console.error('Error fetching mcp detail: %O', error);
+        console.error('Error fetching mcp detail (trying local): %O', error);
+        const local = getLocalMcpDetail(input.identifier);
+        if (local) return local;
         throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to fetch mcp detail',
+          code: 'NOT_FOUND',
+          message: 'MCP not found',
         });
       }
     }),
@@ -364,11 +343,8 @@ export const marketRouter = router({
       try {
         return await ctx.discoverService.getMcpList(input);
       } catch (error) {
-        log('Error fetching mcp list: %O', error);
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to fetch mcp list',
-        });
+        log('Error fetching mcp list (using local data): %O', error);
+        return getLocalMcpList();
       }
     }),
 
@@ -388,10 +364,7 @@ export const marketRouter = router({
         return await ctx.discoverService.getMcpManifest(input);
       } catch (error) {
         log('Error fetching mcp manifest: %O', error);
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to fetch mcp manifest',
-        });
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'MCP manifest not available (market unreachable)' });
       }
     }),
 
@@ -411,10 +384,7 @@ export const marketRouter = router({
         return await ctx.discoverService.getModelCategories(input);
       } catch (error) {
         log('Error fetching model categories: %O', error);
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to fetch model categories',
-        });
+        return [];
       }
     }),
 
@@ -432,10 +402,7 @@ export const marketRouter = router({
         return await ctx.discoverService.getModelDetail(input);
       } catch (error) {
         log('Error fetching model details: %O', error);
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to fetch model details',
-        });
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'model details not available (market unreachable)' });
       }
     }),
 
@@ -446,10 +413,7 @@ export const marketRouter = router({
       return await ctx.discoverService.getModelIdentifiers();
     } catch (error) {
       log('Error fetching model identifiers: %O', error);
-      throw new TRPCError({
-        code: 'INTERNAL_SERVER_ERROR',
-        message: 'Failed to fetch model identifiers',
-      });
+      return [];
     }
   }),
 
@@ -474,10 +438,7 @@ export const marketRouter = router({
         return await ctx.discoverService.getModelList(input);
       } catch (error) {
         log('Error fetching model list: %O', error);
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to fetch model list',
-        });
+        return { items: [], totalCount: 0, currentPage: 1, pageSize: 20 };
       }
     }),
 
@@ -498,10 +459,7 @@ export const marketRouter = router({
         return await ctx.discoverService.getPluginCategories(input);
       } catch (error) {
         log('Error fetching plugin categories: %O', error);
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to fetch plugin categories',
-        });
+        return [];
       }
     }),
 
@@ -519,10 +477,10 @@ export const marketRouter = router({
       try {
         return await ctx.discoverService.getPluginDetail(input);
       } catch (error) {
-        log('Error fetching plugin details: %O', error);
+        log('Error fetching plugin details (market unreachable): %O', error);
         throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to fetch plugin details',
+          code: 'NOT_FOUND',
+          message: 'Plugin not available (market unreachable)',
         });
       }
     }),
@@ -534,10 +492,7 @@ export const marketRouter = router({
       return await ctx.discoverService.getPluginIdentifiers();
     } catch (error) {
       log('Error fetching plugin identifiers: %O', error);
-      throw new TRPCError({
-        code: 'INTERNAL_SERVER_ERROR',
-        message: 'Failed to fetch plugin identifiers',
-      });
+      return [];
     }
   }),
 
@@ -562,10 +517,7 @@ export const marketRouter = router({
         return await ctx.discoverService.getPluginList(input);
       } catch (error) {
         log('Error fetching plugin list: %O', error);
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to fetch plugin list',
-        });
+        return { items: [], totalCount: 0, currentPage: 1, pageSize: 20 };
       }
     }),
 
@@ -585,10 +537,7 @@ export const marketRouter = router({
         return await ctx.discoverService.getProviderDetail(input);
       } catch (error) {
         log('Error fetching provider details: %O', error);
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to fetch provider details',
-        });
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'provider details not available (market unreachable)' });
       }
     }),
 
@@ -598,11 +547,8 @@ export const marketRouter = router({
     try {
       return await ctx.discoverService.getProviderIdentifiers();
     } catch (error) {
-      log('Error fetching provider identifiers: %O', error);
-      throw new TRPCError({
-        code: 'INTERNAL_SERVER_ERROR',
-        message: 'Failed to fetch provider identifiers',
-      });
+      log('Error fetching provider identifiers (market unreachable): %O', error);
+      return [];
     }
   }),
 
@@ -626,10 +572,7 @@ export const marketRouter = router({
         return await ctx.discoverService.getProviderList(input);
       } catch (error) {
         log('Error fetching provider list: %O', error);
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to fetch provider list',
-        });
+        return { items: [], totalCount: 0, currentPage: 1, pageSize: 20 };
       }
     }),
 
@@ -648,10 +591,7 @@ export const marketRouter = router({
         return await ctx.discoverService.getUserInfo(input);
       } catch (error) {
         log('Error fetching user info: %O', error);
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to fetch user info',
-        });
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'User not available (market unreachable)' });
       }
     }),
 
@@ -722,10 +662,7 @@ export const marketRouter = router({
         };
       } catch (error) {
         console.error('Error fetching M2M token: %O', error);
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to fetch M2M token',
-        });
+        return { success: false };
       }
     }),
 
@@ -922,10 +859,7 @@ export const marketRouter = router({
         return { issueUrl: result?.issueUrl, success: true };
       } catch (error) {
         console.error('Error submitting feedback: %O', error);
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to submit feedback',
-        });
+        return { success: false };
       }
     }),
 

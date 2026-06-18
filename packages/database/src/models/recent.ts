@@ -1,5 +1,5 @@
 import type { TaskStatus } from '@lobechat/types';
-import { and, desc, eq, inArray, isNotNull, isNull, ne, not, or, sql } from 'drizzle-orm';
+import { and, desc, eq, ilike, inArray, isNotNull, isNull, ne, not, or, sql } from 'drizzle-orm';
 import { unionAll } from 'drizzle-orm/pg-core';
 
 import { agents, DOCUMENT_FOLDER_TYPE, documents, messages, tasks, topics } from '../schemas';
@@ -79,6 +79,8 @@ export class RecentModel {
           or(
             isNotNull(topics.groupId),
             eq(agents.slug, 'inbox'),
+            // UGS-MODIFY: UGS-015 让 ugs-* 专家对话也出现在最近对话列表
+            ilike(agents.slug, 'ugs-%'),
             and(isNull(topics.groupId), ne(agents.virtual, true)),
           ),
           or(isNull(topics.trigger), not(inArray(topics.trigger, SYSTEM_TOPIC_TRIGGERS))),

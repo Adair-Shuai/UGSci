@@ -6,9 +6,9 @@ import { TypewriterEffect } from '@lobehub/ui/awesome';
 import { LoadingDots } from '@lobehub/ui/chat';
 import { Steps } from 'antd';
 import { cssVar } from 'antd-style';
-import { BrainIcon, HeartHandshakeIcon, PencilRulerIcon } from 'lucide-react';
+import { BrainIcon, PencilRulerIcon, WorkflowIcon } from 'lucide-react';
 import { memo, useCallback } from 'react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 
 import { ProductLogo } from '@/components/Branding';
 import { useUserStore } from '@/store/user';
@@ -60,13 +60,21 @@ const WelcomeStep = memo<WelcomeStepProps>(({ onNext }) => {
             pauseDuration={16_000}
             typingSpeed={64}
             sentences={[
-              t('telemetry.title', { name: 'Lobe AI' }),
+              t('telemetry.title'),
               t('telemetry.title2'),
               t('telemetry.title3'),
             ]}
           />
         </Text>
-        <Text as={'p'}>{t('telemetry.desc')}</Text>
+        <Text as={'p'}>
+          <Trans
+            components={{
+              brand: <span style={{ color: cssVar.colorPrimary, fontWeight: 600 }} />,
+            }}
+            i18nKey="telemetry.desc"
+            ns="onboarding"
+          />
+        </Text>
       </Flexbox>
       <Steps
         current={null as any}
@@ -74,11 +82,11 @@ const WelcomeStep = memo<WelcomeStepProps>(({ onNext }) => {
         items={[
           {
             description: (
-              <Text as={'p'} color={cssVar.colorTextSecondary} style={{ marginBottom: 16 }}>
+              <Text as={'p'} color={cssVar.colorTextSecondary} style={{ marginBottom: 16, whiteSpace: 'pre-line' }}>
                 {t('telemetry.rows.create.desc')}
               </Text>
             ),
-            icon: <IconAvatar icon={PencilRulerIcon} />,
+            icon: <IconAvatar icon={BrainIcon} />,
             title: (
               <Text as={'h2'} fontSize={16}>
                 {t('telemetry.rows.create.title')}
@@ -87,11 +95,11 @@ const WelcomeStep = memo<WelcomeStepProps>(({ onNext }) => {
           },
           {
             description: (
-              <Text as={'p'} color={cssVar.colorTextSecondary} style={{ marginBottom: 16 }}>
+              <Text as={'p'} color={cssVar.colorTextSecondary} style={{ marginBottom: 16, whiteSpace: 'pre-line' }}>
                 {t('telemetry.rows.collaborate.desc')}
               </Text>
             ),
-            icon: <IconAvatar icon={HeartHandshakeIcon} />,
+            icon: <IconAvatar icon={PencilRulerIcon} />,
             title: (
               <Text as={'h2'} fontSize={16}>
                 {t('telemetry.rows.collaborate.title')}
@@ -100,11 +108,11 @@ const WelcomeStep = memo<WelcomeStepProps>(({ onNext }) => {
           },
           {
             description: (
-              <Text as={'p'} color={cssVar.colorTextSecondary}>
+              <Text as={'p'} color={cssVar.colorTextSecondary} style={{ whiteSpace: 'pre-line' }}>
                 {t('telemetry.rows.evolve.desc')}
               </Text>
             ),
-            icon: <IconAvatar icon={BrainIcon} />,
+            icon: <IconAvatar icon={WorkflowIcon} />,
             title: (
               <Text as={'h2'} fontSize={16}>
                 {t('telemetry.rows.evolve.title')}

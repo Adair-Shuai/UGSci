@@ -5,6 +5,7 @@ import { Divider } from 'antd';
 import { cx } from 'antd-style';
 import { type FC, type PropsWithChildren } from 'react';
 
+import { BRANDING_NAME } from '@lobechat/business-const';
 import { ProductLogo } from '@/components/Branding';
 import { useIsDark } from '@/hooks/useIsDark';
 
@@ -23,7 +24,7 @@ const AuthContainer: FC<PropsWithChildren> = ({ children }) => {
         width={'100%'}
       >
         <Flexbox horizontal align={'center'} padding={16} width={'100%'}>
-          <a aria-label={'LobeHub'} href={'/'} style={{ display: 'inline-flex' }}>
+          <a aria-label={BRANDING_NAME} href={'/'} style={{ display: 'inline-flex' }}>
             <ProductLogo size={40} />
           </a>
         </Flexbox>

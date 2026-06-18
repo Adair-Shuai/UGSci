@@ -5,6 +5,10 @@ import { z } from 'zod';
 import { publicProcedure, router } from '@/libs/trpc/lambda';
 import { marketUserInfo, serverDatabase } from '@/libs/trpc/lambda/middleware';
 import { MarketService } from '@/server/services/market';
+import {
+  getLocalSkillCategories,
+  getLocalSkillList,
+} from '@/server/services/market/localMarketData';
 import { SkillSorts } from '@/types/discover';
 
 const log = debug('lambda-router:market:skill');
@@ -40,11 +44,8 @@ export const skillRouter = router({
       try {
         return await ctx.marketService.getSkillCategories();
       } catch (error) {
-        log('Error fetching skill categories: %O', error);
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to fetch skill categories',
-        });
+        log('Error fetching skill categories (market unreachable, using local data): %O', error);
+        return getLocalSkillCategories();
       }
     }),
 
@@ -65,10 +66,10 @@ export const skillRouter = router({
           version: input.version,
         });
       } catch (error) {
-        log('Error fetching skill detail: %O', error);
+        log('Error fetching skill detail (market unreachable): %O', error);
         throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to fetch skill detail',
+          code: 'NOT_FOUND',
+          message: 'Skill not found (market unavailable)',
         });
       }
     }),
@@ -93,11 +94,8 @@ export const skillRouter = router({
       try {
         return await ctx.marketService.searchSkill(input ?? {});
       } catch (error) {
-        log('Error fetching skill list: %O', error);
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to fetch skill list',
-        });
+        log('Error fetching skill list (market unreachable, using local data): %O', error);
+        return getLocalSkillList();
       }
     }),
 });

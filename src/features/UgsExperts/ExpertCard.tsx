@@ -1,12 +1,105 @@
 // UGS-MODIFY: UGS-015 专家广场 — 专家卡片（增强版）
 // 卡片信息：avatar / name / title / description / skill tags / counts(skills,tools,workflows) / action buttons
-// 视觉与能力中心 CapabilityCard 统一（antd Card + outlined 风格 + 工业蓝配色）
-import { MessageSquarePlus, Sparkles, Tool, Workflow } from 'lucide-react';
-import { Button, Card, Tag } from 'antd';
+// 视觉与能力中心 ConnectorCard 统一：createStaticStyles + cssVar（主题感知，深浅色自动适配）
+import { MessageSquarePlus, Sparkles, Wrench, Workflow } from 'lucide-react';
+import { createStaticStyles } from 'antd-style';
+import { Button, Tag } from 'antd';
 import { type ReactNode, memo } from 'react';
 
 import { type ExpertMeta, EXPERT_CATEGORIES } from './ugsExpertsData';
 import type { ExpertCardMeta } from './expertSelectors';
+
+const styles = createStaticStyles(({ css, cssVar }) => ({
+  card: css`
+    cursor: pointer;
+    height: 100%;
+    border: 1px solid ${cssVar.colorBorderSecondary};
+    border-radius: ${cssVar.borderRadiusLG};
+    background: ${cssVar.colorBgContainer};
+    transition: all 0.2s ease;
+
+    &:hover {
+      border-color: ${cssVar.colorPrimary};
+      box-shadow: ${cssVar.boxShadowTertiary};
+    }
+  `,
+  cardPlanned: css`
+    cursor: default;
+    height: 100%;
+    border: 1px solid ${cssVar.colorBorderSecondary};
+    border-radius: ${cssVar.borderRadiusLG};
+    background: ${cssVar.colorFillQuaternary};
+    opacity: 0.75;
+    transition: all 0.2s ease;
+  `,
+  cardBody: css`
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 14px;
+  `,
+  avatar: css`
+    font-size: 26px;
+    line-height: 1;
+  `,
+  name: css`
+    color: ${cssVar.colorText};
+    font-size: 14px;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  `,
+  title: css`
+    color: ${cssVar.colorPrimary};
+    font-size: 11px;
+  `,
+  description: css`
+    color: ${cssVar.colorTextSecondary};
+    font-size: 12px;
+    line-height: 1.5;
+    flex: 1;
+    margin-bottom: 8px;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  `,
+  tag: css`
+    background: ${cssVar.colorFillTertiary};
+    border-color: transparent;
+    color: ${cssVar.colorTextSecondary};
+    font-size: 11px;
+    margin: 0;
+  `,
+  tagMore: css`
+    color: ${cssVar.colorTextQuaternary};
+    font-size: 11px;
+    line-height: 20px;
+  `,
+  statItem: css`
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 11px;
+  `,
+  statActive: css`
+    color: ${cssVar.colorTextSecondary};
+  `,
+  statEmpty: css`
+    color: ${cssVar.colorTextQuaternary};
+  `,
+  category: css`
+    color: ${cssVar.colorTextQuaternary};
+    font-size: 10px;
+    margin-left: auto;
+  `,
+  statDivider: css`
+    border-top: 1px solid ${cssVar.colorFillSecondary};
+    padding-block: 8px;
+    margin-bottom: 10px;
+  `,
+}));
 
 interface ExpertCardProps {
   cardMeta: ExpertCardMeta;
@@ -29,13 +122,7 @@ const StatItem = ({
   label: string;
 }) => (
   <span
-    style={{
-      alignItems: 'center',
-      color: count > 0 ? '#595959' : '#bbb',
-      display: 'inline-flex',
-      fontSize: 11,
-      gap: 3,
-    }}
+    className={`${styles.statItem} ${count > 0 ? styles.statActive : styles.statEmpty}`}
     title={`${label}：${count}`}
   >
     {icon}
@@ -48,152 +135,99 @@ const ExpertCard = memo<ExpertCardProps>(({ cardMeta, expert, loading, onChat, o
   const isPlanned = cardMeta.planned;
 
   return (
-    <Card
-      hoverable={!isPlanned && !!onOpenDetail}
-      loading={loading}
+    <div
+      className={isPlanned ? styles.cardPlanned : styles.card}
       onClick={isPlanned ? undefined : onOpenDetail}
-      size="small"
-      style={{
-        borderColor: isPlanned ? '#f0f0f0' : '#e8e8e8',
-        cursor: isPlanned ? 'default' : onOpenDetail ? 'pointer' : 'default',
-        height: '100%',
-        opacity: isPlanned ? 0.75 : 1,
-        transition: 'all 0.2s ease',
-      }}
-      styles={{ body: { padding: 14, display: 'flex', flexDirection: 'column', height: '100%' } }}
     >
-      {/* 头部：avatar + name + title + 分类 */}
-      <div style={{ alignItems: 'center', display: 'flex', gap: 10, marginBottom: 8 }}>
-        <span style={{ fontSize: 26, lineHeight: 1 }}>{expert.avatar}</span>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ alignItems: 'center', display: 'flex', gap: 6 }}>
-            <span
-              style={{
-                color: '#1f1f1f',
-                fontSize: 14,
-                fontWeight: 600,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {expert.name}
-            </span>
-            {isPlanned && (
-              <Tag color="processing" style={{ fontSize: 10, margin: 0 }}>
-                规划中
-              </Tag>
-            )}
+      <div className={styles.cardBody}>
+        {/* 头部：avatar + name + title + 分类 */}
+        <div style={{ alignItems: 'center', display: 'flex', gap: 10, marginBottom: 8 }}>
+          <span className={styles.avatar}>{expert.avatar}</span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ alignItems: 'center', display: 'flex', gap: 6 }}>
+              <span className={styles.name}>{expert.name}</span>
+              {isPlanned && (
+                <Tag color="processing" style={{ fontSize: 10, margin: 0 }}>
+                  规划中
+                </Tag>
+              )}
+            </div>
+            <span className={styles.title}>{expert.title}</span>
           </div>
-          <span style={{ color: '#185FA5', fontSize: 11 }}>{expert.title}</span>
+        </div>
+
+        {/* 描述 */}
+        <div className={styles.description}>{expert.description}</div>
+
+        {/* 技能标签 */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
+          {cardMeta.tags.map((tag) => (
+            <Tag key={tag} className={styles.tag}>
+              {tag}
+            </Tag>
+          ))}
+          {expert.tags.length > 3 && (
+            <span className={styles.tagMore}>+{expert.tags.length - 3}</span>
+          )}
+        </div>
+
+        {/* 统计行：skills / tools / workflows */}
+        <div
+          className={styles.statDivider}
+          style={{
+            alignItems: 'center',
+            display: 'flex',
+            gap: 14,
+            justifyContent: 'space-between',
+            paddingTop: 8,
+          }}
+        >
+          <StatItem
+            count={cardMeta.skillCount}
+            icon={<Sparkles size={12} />}
+            label="技能"
+          />
+          <StatItem count={cardMeta.toolCount} icon={<Wrench size={12} />} label="工具" />
+          <StatItem
+            count={cardMeta.workflowCount}
+            icon={<Workflow size={12} />}
+            label="工作流"
+          />
+          <span className={styles.category}>
+            {catMeta.icon} {catMeta.label}
+          </span>
+        </div>
+
+        {/* 操作按钮 */}
+        <div style={{ display: 'flex', gap: 8 }}>
+          <Button
+            block
+            disabled={isPlanned}
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenDetail?.();
+            }}
+            size="small"
+          >
+            查看详情
+          </Button>
+          <Button
+            block
+            disabled={isPlanned}
+            icon={<MessageSquarePlus size={14} />}
+            loading={loading}
+            onClick={(e) => {
+              e.stopPropagation();
+              onChat?.();
+            }}
+            size="small"
+            type="primary"
+          >
+            进入对话
+          </Button>
         </div>
       </div>
-
-      {/* 描述 */}
-      <div
-        style={{
-          color: '#595959',
-          flex: 1,
-          fontSize: 12,
-          lineHeight: 1.5,
-          marginBottom: 8,
-          overflow: 'hidden',
-          display: '-webkit-box',
-          WebkitLineClamp: 2,
-          WebkitBoxOrient: 'vertical',
-        }}
-      >
-        {expert.description}
-      </div>
-
-      {/* 技能标签 */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
-        {cardMeta.tags.map((tag) => (
-          <Tag
-            key={tag}
-            style={{
-              background: '#f0f5ff',
-              borderColor: '#d6e4ff',
-              color: '#185FA5',
-              fontSize: 11,
-              margin: 0,
-            }}
-          >
-            {tag}
-          </Tag>
-        ))}
-        {expert.tags.length > 3 && (
-          <span style={{ color: '#bbb', fontSize: 11, lineHeight: '20px' }}>
-            +{expert.tags.length - 3}
-          </span>
-        )}
-      </div>
-
-      {/* 统计行：skills / tools / workflows */}
-      <div
-        style={{
-          alignItems: 'center',
-          borderTop: '1px solid #f5f5f5',
-          display: 'flex',
-          gap: 14,
-          justifyContent: 'space-between',
-          marginBottom: 10,
-          paddingBottom: 8,
-          paddingTop: 8,
-        }}
-      >
-        <StatItem
-          count={cardMeta.skillCount}
-          icon={<Sparkles size={12} />}
-          label="技能"
-        />
-        <StatItem count={cardMeta.toolCount} icon={<Tool size={12} />} label="工具" />
-        <StatItem
-          count={cardMeta.workflowCount}
-          icon={<Workflow size={12} />}
-          label="工作流"
-        />
-        <span
-          style={{
-            color: '#bbb',
-            fontSize: 10,
-            marginLeft: 'auto',
-          }}
-        >
-          {catMeta.icon} {catMeta.label}
-        </span>
-      </div>
-
-      {/* 操作按钮 */}
-      <div style={{ display: 'flex', gap: 8 }}>
-        <Button
-          block
-          disabled={isPlanned}
-          onClick={(e) => {
-            e.stopPropagation();
-            onOpenDetail?.();
-          }}
-          size="small"
-        >
-          查看详情
-        </Button>
-        <Button
-          block
-          disabled={isPlanned}
-          icon={<MessageSquarePlus size={14} />}
-          loading={loading}
-          onClick={(e) => {
-            e.stopPropagation();
-            onChat?.();
-          }}
-          size="small"
-          style={{ background: '#2563EB', borderColor: '#2563EB' }}
-          type="primary"
-        >
-          进入对话
-        </Button>
-      </div>
-    </Card>
+    </div>
   );
 });
 

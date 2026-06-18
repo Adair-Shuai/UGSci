@@ -112,6 +112,7 @@ vertex-ai-key.json
 
 # AI coding tools
 .local/
+.local-storage/
 .claude/
 .mcp.json
 CLAUDE.local.md
@@ -163,3 +164,4 @@ docs/superpowers/
 .cursor/
 .workbuddy/
 UGS_CUSTOMIZATIONS.md
+nul

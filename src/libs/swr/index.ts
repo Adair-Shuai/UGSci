@@ -45,9 +45,9 @@ export const useClientDataSWR: SWRHook = (key, fetch, config) => {
     dedupingInterval: 0,
     focusThrottleInterval: 5 * 60 * 1000,
     // Custom error retry logic: don't retry on 401 errors
-    onErrorRetry: (error: any, ...args: any[]) => {
-      const revalidate = args[2];
-      const { retryCount } = args[3];
+    // SWR v2.x callback signature: (error, key, config, revalidate, { retryCount })
+    onErrorRetry: (error: any, _key: any, _config: any, revalidate: any, opts: any) => {
+      const { retryCount } = opts;
 
       // Check if error is marked as non-retryable (e.g., 401 authentication errors)
       if (error?.meta?.shouldRetry === false) {
