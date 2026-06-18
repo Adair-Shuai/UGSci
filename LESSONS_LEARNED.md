@@ -291,6 +291,112 @@ npx node-gyp rebuild --target=41.3.0 --arch=x64 --dist-url=https://electronjs.or
    - Native 模块在打包前手动编译
    - 打包前确保 `ELECTRON_RUN_AS_NODE` 已 unset
 
+### INC-010: pnpm list 在 Windows 上 EMFILE 句柄耗尽（2026-06-18）
+
+**现象**：electron-builder 26 在 `searching for node modules` 阶段报 `Node module collector process exited with code 4294963230`，pnpm 子进程返回 `{"error":{"code":"EMFILE","message":"EMFILE: too many open files"}}`。
+
+**真实根因**：
+- Windows 单进程文件句柄上限 ~3200（Git Bash 报 `ulimit -n 3200`，且 `ulimit -n 16384` 报 "Operation not permitted"）
+- pnpm 10 默认行为：18 个 workspace + 1100+ 顶层 modules + `--depth Infinity` 全量扫描 node_modules，远超句柄上限
+- `pnpm install` 报 `ERR_PNPM_IGNORED_BUILDS` 也根因相同——exit 1 中断，symlink 状态被打乱（`node_modules/@napi-rs/canvas` 等被删后未补回）
+
+**正确做法**：
+1. **首选修复**：把 `app-builder-lib/out/node-module-collector/index.js` 的 `getCollectorByPackageManager` 让 `PM.PNPM` 走 `TraversalNodeModulesCollector`（内置文件遍历，零子进程）。这是 electron-builder 内置的 fallback 路径
+2. **配套修复**：改 `traversalNodeModulesCollector.js` 的 `buildPackage` prodDeps 回调，throw 改为 warn + 记 `PKG_NOT_FOUND` logSummary（不要中断 flow）
+3. **配套修复**：`pnpm-workspace.yaml` 的 `onlyBuiltDependencies` 必须列出所有 build script（`electron-winstaller`/`get-windows`/`electron`/`esbuild`/`electron-builder`），否则 pnpm 10 阻断 build script 报 exit 1
+
+**通用规则**：
+1. **永远不要在 Windows 上用 pnpm 10 + 18 workspace + electron-builder 26 原生组合**——必然 EMFILE
+2. 调 ulimit 在 Windows Git Bash 无效（操作不允许）
+3. 优先使用 `TraversalNodeModulesCollector`（appFileCopier.js 的 `pmApproaches[1]` 就是这个），它扫描 fs 不调子进程
+4. TRAVERSAL 的"找不到 production dep"应当 warn 而非 throw，否则单点失败让整个 pack 失败
+
+### INC-011: pnpm 别名包 (strip-ansi-cjs) 导致 asar 缺依赖（2026-06-18）
+
+**现象**：LobeHub.exe 启动后报 `Cannot find module 'strip-ansi'`，报错栈：`gauge/wide-truncate.js` → `string-width/index.js` → `string-width-cjs/index.js` → `wrap-ansi-cjs/index.js` 都需要 `strip-ansi`，但 asar 只有 `strip-ansi-cjs`（pnpm 别名）。
+
+**根因**：
+- `@isaacs/cliui@8.0.2` 通过 pnpm 字段同时声明 `"strip-ansi": "^7.0.1"` 和 `"strip-ansi-cjs": "npm:strip-ansi@^6.0.1"`，是双发布
+- pnpm 在 `.pnpm/@isaacs+cliui@8.0.2/node_modules/` 下建立两个 symlink：`strip-ansi -> strip-ansi@7.2.0`、`strip-ansi-cjs -> strip-ansi@6.0.1`
+- electron-builder 的文件 glob `node_modules/{name}/**` 用 symlink 的**链接名**（strip-ansi-cjs）作为目录名放入 asar
+- 但 `gauge/wide-truncate.js` 等老模块的 `require('strip-ansi')` 走 Node 默认解析：先看自身 `node_modules/strip-ansi`，找不到则向上
+- 这些老模块依赖的是 `string-width@4.2.3` + `strip-ansi@^6.0.1`（pnpm 把它解析到 `strip-ansi@6.0.1`）——所以 pnpm 预期 `string-width@4.2.3/node_modules/strip-ansi` 能解析
+- 然而 TRAVERSAL collector 把 pnpm 别名 "strip-ansi-cjs" 当作目录名收集，gauge 看不到真正的 "strip-ansi" 目录
+
+**正确做法（按优先级）**：
+1. **最佳方案**：在 `node_modules/strip-ansi`（**真实目录**而非 symlink）放一份 `strip-ansi@6.0.1` 的内容
+   ```bash
+   node -e "
+   const fs = require('fs'), path = require('path');
+   function copyDir(s, d) {
+     fs.mkdirSync(d, { recursive: true });
+     for (const e of fs.readdirSync(s, { withFileTypes: true })) {
+       const sp = path.join(s, e.name), dp = path.join(d, e.name);
+       if (e.isDirectory()) copyDir(sp, dp);
+       else fs.copyFileSync(sp, dp);
+     }
+   }
+   copyDir('node_modules/.pnpm/strip-ansi@6.0.1/node_modules/strip-ansi', 'node_modules/strip-ansi');
+   // 同样处理 ansi-regex
+   copyDir('node_modules/.pnpm/ansi-regex@5.0.1/node_modules/ansi-regex', 'node_modules/ansi-regex');
+   "
+   ```
+2. **原因**：electron-builder 的 file glob `**/*` 从 `node_modules/strip-ansi` 收集时，会把真实目录下的内容正确放入 asar 的 `node_modules/strip-ansi/`
+3. **同理**：`@isaacs/cliui` 用的 `wrap-ansi-cjs` 在 asar 中已有 `wrap-ansi` 目录（因为 `wrap-ansi@7.0.0` 自身），但 `wrap-ansi-cjs/index.js` 内部 `require('strip-ansi')` 也走真名解析——所以补 strip-ansi 后 wrap-ansi-cjs 也活了
+4. **不要用 symlink**：用 symlink (junction) 收集时 electron-builder 仍会 resolve 到 .pnpm/ 真实路径，命名按 symlink 名（即"strip-ansi-cjs"）——**必须是真实目录副本**
+
+**衍生坑**：把 `node_modules/strip-ansi` 设为 symlink 不会生效，因 electron-builder 的 `ModuleCopier` 跟踪 symlink 时会按链接名命名。
+
+### INC-012: Windows 残留 app.asar 文件锁导致无法覆盖（2026-06-18）
+
+**现象**：尝试删除 `release/win-unpacked/resources/app.asar`（或 mv、重命名、cmd del、PS Remove-Item -Force）都失败，错误 `EBUSY` 或 `EPERM`，即使等 5 分钟也无效。最终 `rm -rf release/` 都失败。
+
+**根因**：Windows Search Indexer (`SearchIndexer.exe`)、MpDefenderCoreService、AV scan 持有文件句柄。Git Bash `rm` 和 cmd `del` 都无法强制回收。
+
+**解决**：
+1. **不删，直接写到新目录**：用 `-c.directories.output=release_new` 让 electron-builder 输出到新目录
+2. **拷贝到最终位置**：`node fs.copyDir()` 整个 `release_new/win-unpacked` 到项目根 `win-unpacked-fixed/`
+3. **废弃旧 release/**：保留为废文件不删，下一次构建会复用同名目录
+4. **下次预防**：打包前 `net stop "Windows Search"` 或禁用 Windows Defender 实时保护后再打包
+
+**通用规则**：
+1. **Windows 上发布后不要反复打包到同一目录**——每次失败都可能留下锁。改用时间戳目录
+2. **不要尝试 unlink EBUSY 文件**——会永远卡住。直接写到新目录
+
+### INC-013: package.json name 未同步导致 IPC pipe EADDRINUSE（2026-06-18）
+
+**现象**：Electron 启动后主进程 `ElectronIPCServer.start()` 报 `EADDRINUSE: address already in use \\.\pipe\lobehub-desktop-dev-electron-ipc`。主进程 bootstrap 中断，splash 页无限转圈。
+
+**根因**：
+- IPC pipe 名称由 `packages/electron-server-ipc/src/const.ts:5` 生成：`\\.\pipe\{appId}-electron-ipc`
+- `appId` 来源于 `App.ts:10`：`import { name } from '@/../../package.json'` —— 即 `package.json` 的 `"name"` 字段
+- 品牌改名时修改了 `pre-app-init.ts` 的 `app.setName()`，但忘记改 `package.json` 的 `"name"`
+- 旧 pipe 名 `lobehub-desktop-dev-electron-ipc` 与之前残留进程冲突
+
+**修复**：`apps/desktop/package.json` 的 `"name"` 从 `"lobehub-desktop-dev"` 改为 `"ugsci-desktop-dev"`
+
+**通用规则**：
+1. `package.json#name` 不只是包名——在 Electron 中决定 IPC pipe、userData 路径、协议 scheme 等多个底层标识
+2. 品牌改名时的同步检查清单见 `docs/desktop-packaging-guide.md` 第五节
+
+### INC-014: 打包残留目录触发 Vite HMR 无限 page reload（2026-06-18）
+
+**现象**：electron-vite dev 模式下，Vite 客户端频繁触发 `page reload`，日志显示 `LICENSES.chromium.html` 等文件变化。每次 reload 重新请求上百个模块，叠加 ECONNRESET 导致 SPA 永远无法完成初始化。
+
+**根因**：
+- 多次 electron-builder 打包尝试在 `apps/desktop/` 下创建了 `build/`、`LobeHub/`、`desktop_v2/`、`release/` 等目录
+- Vite dev server 的文件监听器默认监听项目所有文件变化
+- electron-builder 提取的 Chromium license、资源文件等被 Vite 误判为源码变更，触发 HMR
+
+**修复**：
+1. 清理所有打包残留目录：`rm -rf apps/desktop/{build,release,LobeHub,desktop_v2}`
+2. 在 `apps/desktop/.gitignore` 中忽略这些目录
+
+**通用规则**：
+1. electron-builder 的输出目录必须加入 `.gitignore` 和 Vite `server.watch.ignored`
+2. 打包和开发不应在同一工作目录进行
+3. 遇到 Vite 频繁 reload 时，先检查是否有非源码目录被文件监听器捕获
+
 ---
 
 ## 六、复盘检查清单（解决问题前必读）

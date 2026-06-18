@@ -6,5 +6,8 @@ out
 *.log*
 standalone
 release
+LobeHub
+desktop_v2
+build
 
 bin
