@@ -1,23 +1,86 @@
-// UGS-MODIFY: UGS-015 储气库专家市场页数据定义
+// UGS-MODIFY: UGS-015 储气库专家广场页数据定义
+//
+// 业务模型：Expert = Persona + Skills + Tools + Workflows + Team Relations
+// 本文件为「展示层」元数据，不新增后端表结构。
+// ExpertCardMeta 通过 expertSelectors 从 ExpertMeta 推导（skillCount/toolCount/workflowCount）。
 import { BUILTIN_AGENTS, BUILTIN_AGENT_SLUGS } from '@lobechat/builtin-agents';
 
 /**
- * 专家分类
+ * 专家分类（专家广场一级筛选用）
+ * - geology     地质专家
+ * - reservoir   储层专家
+ * - development 开发专家
+ * - simulation  仿真专家
+ * - optimization 优化专家
+ * - economics   经济评价专家
+ * - custom      自定义
  */
-export type ExpertCategory = 'evaluation' | 'operation' | 'mechanism' | 'engineering' | 'aux';
+export type ExpertCategory =
+  | 'geology'
+  | 'reservoir'
+  | 'development'
+  | 'simulation'
+  | 'optimization'
+  | 'economics'
+  | 'custom';
 
+export interface ExpertCategoryMeta {
+  icon: string;
+  label: string;
+}
+
+export const EXPERT_CATEGORIES: Record<ExpertCategory, ExpertCategoryMeta> = {
+  custom: { icon: '🧩', label: '自定义' },
+  development: { icon: '🛠️', label: '开发专家' },
+  economics: { icon: '💰', label: '经济评价专家' },
+  geology: { icon: '⛰️', label: '地质专家' },
+  optimization: { icon: '🎯', label: '优化专家' },
+  reservoir: { icon: '🪨', label: '储层专家' },
+  simulation: { icon: '🖥️', label: '仿真专家' },
+};
+
+/** 分类在筛选栏中的展示顺序（全部置于最前，由页面处理） */
+export const EXPERT_CATEGORY_ORDER: ExpertCategory[] = [
+  'geology',
+  'reservoir',
+  'development',
+  'simulation',
+  'optimization',
+  'economics',
+  'custom',
+];
+
+/**
+ * 专家展示元数据
+ * - slug / avatar / name / description / tags：单一数据源来自 BUILTIN_AGENTS + 展示补充
+ * - title：职称（卡片副标题）
+ * - category：专家广场分类
+ * - skills：能力点（用于 Skills Tab 与 skillCount）
+ * - recommendedTools：关联能力标识（用于 Tools Tab 与 toolCount）
+ * - workflowSteps：工作流步骤（用于 Workflows Tab 与 workflowCount）
+ */
 export interface ExpertMeta {
   avatar: string;
   category: ExpertCategory;
   description: string;
   name: string;
+  /** 关联能力标识（MCP / Tool Provider identifier） */
+  recommendedTools: string[];
+  /** 能力点列表 */
+  skills: string[];
   slug: string;
+  /** 职称 */
+  title: string;
   tags: string[];
+  /** 工作流步骤（顺序执行） */
+  workflowSteps: string[];
+  /** 是否为规划中占位（无对应 builtin agent） */
+  planned?: boolean;
 }
 
 export interface ExpertTeamMeta {
   description: string;
-  /** 成员 slug 列表（引用 13 个 ugs-* 专家） */
+  /** 成员 slug 列表（引用 ugs-* 专家） */
   memberSlugs: string[];
   name: string;
   /** 团长 systemRole（supervisor 人设） */
@@ -28,133 +91,282 @@ export interface ExpertTeamMeta {
   teamId: string;
 }
 
-export const CATEGORY_LABELS: Record<ExpertCategory, string> = {
-  aux: '辅助',
-  engineering: '工程类',
-  mechanism: '机理类',
-  operation: '运行类',
-  evaluation: '评估类',
-};
-
 /**
- * 13 个 UGS 专家展示元数据
- * avatar 从 BUILTIN_AGENTS 读取（单一数据源），其余为展示层定义
+ * 13 个 UGS 专家展示元数据（重构为新分类体系）
+ * avatar 从 BUILTIN_AGENTS 读取（单一数据源），其余为展示层定义。
  */
 export const UGS_EXPERTS: ExpertMeta[] = [
-  // 评估类
+  // ========== 地质专家 ==========
+  {
+    avatar: BUILTIN_AGENTS[BUILTIN_AGENT_SLUGS.ugsLogging].avatar ?? '📡',
+    category: 'geology',
+    description: '测井解释、岩性识别、饱和度计算、测井-岩心标定',
+    name: '测井解释专家',
+    recommendedTools: ['pyrestoolbox-mcp'],
+    skills: ['测井曲线解释', '岩性识别', '饱和度计算', '测井-岩心标定'],
+    slug: BUILTIN_AGENT_SLUGS.ugsLogging,
+    tags: ['测井', '岩性', '饱和度'],
+    title: '测井解释工程师',
+    workflowSteps: [
+      '测井曲线导入与环境校正',
+      '岩性识别与分层',
+      '孔隙度/饱和度计算',
+      '测井-岩心交叉标定',
+      '输出解释成果报告',
+    ],
+  },
+
+  // ========== 储层专家 ==========
   {
     avatar: BUILTIN_AGENTS[BUILTIN_AGENT_SLUGS.ugsCapacity].avatar ?? '📊',
-    category: 'evaluation',
+    category: 'reservoir',
     description: '储气库库存评价、物质平衡、P/Z 分析、动态储量计算（SY/T 7686-2023）',
     name: '库容评估专家',
+    recommendedTools: ['neqsim-mcp-server'],
+    skills: ['物质平衡分析', 'P/Z 曲线', '动态储量计算', '库存核算'],
     slug: BUILTIN_AGENT_SLUGS.ugsCapacity,
     tags: ['物质平衡', 'P/Z', '动态储量', 'SY/T 7686'],
-  },
-  {
-    avatar: BUILTIN_AGENTS[BUILTIN_AGENT_SLUGS.ugsDeliverability].avatar ?? '⚡',
-    category: 'evaluation',
-    description: '注采能力预测、IPR 曲线分析、二项式产能方程拟合、产能达标率评价',
-    name: '产能评估专家',
-    slug: BUILTIN_AGENT_SLUGS.ugsDeliverability,
-    tags: ['IPR', '产能方程', '注采能力'],
+    title: '库容评价工程师',
+    workflowSteps: [
+      '注采气与压力数据整理',
+      'P/Z 关系拟合',
+      '物质平衡法储量计算',
+      '动态储量与库存核算',
+      '输出库容评价报告',
+    ],
   },
   {
     avatar: BUILTIN_AGENTS[BUILTIN_AGENT_SLUGS.ugsParams].avatar ?? '⚙️',
-    category: 'evaluation',
+    category: 'reservoir',
     description: '储层物性参数解释、孔渗饱计算、相对渗透率曲线、岩石压缩系数',
     name: '储层物性专家',
+    recommendedTools: ['pyrestoolbox-mcp'],
+    skills: ['孔隙度解释', '渗透率计算', '相对渗透率', '岩石压缩系数'],
     slug: BUILTIN_AGENT_SLUGS.ugsParams,
     tags: ['孔隙度', '渗透率', '相对渗透率'],
-  },
-  // 运行类
-  {
-    avatar: BUILTIN_AGENTS[BUILTIN_AGENT_SLUGS.ugsInjection].avatar ?? '🔄',
-    category: 'operation',
-    description: '注采气日报分析、注采平衡、压力监测、运行参数优化',
-    name: '注采运行专家',
-    slug: BUILTIN_AGENT_SLUGS.ugsInjection,
-    tags: ['日报分析', '注采平衡', '压力监测'],
-  },
-  {
-    avatar: BUILTIN_AGENTS[BUILTIN_AGENT_SLUGS.ugsPeaking].avatar ?? '🏔️',
-    category: 'operation',
-    description: '调峰能力评价、应急采气方案、季节调峰策略、峰值产量预测',
-    name: '调峰能力专家',
-    slug: BUILTIN_AGENT_SLUGS.ugsPeaking,
-    tags: ['调峰', '应急采气', '峰值预测'],
-  },
-  {
-    avatar: BUILTIN_AGENTS[BUILTIN_AGENT_SLUGS.ugsAllocation].avatar ?? '📐',
-    category: 'operation',
-    description: '配产配注方案设计、井间干扰分析、注采分配优化',
-    name: '配产配注专家',
-    slug: BUILTIN_AGENT_SLUGS.ugsAllocation,
-    tags: ['配产', '配注', '井间干扰'],
-  },
-  // 机理类
-  {
-    avatar: BUILTIN_AGENTS[BUILTIN_AGENT_SLUGS.ugsBpinn].avatar ?? '🧠',
-    category: 'mechanism',
-    description: 'B-PINN 物理信息神经网络、不确定性量化、概率产能预测',
-    name: 'B-PINN 不确定性专家',
-    slug: BUILTIN_AGENT_SLUGS.ugsBpinn,
-    tags: ['B-PINN', '不确定性', '概率预测'],
+    title: '储层物性解释师',
+    workflowSteps: [
+      '测井/岩心数据归集',
+      '孔渗饱参数解释',
+      'J 函数标准化标定',
+      '相对渗透率曲线构建',
+      '输出物性参数报告',
+    ],
   },
   {
     avatar: BUILTIN_AGENTS[BUILTIN_AGENT_SLUGS.ugsPvt].avatar ?? '🔬',
-    category: 'mechanism',
+    category: 'reservoir',
     description: 'PVT 相态分析、相图绘制、压缩因子计算、气体黏度（NeqSim）',
     name: 'PVT 相态专家',
+    recommendedTools: ['neqsim-mcp-server'],
+    skills: ['PVT 相态分析', '相图绘制', 'Z 因子计算', '气体黏度'],
     slug: BUILTIN_AGENT_SLUGS.ugsPvt,
     tags: ['PVT', '相图', 'Z 因子', 'NeqSim'],
+    title: 'PVT 相态分析工程师',
+    workflowSteps: [
+      '流体组分输入与校验',
+      '状态方程选择与调参',
+      'PVT 物性计算（Z、黏度）',
+      '相图绘制与分析',
+      '输出 PVT 参数表',
+    ],
+  },
+
+  // ========== 开发专家 ==========
+  {
+    avatar: BUILTIN_AGENTS[BUILTIN_AGENT_SLUGS.ugsDeliverability].avatar ?? '⚡',
+    category: 'development',
+    description: '注采能力预测、IPR 曲线分析、二项式产能方程拟合、产能达标率评价',
+    name: '产能评估专家',
+    recommendedTools: ['pyrestoolbox-mcp'],
+    skills: ['IPR 曲线分析', '二项式产能方程', '注采能力预测', '产能达标率'],
+    slug: BUILTIN_AGENT_SLUGS.ugsDeliverability,
+    tags: ['IPR', '产能方程', '注采能力'],
+    title: '产能分析工程师',
+    workflowSteps: [
+      '试井/生产数据整理',
+      'IPR 曲线拟合',
+      '二项式产能方程回归',
+      '注采能力预测',
+      '产能达标率评价',
+    ],
+  },
+  {
+    avatar: BUILTIN_AGENTS[BUILTIN_AGENT_SLUGS.ugsInjection].avatar ?? '🔄',
+    category: 'development',
+    description: '注采气日报分析、注采平衡、压力监测、运行参数优化',
+    name: '注采运行专家',
+    recommendedTools: [],
+    skills: ['日报分析', '注采平衡核算', '压力监测', '运行参数优化'],
+    slug: BUILTIN_AGENT_SLUGS.ugsInjection,
+    tags: ['日报分析', '注采平衡', '压力监测'],
+    title: '注采运行分析师',
+    workflowSteps: [
+      '注采气日报导入',
+      '注采量核算与平衡分析',
+      '压力趋势监测',
+      '异常点检测与告警',
+      '输出运行优化建议',
+    ],
   },
   {
     avatar: BUILTIN_AGENTS[BUILTIN_AGENT_SLUGS.ugsRateTransient].avatar ?? '📉',
-    category: 'mechanism',
+    category: 'development',
     description: '产量递减分析、RTA 流动物质平衡、Agarwal/Fetkovich 拟合',
     name: '产量递减/RTA 专家',
+    recommendedTools: ['pyrestoolbox-mcp'],
+    skills: ['RTA 分析', '递减曲线识别', '流动物质平衡', 'Agarwal-Gardner 拟合'],
     slug: BUILTIN_AGENT_SLUGS.ugsRateTransient,
     tags: ['RTA', '递减曲线', '流动物质平衡'],
-  },
-  // 工程类
-  {
-    avatar: BUILTIN_AGENTS[BUILTIN_AGENT_SLUGS.ugsLogging].avatar ?? '📡',
-    category: 'engineering',
-    description: '测井解释、岩性识别、饱和度计算、测井-岩心标定',
-    name: '测井解释专家',
-    slug: BUILTIN_AGENT_SLUGS.ugsLogging,
-    tags: ['测井', '岩性', '饱和度'],
-  },
-  {
-    avatar: BUILTIN_AGENTS[BUILTIN_AGENT_SLUGS.ugsSimulation].avatar ?? '🖥️',
-    category: 'engineering',
-    description: '数值模拟、地质模型搭建、历史拟合、注采预测（CMG/OPM）',
-    name: '数值模拟专家',
-    slug: BUILTIN_AGENT_SLUGS.ugsSimulation,
-    tags: ['数模', '历史拟合', 'CMG', 'OPM'],
+    title: '产量递减分析师',
+    workflowSteps: [
+      '生产历史数据整理',
+      '递减模型识别（Arps/Duong）',
+      'RTA 流动物质平衡拟合',
+      '动态储量估算',
+      '递减预测与置信区间',
+    ],
   },
   {
     avatar: BUILTIN_AGENTS[BUILTIN_AGENT_SLUGS.ugsIntegrity].avatar ?? '🛡️',
-    category: 'engineering',
+    category: 'development',
     description: '井筒完整性评价、套管损伤、固井质量、地应力分析',
     name: '井筒完整性专家',
+    recommendedTools: [],
+    skills: ['井筒完整性评价', '套管损伤诊断', '固井质量评价', '地应力分析'],
     slug: BUILTIN_AGENT_SLUGS.ugsIntegrity,
     tags: ['井筒', '套管', '固井', '地应力'],
+    title: '井筒完整性评价工程师',
+    workflowSteps: [
+      '测井/检测数据归集',
+      '套管状况评估',
+      '固井质量评价',
+      '地应力与承载分析',
+      '完整性分级与风险建议',
+    ],
   },
-  // 辅助类
+
+  // ========== 仿真专家 ==========
+  {
+    avatar: BUILTIN_AGENTS[BUILTIN_AGENT_SLUGS.ugsSimulation].avatar ?? '🖥️',
+    category: 'simulation',
+    description: '数值模拟、地质模型搭建、历史拟合、注采预测（CMG/OPM）',
+    name: '数值模拟专家',
+    recommendedTools: [],
+    skills: ['地质建模', '历史拟合', '注采预测', 'CMG/OPM'],
+    slug: BUILTIN_AGENT_SLUGS.ugsSimulation,
+    tags: ['数模', '历史拟合', 'CMG', 'OPM'],
+    title: '数值模拟工程师',
+    workflowSteps: [
+      '地质模型搭建与网格化',
+      'PVT/相渗/初始化输入',
+      '历史拟合与误差量化',
+      '注采方案预测',
+      '敏感性分析与方案对比',
+    ],
+  },
+
+  // ========== 优化专家 ==========
+  {
+    avatar: BUILTIN_AGENTS[BUILTIN_AGENT_SLUGS.ugsPeaking].avatar ?? '🏔️',
+    category: 'optimization',
+    description: '调峰能力评价、应急采气方案、季节调峰策略、峰值产量预测',
+    name: '调峰能力专家',
+    recommendedTools: [],
+    skills: ['调峰能力评价', '应急采气方案', '季节调峰策略', '峰值产量预测'],
+    slug: BUILTIN_AGENT_SLUGS.ugsPeaking,
+    tags: ['调峰', '应急采气', '峰值预测'],
+    title: '调峰优化工程师',
+    workflowSteps: [
+      '历史负荷与需求分析',
+      '峰值需求预测',
+      '调峰能力评估',
+      '应急采气方案设计',
+      '输出调峰优化建议',
+    ],
+  },
+  {
+    avatar: BUILTIN_AGENTS[BUILTIN_AGENT_SLUGS.ugsAllocation].avatar ?? '📐',
+    category: 'optimization',
+    description: '配产配注方案设计、井间干扰分析、注采分配优化',
+    name: '配产配注专家',
+    recommendedTools: [],
+    skills: ['配产方案设计', '配注方案设计', '井间干扰分析', '注采分配优化'],
+    slug: BUILTIN_AGENT_SLUGS.ugsAllocation,
+    tags: ['配产', '配注', '井间干扰'],
+    title: '配产配注工程师',
+    workflowSteps: [
+      '需求拆解与目标设定',
+      '单井能力评估',
+      '井间干扰分析',
+      '注采分配优化求解',
+      '输出配产配注方案',
+    ],
+  },
+  {
+    avatar: BUILTIN_AGENTS[BUILTIN_AGENT_SLUGS.ugsBpinn].avatar ?? '🧠',
+    category: 'optimization',
+    description: 'B-PINN 物理信息神经网络、不确定性量化、概率产能预测',
+    name: 'B-PINN 不确定性专家',
+    recommendedTools: [],
+    skills: ['B-PINN 建模', '不确定性量化', '概率预测', '贝叶斯推断'],
+    slug: BUILTIN_AGENT_SLUGS.ugsBpinn,
+    tags: ['B-PINN', '不确定性', '概率预测'],
+    title: '不确定性量化研究员',
+    workflowSteps: [
+      '物理方程与控制方程建模',
+      '先验分布设定',
+      'PINN 网络训练',
+      '贝叶斯推断与后验采样',
+      '输出概率预测区间',
+    ],
+  },
+
+  // ========== 经济评价专家（规划中占位） ==========
+  {
+    avatar: '💰',
+    category: 'economics',
+    description: '注采方案经济评价、NPV/IRR 测算、注采成本核算、多方案比选',
+    name: '经济评价专家',
+    planned: true,
+    recommendedTools: [],
+    skills: ['NPV/IRR 测算', '注采成本核算', '方案经济比选', '敏感性分析'],
+    slug: 'ugs-economics',
+    tags: ['经济评价', 'NPV', '成本核算'],
+    title: '经济评价工程师',
+    workflowSteps: [
+      '投资与成本参数梳理',
+      '注采方案现金流建模',
+      'NPV/IRR 测算',
+      '多方案经济比选',
+      '输出经济评价结论',
+    ],
+  },
+
+  // ========== 自定义 ==========
   {
     avatar: BUILTIN_AGENTS[BUILTIN_AGENT_SLUGS.ugsLiterature].avatar ?? '📚',
-    category: 'aux',
+    category: 'custom',
     description: '文献检索、规范查询、综述撰写、行业标准解读',
     name: '文献检索专家',
+    recommendedTools: [],
+    skills: ['文献检索', '规范查询', '综述撰写', '行业标准解读'],
     slug: BUILTIN_AGENT_SLUGS.ugsLiterature,
     tags: ['文献', '规范', '综述'],
+    title: '文献检索助手',
+    workflowSteps: [
+      '课题分析与检索策略制定',
+      '多源文献检索',
+      '文献筛选与质量评估',
+      '综述撰写与结构整理',
+      '引用规范与交付',
+    ],
   },
 ];
 
 /**
  * 5 个预置专家团定义
- * 点击"召唤团队"时，读取 memberSlugs 对应的 BUILTIN_AGENTS 配置，
+ * 点击「召唤团队」时，读取 memberSlugs 对应的 BUILTIN_AGENTS 配置，
  * 调用 chatGroupService.createGroupWithMembers 实时创建群组
  */
 export const UGS_EXPERT_TEAMS: ExpertTeamMeta[] = [

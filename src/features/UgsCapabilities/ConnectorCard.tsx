@@ -1,19 +1,21 @@
-// UGS-MODIFY: UGS-016 能力中心 — Connector 卡片（展开/收起，复用 ConnectorDetail）
-import { ChevronDown, ChevronRight, LinkIcon } from 'lucide-react';
-import { memo, useCallback } from 'react';
+// UGS-MODIFY: UGS-016 能力中心 — Connector 卡片（弹窗模式，复用 ConnectorDetail）
+import { Modal } from '@lobehub/ui/base-ui';
+import { ChevronRight, LinkIcon } from 'lucide-react';
+import { memo, useCallback, useState } from 'react';
 import { Card, Switch, Tag } from 'antd';
 
 import ConnectorDetail from '@/features/Connectors/ConnectorDetail';
+import { useIsMobile } from '@/hooks/useIsMobile';
 import type { ConnectorWithTools } from '@/store/tool/slices/connector';
 import { useToolStore } from '@/store/tool';
 
 interface ConnectorCardProps {
   connector: ConnectorWithTools;
-  expanded: boolean;
-  onToggleExpand: () => void;
 }
 
-const ConnectorCard = memo<ConnectorCardProps>(({ connector, expanded, onToggleExpand }) => {
+const ConnectorCard = memo<ConnectorCardProps>(({ connector }) => {
+  const isMobile = useIsMobile();
+  const [modalOpen, setModalOpen] = useState(false);
   const updateConnector = useToolStore((s) => s.updateConnector);
 
   const handleToggleEnabled = useCallback(
@@ -23,71 +25,81 @@ const ConnectorCard = memo<ConnectorCardProps>(({ connector, expanded, onToggleE
     [connector.id, updateConnector],
   );
 
+  const handleCardClick = useCallback(() => {
+    setModalOpen(true);
+  }, []);
+
   const toolCount = connector.tools?.length ?? 0;
-  const statusColor = connector.status === 'active' || connector.isEnabled ? 'success' : 'default';
+  const statusColor = connector.isEnabled ? 'success' : 'default';
   const statusLabel = connector.isEnabled ? '已启用' : '已禁用';
 
   return (
-    <Card
-      size="small"
-      style={{
-        borderColor: expanded ? '#2563EB' : '#e8e8e8',
-        transition: 'all 0.2s ease',
-      }}
-      styles={{ body: { padding: 0 } }}
-    >
-      {/* 卡片头部（可点击展开） */}
-      <div
-        onClick={onToggleExpand}
+    <>
+      <Card
+        hoverable
+        onClick={handleCardClick}
+        size="small"
         style={{
-          alignItems: 'center',
+          borderColor: '#e8e8e8',
           cursor: 'pointer',
-          display: 'flex',
-          gap: 10,
-          padding: '12px 16px',
+          transition: 'all 0.2s ease',
         }}
+        styles={{ body: { padding: '12px 16px' } }}
       >
-        {expanded ? (
-          <ChevronDown size={16} color="#888" />
-        ) : (
-          <ChevronRight size={16} color="#888" />
-        )}
-        <LinkIcon size={16} color="#185FA5" />
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ alignItems: 'center', display: 'flex', gap: 8 }}>
-            <span style={{ color: '#1f1f1f', fontSize: 14, fontWeight: 500 }}>
-              {connector.name}
+        <div style={{ alignItems: 'center', display: 'flex', gap: 10 }}>
+          <LinkIcon size={16} color="#185FA5" />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ alignItems: 'center', display: 'flex', gap: 8 }}>
+              <span style={{ color: '#1f1f1f', fontSize: 14, fontWeight: 500 }}>
+                {connector.name}
+              </span>
+              <Tag color={statusColor} style={{ fontSize: 10, margin: 0 }}>
+                {statusLabel}
+              </Tag>
+            </div>
+            <span style={{ color: '#888', fontSize: 11 }}>
+              {toolCount > 0 ? `${toolCount} 个工具` : '无工具'} · {connector.sourceType}
             </span>
-            <Tag color={statusColor} style={{ fontSize: 10, margin: 0 }}>
+          </div>
+          {/* 启用/禁用开关（点击不触发弹窗） */}
+          <div onClick={(e) => e.stopPropagation()}>
+            <Switch
+              checked={connector.isEnabled}
+              onChange={handleToggleEnabled}
+              size="small"
+            />
+          </div>
+          <ChevronRight size={16} color="#bbb" />
+        </div>
+      </Card>
+
+      {/* 详情弹窗（复用 ConnectorDetail） */}
+      <Modal
+        centered={!isMobile}
+        footer={null}
+        open={modalOpen}
+        title={
+          <div style={{ alignItems: 'center', display: 'flex', gap: 8 }}>
+            <LinkIcon size={16} color="#185FA5" />
+            <span>{connector.name}</span>
+            <Tag color={statusColor} style={{ fontSize: 10, marginLeft: 4 }}>
               {statusLabel}
             </Tag>
           </div>
-          <span style={{ color: '#888', fontSize: 11 }}>
-            {toolCount > 0 ? `${toolCount} 个工具` : '无工具'} · {connector.sourceType}
-          </span>
-        </div>
-        {/* 启用/禁用开关（点击不触发展开） */}
-        <div onClick={(e) => e.stopPropagation()}>
-          <Switch
-            checked={connector.isEnabled}
-            onChange={handleToggleEnabled}
-            size="small"
-          />
-        </div>
-      </div>
-
-      {/* 展开后的详情区域（复用 ConnectorDetail） */}
-      {expanded && (
+        }
+        width={isMobile ? '100%' : 720}
+        onCancel={() => setModalOpen(false)}
+      >
         <div
           style={{
-            borderTop: '1px solid #f0f0f0',
-            padding: '8px 16px 16px',
+            maxHeight: isMobile ? '70vh' : '60vh',
+            overflowY: 'auto',
           }}
         >
           <ConnectorDetail connectorId={connector.id} />
         </div>
-      )}
-    </Card>
+      </Modal>
+    </>
   );
 });
 
