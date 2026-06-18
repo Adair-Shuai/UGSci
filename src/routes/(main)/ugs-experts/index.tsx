@@ -1,10 +1,7 @@
-// UGS-MODIFY: UGS-015 储气库专家市场页路由
 import { type FC } from 'react';
 
-import UgsExperts from '@/features/UgsExperts';
+import UgsExperts from '@/features/UgsExperts/index.tsx';
 
-const UgsExpertsRoute: FC = () => {
-  return <UgsExperts />;
-};
+const UgsExpertsRoute: FC = () => <UgsExperts />;
 
 export default UgsExpertsRoute;

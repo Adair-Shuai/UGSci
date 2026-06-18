@@ -1,12 +1,16 @@
-// UGS-MODIFY: UGS-015 储气库专家市场页 - 主页面
+// UGS-MODIFY: UGS-015 储气库专家市场页 - 主页面（专家 + 专家团 Tab 合并）
 import { BUILTIN_AGENTS, getAgentRuntimeConfig, type RuntimeContext } from '@lobechat/builtin-agents';
-import { PageHeader } from '@/features/UgsShared';
+import { Button } from '@lobehub/ui';
+import { Store } from 'lucide-react';
+import { App, Tabs } from 'antd';
+import { type FC, useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+
+import PageHeader from '@/features/UgsShared/PageHeader';
 import { useWorkspaceAwareNavigate } from '@/features/Workspace/useWorkspaceAwareNavigate';
 import { chatGroupService } from '@/services/chatGroup';
 import { type GroupMemberConfig, type SupervisorConfig } from '@/services/chatGroup';
 import { useAgentStore } from '@/store/agent';
-import { App } from 'antd';
-import { type FC, useCallback, useMemo, useState } from 'react';
 
 import ExpertCard from './ExpertCard';
 import TeamCard from './TeamCard';
@@ -26,11 +30,15 @@ const CATEGORY_ORDER: ExpertCategory[] = [
   'aux',
 ];
 
+type TabKey = 'experts' | 'teams';
+
 const UgsExpertsPage: FC = () => {
+  const { t } = useTranslation('common');
   const navigate = useWorkspaceAwareNavigate();
   const { message } = App.useApp();
   const refreshBuiltinAgent = useAgentStore((s) => s.refreshBuiltinAgent);
 
+  const [activeTab, setActiveTab] = useState<TabKey>('experts');
   const [loadingExpertSlug, setLoadingExpertSlug] = useState<string | null>(null);
   const [loadingTeamId, setLoadingTeamId] = useState<string | null>(null);
 
@@ -43,12 +51,11 @@ const UgsExpertsPage: FC = () => {
     return map;
   }, []);
 
-  // 点击专家卡片：ensureBuiltinAgentHydrated → navigate
+  // 点击专家卡片：refreshBuiltinAgent → navigate
   const handleExpertClick = useCallback(
     async (expert: ExpertMeta) => {
       setLoadingExpertSlug(expert.slug);
       try {
-        // 调 refreshBuiltinAgent 触发服务端 getBuiltinAgent（按 slug 查/建 agent 记录）
         await refreshBuiltinAgent(expert.slug);
         const agentId = useAgentStore.getState().builtinAgentIdMap[expert.slug];
         if (agentId) {
@@ -71,7 +78,6 @@ const UgsExpertsPage: FC = () => {
     async (team: (typeof UGS_EXPERT_TEAMS)[number]) => {
       setLoadingTeamId(team.teamId);
       try {
-        // 从 BUILTIN_AGENTS 读取每个成员的 runtime config 生成 systemRole
         const ctx: RuntimeContext = { userLocale: 'zh-CN' };
         const members: GroupMemberConfig[] = team.memberSlugs.map((slug) => {
           const runtimeResult = getAgentRuntimeConfig(slug, ctx);
@@ -94,7 +100,6 @@ const UgsExpertsPage: FC = () => {
         const result = await chatGroupService.createGroupWithMembers(
           {
             title: team.name,
-            // config.systemPrompt 是团长的备用 systemRole
             config: { systemPrompt: team.supervisorSystemRole } as any,
           },
           members,
@@ -120,82 +125,103 @@ const UgsExpertsPage: FC = () => {
     [navigate, message],
   );
 
+  // 跳转到 Lobe 原生专家市场（/community）
+  const handleOpenMarket = useCallback(() => {
+    navigate('/community');
+  }, [navigate]);
+
+  // 专家 Tab 内容
+  const expertsContent = (
+    <div>
+      {CATEGORY_ORDER.map((cat) => {
+        const experts = expertsByCategory.get(cat) ?? [];
+        if (experts.length === 0) return null;
+        return (
+          <div key={cat} style={{ marginBottom: 16 }}>
+            <div
+              style={{
+                color: '#185FA5',
+                fontSize: 13,
+                fontWeight: 500,
+                marginBottom: 8,
+                paddingBottom: 4,
+                borderBottom: '1px solid #f0f0f0',
+              }}
+            >
+              {CATEGORY_LABELS[cat]}（{experts.length}）
+            </div>
+            <div
+              style={{
+                display: 'grid',
+                gap: 12,
+                gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+              }}
+            >
+              {experts.map((expert) => (
+                <ExpertCard
+                  expert={expert}
+                  key={expert.slug}
+                  loading={loadingExpertSlug === expert.slug}
+                  onClick={() => handleExpertClick(expert)}
+                />
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  // 专家团 Tab 内容
+  const teamsContent = (
+    <div>
+      <p style={{ color: '#888', fontSize: 12, marginBottom: 16 }}>
+        专家团由团长（Supervisor）自动拆解任务并调度子专家，你只需跟团长对话
+      </p>
+      <div
+        style={{
+          display: 'grid',
+          gap: 16,
+          gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+        }}
+      >
+        {UGS_EXPERT_TEAMS.map((team) => (
+          <TeamCard
+            key={team.teamId}
+            loading={loadingTeamId === team.teamId}
+            onSummon={() => handleTeamSummon(team)}
+            team={team}
+          />
+        ))}
+      </div>
+    </div>
+  );
+
   return (
     <div style={{ padding: '24px 32px', maxWidth: 1200, margin: '0 auto' }}>
       <PageHeader
         description="13 位储气库领域专家 + 5 个预置专家团，点击召唤即进入专属对话"
         emoji="🛢️"
-        title="UGSci 储气库专家市场"
+        extra={
+          <Button
+            icon={<Store size={16} />}
+            onClick={handleOpenMarket}
+            size="small"
+          >
+            专家市场
+          </Button>
+        }
+        title="UGSci 专家"
       />
 
-      {/* 专家区 */}
-      <div style={{ marginBottom: 32 }}>
-        <h2 style={{ fontSize: 16, fontWeight: 500, color: '#1f1f1f', marginBottom: 12 }}>
-          单专家
-        </h2>
-        {CATEGORY_ORDER.map((cat) => {
-          const experts = expertsByCategory.get(cat) ?? [];
-          if (experts.length === 0) return null;
-          return (
-            <div key={cat} style={{ marginBottom: 16 }}>
-              <div
-                style={{
-                  color: '#185FA5',
-                  fontSize: 13,
-                  fontWeight: 500,
-                  marginBottom: 8,
-                  paddingBottom: 4,
-                  borderBottom: '1px solid #f0f0f0',
-                }}
-              >
-                {CATEGORY_LABELS[cat]}（{experts.length}）
-              </div>
-              <div
-                style={{
-                  display: 'grid',
-                  gap: 12,
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
-                }}
-              >
-                {experts.map((expert) => (
-                  <ExpertCard
-                    expert={expert}
-                    key={expert.slug}
-                    loading={loadingExpertSlug === expert.slug}
-                    onClick={() => handleExpertClick(expert)}
-                  />
-                ))}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* 专家团区 */}
-      <div>
-        <h2 style={{ fontSize: 16, fontWeight: 500, color: '#1f1f1f', marginBottom: 12 }}>
-          预置专家团
-        </h2>
-        <p style={{ color: '#888', fontSize: 12, marginBottom: 16 }}>
-          专家团由团长（Supervisor）自动拆解任务并调度子专家，你只需跟团长对话
-        </p>
-        <div
-          style={{
-            display: 'grid',
-            gap: 16,
-            gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-          }}
-        >
-          {UGS_EXPERT_TEAMS.map((team) => (
-            <TeamCard
-              key={team.teamId}
-              loading={loadingTeamId === team.teamId}
-              onSummon={() => handleTeamSummon(team)}
-              team={team}
-            />
-          ))}
-        </div>
-      </div>
+      <Tabs
+        activeKey={activeTab}
+        items={[
+          { children: expertsContent, key: 'experts', label: `专家（${UGS_EXPERTS.length}）` },
+          { children: teamsContent, key: 'teams', label: `专家团（${UGS_EXPERT_TEAMS.length}）` },
+        ]}
+        onChange={(k) => setActiveTab(k as TabKey)}
+      />
     </div>
   );
 };

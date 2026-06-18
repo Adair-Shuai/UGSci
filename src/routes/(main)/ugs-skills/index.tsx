@@ -1,6 +1,6 @@
 import { type FC } from 'react';
 
-import UgsSkills from '@/features/UgsSkills';
+import UgsSkills from '@/features/UgsSkills/index.tsx';
 
 const UgsSkillsRoute: FC = () => <UgsSkills />;
 
