@@ -6,7 +6,7 @@ import type { PlannedCapability } from './types';
  * 安装的 MCP server 通过此映射确定所属分类
  */
 export const MCP_CATEGORY_MAP: Record<string, string> = {
-  // 已接入
+  // 已接入（UGSci 预置 MCP）
   'neqsim-mcp-server': 'engineering-calc',
   'pyrestoolbox-mcp': 'engineering-calc',
   // LobeHub 内置工具

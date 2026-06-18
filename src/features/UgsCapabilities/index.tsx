@@ -16,6 +16,7 @@ import CapabilityCard from './CapabilityCard';
 import CapabilityDrawerContent from './CapabilityDrawerContent';
 import { getCategoryByIdentifier, guessCategoryByName, PLANNED_CAPABILITIES } from './capabilityData';
 import { type CapabilityCardData, type CapabilityCategory, CATEGORIES, CATEGORY_MAP } from './types';
+import { useInitPresetMcps } from './useInitPresetMcps';
 
 const { Text } = Typography;
 
@@ -31,6 +32,9 @@ const CATEGORY_ORDER: CapabilityCategory[] = [
 const UgsCapabilitiesPage: FC = () => {
   const { t } = useTranslation('common');
   const navigate = useWorkspaceAwareNavigate();
+
+  // 自动安装预置 MCP（NeqSim + pyResToolbox）
+  useInitPresetMcps();
 
   // Store: 已安装插件列表
   const installedPlugins = useToolStore(pluginSelectors.installedPlugins);
