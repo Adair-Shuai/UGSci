@@ -1,10 +1,12 @@
-// UGS-MODIFY: UGS-015 储气库专家市场页 - 主页面（专家 + 专家团 Tab 合并）
+// UGS-MODIFY: UGS-015 储气库专家广场页 - 主页面（专家广场模式 + Drawer 详情）
+// 一级页面：4 列 Grid Card，分类筛选 + 搜索，点击卡片打开 Drawer
+// 业务模型：Expert = Persona + Skills + Tools + Workflows + Team Relations
+// 仅展示层重构，复用 agentStore / toolStore，不修改编辑器与数据结构。
 import { BUILTIN_AGENTS, getAgentRuntimeConfig, type RuntimeContext } from '@lobechat/builtin-agents';
 import { Button } from '@lobehub/ui';
-import { Store } from 'lucide-react';
-import { App, Tabs } from 'antd';
+import { Search, Store } from 'lucide-react';
+import { App, Card, Col, Empty, Input, Row, Tabs } from 'antd';
 import { type FC, useCallback, useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 
 import PageHeader from '@/features/UgsShared/PageHeader';
 import { useWorkspaceAwareNavigate } from '@/features/Workspace/useWorkspaceAwareNavigate';
@@ -13,47 +15,75 @@ import { type GroupMemberConfig, type SupervisorConfig } from '@/services/chatGr
 import { useAgentStore } from '@/store/agent';
 
 import ExpertCard from './ExpertCard';
+import ExpertDrawer from './ExpertDrawer';
 import TeamCard from './TeamCard';
+import {
+  filterExpertsByKeyword,
+  selectCategoryCounts,
+  selectExpertCardMeta,
+  selectExpertStats,
+  selectExpertsByCategory,
+} from './expertSelectors';
 import {
   type ExpertCategory,
   type ExpertMeta,
-  CATEGORY_LABELS,
+  EXPERT_CATEGORIES,
+  EXPERT_CATEGORY_ORDER,
   UGS_EXPERTS,
   UGS_EXPERT_TEAMS,
 } from './ugsExpertsData';
 
-const CATEGORY_ORDER: ExpertCategory[] = [
-  'evaluation',
-  'operation',
-  'mechanism',
-  'engineering',
-  'aux',
-];
-
+type CategoryFilter = ExpertCategory | 'all';
 type TabKey = 'experts' | 'teams';
 
 const UgsExpertsPage: FC = () => {
-  const { t } = useTranslation('common');
   const navigate = useWorkspaceAwareNavigate();
   const { message } = App.useApp();
   const refreshBuiltinAgent = useAgentStore((s) => s.refreshBuiltinAgent);
 
   const [activeTab, setActiveTab] = useState<TabKey>('experts');
+  const [activeCategory, setActiveCategory] = useState<CategoryFilter>('all');
+  const [keyword, setKeyword] = useState('');
+
+  // Drawer 状态
+  const [activeExpert, setActiveExpert] = useState<ExpertMeta | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [loadingExpertSlug, setLoadingExpertSlug] = useState<string | null>(null);
   const [loadingTeamId, setLoadingTeamId] = useState<string | null>(null);
 
-  // 按分类分组
-  const expertsByCategory = useMemo(() => {
-    const map = new Map<ExpertCategory, ExpertMeta[]>();
-    for (const cat of CATEGORY_ORDER) {
-      map.set(cat, UGS_EXPERTS.filter((e) => e.category === cat));
+  // 统计概览
+  const stats = useMemo(() => selectExpertStats(UGS_EXPERTS), []);
+  const categoryCounts = useMemo(() => selectCategoryCounts(UGS_EXPERTS), []);
+
+  // 分类 Tabs
+  const categoryTabItems = useMemo(() => {
+    const items = [{ key: 'all', label: `全部（${categoryCounts.all}）` }];
+    for (const cat of EXPERT_CATEGORY_ORDER) {
+      const meta = EXPERT_CATEGORIES[cat];
+      items.push({
+        key: cat,
+        label: `${meta.icon} ${meta.label}（${categoryCounts[cat]}）`,
+      });
     }
-    return map;
+    return items;
+  }, [categoryCounts]);
+
+  // 当前展示的专家（分类 + 搜索）
+  const visibleExperts = useMemo(() => {
+    const byCat = selectExpertsByCategory(UGS_EXPERTS, activeCategory);
+    return filterExpertsByKeyword(byCat, keyword);
+  }, [activeCategory, keyword]);
+
+  // 点击卡片：打开 Drawer
+  const handleOpenDetail = useCallback((expert: ExpertMeta) => {
+    setActiveExpert(expert);
+    setDrawerOpen(true);
   }, []);
 
-  // 点击专家卡片：refreshBuiltinAgent → navigate
-  const handleExpertClick = useCallback(
+  // 进入对话：refreshBuiltinAgent → navigate（复用现有逻辑）
+  const handleChat = useCallback(
     async (expert: ExpertMeta) => {
+      if (expert.planned) return;
       setLoadingExpertSlug(expert.slug);
       try {
         await refreshBuiltinAgent(expert.slug);
@@ -73,7 +103,7 @@ const UgsExpertsPage: FC = () => {
     [navigate, refreshBuiltinAgent, message],
   );
 
-  // 点击专家团卡片：createGroupWithMembers → navigate
+  // 召唤专家团：复用现有逻辑
   const handleTeamSummon = useCallback(
     async (team: (typeof UGS_EXPERT_TEAMS)[number]) => {
       setLoadingTeamId(team.teamId);
@@ -125,102 +155,159 @@ const UgsExpertsPage: FC = () => {
     [navigate, message],
   );
 
-  // 跳转到 Lobe 原生专家市场（/community）
   const handleOpenMarket = useCallback(() => {
     navigate('/community');
   }, [navigate]);
 
-  // 专家 Tab 内容
+  // 统计卡片
+  const statCards = (
+    <Row gutter={16} style={{ marginBottom: 20 }}>
+      <Col span={6}>
+        <Card size="small">
+          <div style={{ color: '#888', fontSize: 11 }}>专家总数</div>
+          <div style={{ color: '#185FA5', fontSize: 20, fontWeight: 600 }}>
+            {stats.totalCount}
+          </div>
+          <div style={{ color: '#888', fontSize: 11 }}>{stats.onlineCount} 已上线</div>
+        </Card>
+      </Col>
+      <Col span={6}>
+        <Card size="small">
+          <div style={{ color: '#888', fontSize: 11 }}>技能总数</div>
+          <div style={{ color: '#185FA5', fontSize: 20, fontWeight: 600 }}>{stats.skillTotal}</div>
+          <div style={{ color: '#888', fontSize: 11 }}>跨 {stats.categoryCount} 个专业领域</div>
+        </Card>
+      </Col>
+      <Col span={6}>
+        <Card size="small">
+          <div style={{ color: '#888', fontSize: 11 }}>关联工具</div>
+          <div style={{ color: '#185FA5', fontSize: 20, fontWeight: 600 }}>{stats.toolTotal}</div>
+          <div style={{ color: '#888', fontSize: 11 }}>来自能力中心</div>
+        </Card>
+      </Col>
+      <Col span={6}>
+        <Card size="small">
+          <div style={{ color: '#888', fontSize: 11 }}>预置专家团</div>
+          <div style={{ color: '#185FA5', fontSize: 20, fontWeight: 600 }}>{stats.teamCount}</div>
+          <div style={{ color: '#888', fontSize: 11 }}>
+            {stats.plannedCount > 0 ? `${stats.plannedCount} 个专家规划中` : '点击召唤即用'}
+          </div>
+        </Card>
+      </Col>
+    </Row>
+  );
+
+  // 专家广场内容
   const expertsContent = (
     <div>
-      {CATEGORY_ORDER.map((cat) => {
-        const experts = expertsByCategory.get(cat) ?? [];
-        if (experts.length === 0) return null;
-        return (
-          <div key={cat} style={{ marginBottom: 16 }}>
-            <div
-              style={{
-                color: '#185FA5',
-                fontSize: 13,
-                fontWeight: 500,
-                marginBottom: 8,
-                paddingBottom: 4,
-                borderBottom: '1px solid #f0f0f0',
-              }}
-            >
-              {CATEGORY_LABELS[cat]}（{experts.length}）
-            </div>
-            <div
-              style={{
-                display: 'grid',
-                gap: 12,
-                gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
-              }}
-            >
-              {experts.map((expert) => (
+      {/* 分类筛选 */}
+      <Tabs
+        activeKey={activeCategory}
+        items={categoryTabItems}
+        onChange={(k) => setActiveCategory(k as CategoryFilter)}
+        size="small"
+        style={{ marginBottom: 12 }}
+      />
+
+      {/* 搜索 */}
+      <Input
+        allowClear
+        onChange={(e) => setKeyword(e.target.value)}
+        placeholder="搜索专家名称 / 职称 / 技能 / 标签"
+        prefix={<Search size={14} color="#bbb" />}
+        size="middle"
+        style={{ marginBottom: 16, maxWidth: 360 }}
+        value={keyword}
+      />
+
+      {/* 4 列专家卡片 Grid */}
+      {visibleExperts.length === 0 ? (
+        <Empty
+          description="未找到匹配的专家"
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+          style={{ marginTop: 48 }}
+        />
+      ) : (
+        <Row gutter={[12, 12]}>
+          {visibleExperts.map((expert) => {
+            const cardMeta = selectExpertCardMeta(expert);
+            return (
+              <Col key={expert.slug} lg={6} md={8} sm={12} xs={24}>
                 <ExpertCard
+                  cardMeta={cardMeta}
                   expert={expert}
-                  key={expert.slug}
                   loading={loadingExpertSlug === expert.slug}
-                  onClick={() => handleExpertClick(expert)}
+                  onChat={() => handleChat(expert)}
+                  onOpenDetail={() => handleOpenDetail(expert)}
                 />
-              ))}
-            </div>
-          </div>
-        );
-      })}
+              </Col>
+            );
+          })}
+        </Row>
+      )}
     </div>
   );
 
-  // 专家团 Tab 内容
+  // 专家团内容
   const teamsContent = (
     <div>
       <p style={{ color: '#888', fontSize: 12, marginBottom: 16 }}>
         专家团由团长（Supervisor）自动拆解任务并调度子专家，你只需跟团长对话
       </p>
-      <div
-        style={{
-          display: 'grid',
-          gap: 16,
-          gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-        }}
-      >
+      <Row gutter={[16, 16]}>
         {UGS_EXPERT_TEAMS.map((team) => (
-          <TeamCard
-            key={team.teamId}
-            loading={loadingTeamId === team.teamId}
-            onSummon={() => handleTeamSummon(team)}
-            team={team}
-          />
+          <Col key={team.teamId} lg={6} md={8} sm={12} xs={24}>
+            <TeamCard
+              loading={loadingTeamId === team.teamId}
+              onSummon={() => handleTeamSummon(team)}
+              team={team}
+            />
+          </Col>
         ))}
-      </div>
+      </Row>
     </div>
   );
 
   return (
-    <div style={{ padding: '24px 32px', maxWidth: 1200, margin: '0 auto' }}>
+    <div style={{ padding: '24px 32px', maxWidth: 1400, margin: '0 auto' }}>
       <PageHeader
-        description="13 位储气库领域专家 + 5 个预置专家团，点击召唤即进入专属对话"
+        description="储气库领域专家广场 · 卡片式市场，点击卡片查看详情，一键进入专属对话"
         emoji="🛢️"
         extra={
-          <Button
-            icon={<Store size={16} />}
-            onClick={handleOpenMarket}
-            size="small"
-          >
+          <Button icon={<Store size={16} />} onClick={handleOpenMarket} size="small">
             专家市场
           </Button>
         }
-        title="UGSci 专家"
+        title="UGSci 专家广场"
       />
+
+      {statCards}
 
       <Tabs
         activeKey={activeTab}
         items={[
           { children: expertsContent, key: 'experts', label: `专家（${UGS_EXPERTS.length}）` },
-          { children: teamsContent, key: 'teams', label: `专家团（${UGS_EXPERT_TEAMS.length}）` },
+          {
+            children: teamsContent,
+            key: 'teams',
+            label: `专家团（${UGS_EXPERT_TEAMS.length}）`,
+          },
         ]}
         onChange={(k) => setActiveTab(k as TabKey)}
+      />
+
+      {/* 专家详情 Drawer */}
+      <ExpertDrawer
+        expert={activeExpert}
+        loading={activeExpert ? loadingExpertSlug === activeExpert.slug : false}
+        onClose={() => setDrawerOpen(false)}
+        onChat={() => {
+          if (activeExpert) {
+            setDrawerOpen(false);
+            handleChat(activeExpert);
+          }
+        }}
+        open={drawerOpen}
       />
     </div>
   );

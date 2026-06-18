@@ -66,13 +66,7 @@ export const useNavLayout = (): NavLayout => {
           title: t('tab.pages'),
           url: '/page',
         },
-        // UGS-MODIFY: UGS-015 储气库专家市场 + 能力中心 + 技能中心
-        {
-          icon: getRouteById('ugs-experts')!.icon,
-          key: SidebarTabKey.UgsExperts,
-          title: t('tab.ugsExperts'),
-          url: '/ugs-experts',
-        },
+        // UGS-MODIFY: UGS-015 能力中心 + 技能中心 + 储气库专家市场
         {
           icon: getRouteById('ugs-capabilities')!.icon,
           key: SidebarTabKey.UgsCapabilities,
@@ -84,6 +78,12 @@ export const useNavLayout = (): NavLayout => {
           key: SidebarTabKey.UgsSkills,
           title: t('tab.ugsSkills'),
           url: '/ugs-skills',
+        },
+        {
+          icon: getRouteById('ugs-experts')!.icon,
+          key: SidebarTabKey.UgsExperts,
+          title: t('tab.ugsExperts'),
+          url: '/ugs-experts',
         },
       ] as NavItem[],
     [t, toggleCommandMenu],
