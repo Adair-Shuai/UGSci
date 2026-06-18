@@ -258,6 +258,15 @@ const config = {
     ...getNativeModulesFilesConfig(),
     // Include non-native runtime modules that are intentionally externalized from Vite.
     ...getExternalRuntimeModulesFilesConfig(),
+    // UGS-MODIFY: Force-include pnpm-aliased packages under their canonical names so
+    // require('strip-ansi') / require('wrap-ansi') / require('string-width') resolves
+    // at runtime. Without this, @isaacs/cliui's pnpm alias 'strip-ansi-cjs' would be the
+    // only thing placed in asar under that family, breaking gauge/wide-truncate and others.
+    // Must be a real top-level directory (not a symlink). See LESSONS_LEARNED.md INC-011.
+    { from: 'node_modules/strip-ansi', to: 'node_modules/strip-ansi', filter: ['**/*'] },
+    { from: 'node_modules/wrap-ansi', to: 'node_modules/wrap-ansi', filter: ['**/*'] },
+    { from: 'node_modules/ansi-regex', to: 'node_modules/ansi-regex', filter: ['**/*'] },
+    { from: 'node_modules/string-width', to: 'node_modules/string-width', filter: ['**/*'] },
   ],
   generateUpdatesFilesForAllChannels: true,
   linux: {
