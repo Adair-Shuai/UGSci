@@ -24,6 +24,7 @@ import { createUgsMarketModal } from '@/features/UgsMarket';
 import PageHeader from '@/features/UgsShared/PageHeader';
 import { useFetchInstalledPlugins } from '@/hooks/useFetchInstalledPlugins';
 import { useToolStore } from '@/store/tool';
+import { pluginSelectors } from '@/store/tool/selectors';
 import { connectorSelectors } from '@/store/tool/slices/connector';
 
 import { PLANNED_CAPABILITIES } from './capabilityData';
@@ -126,10 +127,15 @@ const UgsCapabilitiesPage: FC = () => {
   const notConnectedConnectors = useToolStore(connectorSelectors.notConnectedConnectors);
 
   // 监听 installedPlugins 变化，自动触发 fetchConnectors
+  // （市场 MCP 安装走 installMCPPlugin → refreshPlugins，不调 fetchConnectors；
+  //  这里补齐：installedPlugins 变化 → fetchConnectors → connectors 更新）
+  const installedPluginsCount = useToolStore(
+    (s) => pluginSelectors.installedPlugins(s).length,
+  );
   const fetchConnectors = useToolStore((s) => s.fetchConnectors);
   useEffect(() => {
     fetchConnectors();
-  }, [fetchConnectors]);
+  }, [installedPluginsCount, fetchConnectors]);
 
   const allConnectors = useMemo(
     () => [...connectedConnectors, ...notConnectedConnectors],
