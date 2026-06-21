@@ -54,5 +54,5 @@ export const useInitPresetMcps = () => {
 
       refreshingRef.current = false;
     })();
-  }, [installedPlugins, installCustomPlugin]);
+  }, [installedPlugins, installCustomPlugin, syncPluginTools, fetchConnectors]);
 };

@@ -1,39 +1,41 @@
-// UGS-MODIFY: UGS-016 能力中心主页面（LobeHub 设计语言）
+// UGS-MODIFY: UGS-016 能力中心主页面（LobeHub 设计语言 · 双 Tab 结构）
 //
-// 右上角三模块（与技能中心/专家广场视觉对齐）：
-// - 搜索框：本地筛选 connector
-// - 能力市场：复用 Lobe `createSkillStoreModal()` 弹窗（含 MCP Tab）
-// - 添加能力：复用 Lobe `AddSkillButton`（含 4 个子弹窗，其中 customMcp 为自定义 MCP）
+// 结构：
+// - PageHeader：标题「能力中心」+ 右上角三模块（搜索框 + 能力市场按钮 + 添加能力按钮）
+// - 统计概览：4 张 stat card 展示整体数据
+// - 双 Tab：
+//   - Tab1「常用能力」：按 6 个分类分组展示已安装 connector + 规划中能力
+//   - Tab2「已安装」：展示所有已安装的 MCP connector，带数量角标与本地搜索
 //
-// 操作闭环：
-// - 自定义 MCP：CustomConnectorModal 创建后会 fetchConnectors → connectors 变化 → 自动 re-render
-// - 市场 MCP：installMCPPlugin 只调 refreshPlugins 不调 fetchConnectors，
-//   这里通过监听 installedPlugins.length 变化主动触发 fetchConnectors 实现自动刷新
+// 模块复用：
+// - 分类分组展示：CommonTab（本目录）
+// - 已安装列表展示：InstalledTab（本目录）
+// - 能力市场弹窗：createUgsMarketModal('mcp', '能力市场')
+// - 添加能力：AddSkillButton（4 个子弹窗，含自定义 MCP）
+// - 能力卡片：ConnectorCard
 import { Button } from '@lobehub/ui';
-import { Plus, Search, Store } from 'lucide-react';
+import { Search, Store } from 'lucide-react';
 import { createStaticStyles } from 'antd-style';
-import { App, Empty, Input, Skeleton, Tabs, Tag } from 'antd';
-import { type FC, useCallback, useEffect, useMemo, useState } from 'react';
+import { App, Badge, Input, Tabs } from 'antd';
+import { type FC, useEffect, useMemo, useState } from 'react';
 
 import AddSkillButton from '@/features/UgsShared/AddSkillButton';
 import { createUgsMarketModal } from '@/features/UgsMarket';
 import PageHeader from '@/features/UgsShared/PageHeader';
 import { useFetchInstalledPlugins } from '@/hooks/useFetchInstalledPlugins';
 import { useToolStore } from '@/store/tool';
-import { pluginSelectors } from '@/store/tool/selectors';
 import { connectorSelectors } from '@/store/tool/slices/connector';
 
-import ConnectorCard from './ConnectorCard';
-import { useInitPresetMcps } from './useInitPresetMcps';
 import { PLANNED_CAPABILITIES } from './capabilityData';
-import { type CapabilityCategory, CATEGORIES, CATEGORY_MAP } from './types';
+import CommonTab from './CommonTab';
+import InstalledTab from './InstalledTab';
+import { CATEGORIES } from './types';
 
 const styles = createStaticStyles(({ css, cssVar }) => ({
   scrollContainer: css`
     height: 100%;
     overflow-y: auto;
     overflow-x: hidden;
-
     &::-webkit-scrollbar {
       width: 6px;
     }
@@ -54,7 +56,6 @@ const styles = createStaticStyles(({ css, cssVar }) => ({
   `,
   searchInput: css`
     max-width: 280px;
-
     .ant-input-affix-wrapper {
       background: ${cssVar.colorBgContainer};
       border-color: ${cssVar.colorBorderSecondary};
@@ -104,105 +105,38 @@ const styles = createStaticStyles(({ css, cssVar }) => ({
     color: ${cssVar.colorTextQuaternary};
     font-size: 11px;
   `,
-  grid: css`
-    display: grid;
-    gap: 12px;
-    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  `,
-  plannedCard: css`
-    border: 1px solid ${cssVar.colorBorderSecondary};
-    border-radius: ${cssVar.borderRadiusLG};
-    background: ${cssVar.colorFillQuaternary};
-    padding: 12px 16px;
-    opacity: 0.75;
-  `,
-  plannedName: css`
-    color: ${cssVar.colorText};
-    font-size: 14px;
-    font-weight: 500;
-  `,
-  plannedMeta: css`
-    color: ${cssVar.colorTextTertiary};
-    font-size: 11px;
+  tabBadge: css`
+    .ant-badge-count {
+      background: ${cssVar.colorPrimary};
+    }
   `,
 }));
 
-const CATEGORY_ORDER: CapabilityCategory[] = [
-  'data-connection',
-  'engineering-calc',
-  'numerical-sim',
-  'optimization',
-  'knowledge-retrieval',
-  'system-collab',
-];
-
-const getConnectorCategory = (identifier: string, name: string): CapabilityCategory => {
-  const map: Record<string, CapabilityCategory> = {
-    'neqsim-mcp-server': 'engineering-calc',
-    'pyrestoolbox-mcp': 'engineering-calc',
-  };
-  if (map[identifier]) return map[identifier];
-
-  const lower = name.toLowerCase();
-  if (lower.includes('search') || lower.includes('browser') || lower.includes('doc'))
-    return 'knowledge-retrieval';
-  if (lower.includes('file') || lower.includes('data')) return 'data-connection';
-  return 'system-collab';
-};
+type MainTab = 'common' | 'installed';
 
 const UgsCapabilitiesPage: FC = () => {
   const { message } = App.useApp();
   const [keyword, setKeyword] = useState('');
+  const [activeTab, setActiveTab] = useState<MainTab>('common');
 
-  useInitPresetMcps();
   // 拉取已安装 plugins（用于监听变化触发 fetchConnectors）
   useFetchInstalledPlugins();
 
   const connectedConnectors = useToolStore(connectorSelectors.connectedConnectors);
   const notConnectedConnectors = useToolStore(connectorSelectors.notConnectedConnectors);
-  const isConnectorsInit = useToolStore((s) => s.isConnectorsInit);
 
-  // 监听 installedPlugins 数量变化，主动触发 fetchConnectors
-  // （市场 MCP 安装走 installMCPPlugin → refreshPlugins，不调 fetchConnectors；
-  //  这里补齐：installedPlugins 变化 → fetchConnectors → connectors 更新 → 自动 re-render）
-  const installedPluginsCount = useToolStore(
-    (s) => pluginSelectors.installedPlugins(s).length,
-  );
+  // 监听 installedPlugins 变化，自动触发 fetchConnectors
   const fetchConnectors = useToolStore((s) => s.fetchConnectors);
   useEffect(() => {
     fetchConnectors();
-  }, [installedPluginsCount, fetchConnectors]);
-
-  const [activeCategory, setActiveCategory] = useState<CapabilityCategory | 'all'>('all');
+  }, [fetchConnectors]);
 
   const allConnectors = useMemo(
     () => [...connectedConnectors, ...notConnectedConnectors],
     [connectedConnectors, notConnectedConnectors],
   );
 
-  // 关键词过滤（按 identifier / name）
-  const visibleConnectorsAll = useMemo(() => {
-    const k = keyword.trim().toLowerCase();
-    if (!k) return allConnectors;
-    return allConnectors.filter((c) => {
-      if (c.identifier.toLowerCase().includes(k)) return true;
-      if (c.name?.toLowerCase().includes(k)) return true;
-      return false;
-    });
-  }, [allConnectors, keyword]);
-
-  const connectorsByCategory = useMemo(() => {
-    const map = new Map<CapabilityCategory, typeof allConnectors>();
-    for (const cat of CATEGORY_ORDER) map.set(cat, []);
-    for (const conn of visibleConnectorsAll) {
-      const cat = getConnectorCategory(conn.identifier, conn.name);
-      const list = map.get(cat) ?? [];
-      list.push(conn);
-      map.set(cat, list);
-    }
-    return map;
-  }, [visibleConnectorsAll]);
-
+  // 统计概览数据
   const stats = useMemo(() => {
     const enabled = allConnectors.filter((c) => c.isEnabled);
     const totalTools = allConnectors.reduce((sum, c) => sum + (c.tools?.length ?? 0), 0);
@@ -214,31 +148,6 @@ const UgsCapabilitiesPage: FC = () => {
       totalTools,
     };
   }, [allConnectors, connectedConnectors.length]);
-
-  const tabItems = useMemo(() => {
-    return [
-      { key: 'all', label: `全部（${visibleConnectorsAll.length}）` },
-      ...CATEGORY_ORDER.map((cat) => {
-        const list = connectorsByCategory.get(cat) ?? [];
-        const plannedCount = PLANNED_CAPABILITIES.filter((p) => p.category === cat).length;
-        const meta = CATEGORY_MAP[cat];
-        return {
-          key: cat,
-          label: `${meta.icon} ${meta.label}（${list.length + plannedCount}）`,
-        };
-      }),
-    ];
-  }, [visibleConnectorsAll.length, connectorsByCategory]);
-
-  const visibleConnectors = useMemo(() => {
-    if (activeCategory === 'all') return visibleConnectorsAll;
-    return connectorsByCategory.get(activeCategory) ?? [];
-  }, [activeCategory, visibleConnectorsAll, connectorsByCategory]);
-
-  const visiblePlanned = useMemo(() => {
-    if (activeCategory === 'all') return PLANNED_CAPABILITIES;
-    return PLANNED_CAPABILITIES.filter((p) => p.category === activeCategory);
-  }, [activeCategory]);
 
   // 右上角三模块：搜索框 + 能力市场 + 添加能力
   const headerExtra = (
@@ -252,7 +161,6 @@ const UgsCapabilitiesPage: FC = () => {
         size="middle"
         value={keyword}
       />
-      {/* 能力市场：弹窗形式（复用 Lobe 社区 MCP 商店组件 + 分类筛选） */}
       <Button
         icon={<Store size={16} />}
         onClick={() => createUgsMarketModal('mcp', '能力市场')}
@@ -260,7 +168,6 @@ const UgsCapabilitiesPage: FC = () => {
       >
         能力市场
       </Button>
-      {/* 添加能力：复用 Lobe AddSkillButton（4 个子弹窗，含自定义 MCP） */}
       <AddSkillButton
         customLabel="添加能力"
         customTitle="添加能力"
@@ -282,7 +189,6 @@ const UgsCapabilitiesPage: FC = () => {
           title="UGSci 能力中心"
         />
 
-        {/* 统计概览 */}
         <div className={styles.statsGrid}>
           <div className={styles.statCard}>
             <div className={styles.statLabel}>已连接能力</div>
@@ -306,52 +212,36 @@ const UgsCapabilitiesPage: FC = () => {
           </div>
         </div>
 
-        {/* 分类 Tabs */}
+        {/* 双 Tab：常用能力 / 已安装 */}
         <Tabs
-          activeKey={activeCategory}
-          items={tabItems}
-          onChange={(k) => setActiveCategory(k as CapabilityCategory | 'all')}
+          activeKey={activeTab}
+          items={[
+            {
+              children: <CommonTab keyword={keyword} />,
+              key: 'common',
+              label: '常用能力',
+            },
+            {
+              children: <InstalledTab keyword={keyword} />,
+              key: 'installed',
+              label: (
+                <Badge
+                  className={styles.tabBadge}
+                  count={allConnectors.length}
+                  offset={[10, 0]}
+                  size="small"
+                >
+                  <span>已安装</span>
+                </Badge>
+              ),
+            },
+          ]}
+          onChange={(k) => setActiveTab(k as MainTab)}
           style={{ marginBottom: 16 }}
         />
-
-        {/* Connector 卡片 Grid */}
-        {!isConnectorsInit && allConnectors.length === 0 ? (
-          <div style={{ padding: '24px 0' }}>
-            <Skeleton active paragraph={{ rows: 4 }} />
-          </div>
-        ) : visibleConnectors.length === 0 && visiblePlanned.length === 0 ? (
-          <Empty description="此分类暂无能力" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-        ) : (
-          <div className={styles.grid}>
-            {visibleConnectors.map((conn) => (
-              <ConnectorCard connector={conn} key={conn.id} />
-            ))}
-
-            {visiblePlanned.map((p, idx) => (
-              <div className={styles.plannedCard} key={`planned-${idx}`}>
-                <div style={{ alignItems: 'center', display: 'flex', gap: 10 }}>
-                  <span style={{ fontSize: 20 }}>{p.icon}</span>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ alignItems: 'center', display: 'flex', gap: 6 }}>
-                      <span className={styles.plannedName}>{p.name}</span>
-                      <Tag color="processing" style={{ fontSize: 10, margin: 0 }}>
-                        规划中
-                      </Tag>
-                    </div>
-                    <span className={styles.plannedMeta}>
-                      {p.transportType} · {p.description.slice(0, 40)}
-                      {p.description.length > 40 ? '…' : ''}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );
 };
 
 export default UgsCapabilitiesPage;
-
