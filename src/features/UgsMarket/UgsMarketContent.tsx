@@ -292,6 +292,13 @@ const MarketDetailContent: FC<{ identifier: string; type: UgsMarketType }> = ({ 
         if (result?.agentId) navigate(`/agent/${result.agentId}`);
       } else if (type === 'mcp') {
         await installMCPPlugin(identifier);
+        // 安装成功后同步创建 connector 记录，确保能力中心列表正确展示
+        try {
+          const toolStore = useToolStore.getState();
+          await toolStore.syncPluginTools(identifier);
+        } catch (syncErr) {
+          console.warn('[UgsMarket] MCP connector 同步失败:', syncErr);
+        }
         message.success('MCP 安装成功');
       } else if (type === 'skill') {
         await agentSkillService.importFromMarket(identifier);
