@@ -10,7 +10,12 @@ import { useBusinessSignin } from '@/business/client/hooks/useBusinessSignin';
 import { message } from '@/components/AntdStaticMethods';
 import { useAuthServerConfigStore } from '@/features/AuthShell';
 import { trackLoginOrSignupClicked } from '@/features/User/UserLoginOrSignup/trackLoginOrSignupClicked';
-import { requestPasswordReset, signIn, phoneNumber } from '@/libs/better-auth/auth-client';
+import {
+  emailOtp,
+  phoneNumber,
+  requestPasswordReset,
+  signIn,
+} from '@/libs/better-auth/auth-client';
 import { isBuiltinProvider, normalizeProviderId } from '@/libs/better-auth/utils/client';
 import { buildOnboardingRedirectUrl, sanitizeRedirectPath } from '@/utils/onboardingRedirect';
 
@@ -18,7 +23,7 @@ import { EMAIL_REGEX, USERNAME_REGEX } from './SignInEmailStep';
 
 const LAST_AUTH_PROVIDER_KEY = 'lobehub:auth:last-provider:v1';
 
-type Step = 'email' | 'password';
+type Step = 'email' | 'password' | 'emailCode';
 // UGS-MODIFY: UGS-005 add phone sign-in mode
 type SignInMode = 'phone' | 'email';
 
@@ -46,8 +51,8 @@ export const useSignIn = () => {
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
   const [isSocialOnly, setIsSocialOnly] = useState(false);
-  // UGS-MODIFY: UGS-005 phone sign-in state
-  const [mode, setMode] = useState<SignInMode>('phone');
+  // UGS-MODIFY: UGS-005 phone sign-in state (default to 'email', phone code retained for future)
+  const [mode, setMode] = useState<SignInMode>('email');
   const [otpSending, setOtpSending] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [countdown, setCountdown] = useState(0);
@@ -159,15 +164,13 @@ export const useSignIn = () => {
           message.error(t('betterAuth.errors.usernameNotRegistered'));
           return;
         }
-        const callbackUrl = searchParams.get('callbackUrl') || '/';
-        const signupParams = new URLSearchParams();
-        signupParams.set('email', targetEmail);
-        signupParams.set('callbackUrl', callbackUrl);
-        const utmSource = searchParams.get('utm_source');
-        if (utmSource) signupParams.set('utm_source', utmSource);
-        const referral = searchParams.get('referral');
-        if (referral) signupParams.set('referral', referral);
-        navigate(`/signup?${signupParams.toString()}`);
+        // UGS-MODIFY: new user → prompt to use verification code instead of redirecting to /signup
+        setEmail(targetEmail);
+        message.info(
+          t('ugs.emailCode.newUserHint', { defaultValue: '该邮箱未注册，请使用验证码注册登录' }),
+        );
+        // Auto-switch to verification code flow for new users
+        await handleSendEmailOtp(targetEmail);
         return;
       }
 
@@ -316,12 +319,16 @@ export const useSignIn = () => {
     try {
       const { error } = await phoneNumber.sendOtp({ phoneNumber: phone.trim() });
       if (error) {
-        message.error(error.message || t('ugs.phoneSignin.sendError', { defaultValue: '验证码发送失败' }));
+        message.error(
+          error.message || t('ugs.phoneSignin.sendError', { defaultValue: '验证码发送失败' }),
+        );
         return;
       }
       setOtpSent(true);
       setCountdown(60);
-      message.success(t('ugs.phoneSignin.sent', { defaultValue: '验证码已发送，开发模式请查看服务端控制台' }));
+      message.success(
+        t('ugs.phoneSignin.sent', { defaultValue: '验证码已发送，开发模式请查看服务端控制台' }),
+      );
     } catch (error) {
       console.error('Send OTP error:', error);
       message.error(t('ugs.phoneSignin.sendError', { defaultValue: '验证码发送失败' }));
@@ -339,7 +346,9 @@ export const useSignIn = () => {
         phoneNumber: phone.trim(),
       });
       if (error) {
-        message.error(error.message || t('ugs.phoneSignin.verifyError', { defaultValue: '验证失败' }));
+        message.error(
+          error.message || t('ugs.phoneSignin.verifyError', { defaultValue: '验证失败' }),
+        );
         return;
       }
       window.location.href = sanitizeRedirectPath(callbackUrl);
@@ -360,6 +369,115 @@ export const useSignIn = () => {
     setMode('phone');
     setStep('email');
     setIsSocialOnly(false);
+  };
+
+  // UGS-MODIFY: email OTP sign-in
+  const [emailOtpSending, setEmailOtpSending] = useState(false);
+  const [emailOtpSent, setEmailOtpSent] = useState(false);
+  const [emailCountdown, setEmailCountdown] = useState(0);
+  // UGS-MODIFY: track whether user has password (determines post-OTP redirect)
+  const [isNewUserNoPassword, setIsNewUserNoPassword] = useState(false);
+
+  // UGS-MODIFY: email OTP countdown timer
+  useEffect(() => {
+    if (emailCountdown <= 0) return;
+    const timer = setTimeout(() => setEmailCountdown((c) => c - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [emailCountdown]);
+
+  const handleSendEmailOtp = async (targetEmail?: string) => {
+    setEmailOtpSending(true);
+    try {
+      const emailValue =
+        targetEmail ||
+        (await form
+          .validateFields(['email'])
+          .then((v) => v.email as string)
+          .catch(() => null));
+      if (!emailValue) return;
+
+      // UGS-MODIFY: Check if user has password before sending OTP
+      const resolvedEmail = await resolveEmailFromIdentifier(emailValue);
+      if (resolvedEmail) {
+        const checkResponse = await fetch('/api/auth/check-user', {
+          body: JSON.stringify({ email: resolvedEmail.email }),
+          headers: { 'Content-Type': 'application/json' },
+          method: 'POST',
+        });
+        const checkData = await checkResponse.json();
+        // UGS-MODIFY: New user or existing user without password → redirect to set-password after OTP
+        setIsNewUserNoPassword(!checkData.exists || !checkData.hasPassword);
+      }
+
+      const { error } = await emailOtp.sendVerificationOtp({ email: emailValue, type: 'sign-in' });
+      if (error) {
+        message.error(
+          error.message || t('ugs.emailCode.sendError', { defaultValue: '验证码发送失败' }),
+        );
+        return;
+      }
+      setEmailOtpSent(true);
+      setEmailCountdown(60);
+      setEmail(emailValue.toLowerCase());
+      setStep('emailCode');
+      message.success(t('ugs.emailCode.sent', { defaultValue: '验证码已发送，请查收邮件' }));
+    } catch (error) {
+      console.error('Send email OTP error:', error);
+      message.error(t('ugs.emailCode.sendError', { defaultValue: '验证码发送失败' }));
+    } finally {
+      setEmailOtpSending(false);
+    }
+  };
+
+  const handleVerifyEmailOtp = async (code: string) => {
+    setLoading(true);
+    try {
+      const callbackUrl = searchParams.get('callbackUrl') || '/';
+      const result = await signIn.emailOtp(
+        {
+          email,
+          otp: code,
+        },
+        {
+          onError: (ctx) => {
+            console.error('Email OTP sign in error:', ctx.error);
+            if (ctx.error.status === 403) {
+              navigate(
+                `/verify-email?email=${encodeURIComponent(email)}&callbackUrl=${encodeURIComponent(callbackUrl)}`,
+              );
+            } else {
+              message.error(
+                ctx.error.message || t('ugs.emailCode.verifyError', { defaultValue: '验证失败' }),
+              );
+            }
+          },
+          onSuccess: () => {
+            // UGS-MODIFY: new users go to set-password first
+            if (isNewUserNoPassword) {
+              window.location.href = '/set-password';
+            } else {
+              window.location.href = sanitizeRedirectPath(callbackUrl);
+            }
+          },
+        },
+      );
+      if (result.error && result.error.status !== 403) {
+        message.error(
+          result.error.message || t('ugs.emailCode.verifyError', { defaultValue: '验证失败' }),
+        );
+      }
+    } catch (error) {
+      console.error('Verify email OTP error:', error);
+      message.error(t('ugs.emailCode.verifyError', { defaultValue: '验证失败' }));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBackToEmailFromCode = () => {
+    setStep('email');
+    setEmailOtpSent(false);
+    setIsNewUserNoPassword(false);
   };
 
   const resolvedProviders = ENABLE_BUSINESS_FEATURES ? ssoProviders : oAuthSSOProviders;
@@ -397,5 +515,12 @@ export const useSignIn = () => {
     handleVerifyOtp,
     handleSwitchToEmail,
     handleSwitchToPhone,
+    // UGS-MODIFY: email OTP sign-in
+    emailOtpSending,
+    emailOtpSent,
+    emailCountdown,
+    handleSendEmailOtp,
+    handleVerifyEmailOtp,
+    handleBackToEmailFromCode,
   };
 };

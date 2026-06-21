@@ -3,7 +3,8 @@ import { Alert, Button, Flexbox, Icon, Input, Skeleton, Text } from '@lobehub/ui
 import { type FormInstance, type InputRef } from 'antd';
 import { Badge, Divider, Form } from 'antd';
 import { createStaticStyles } from 'antd-style';
-import { ChevronRight, Mail } from 'lucide-react';
+// UGS-MODIFY: email OTP — add MessageSquareCode icon for verification code button
+import { Mail, MessageSquareCode } from 'lucide-react';
 import { type CSSProperties, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -31,6 +32,8 @@ const getProviderName = (provider: string) =>
   provider.toLowerCase().replaceAll(/(^|[_-])([a-z])/g, (_, __, c) => c.toUpperCase());
 
 export interface SignInEmailStepProps {
+  // UGS-MODIFY: code loading state
+  codeLoading: boolean;
   disableEmailPassword?: boolean;
   form: FormInstance<{ email: string }>;
   isSocialOnly: boolean;
@@ -38,6 +41,8 @@ export interface SignInEmailStepProps {
   loading: boolean;
   oAuthSSOProviders: string[];
   onCheckUser: (values: { email: string }) => Promise<void>;
+  // UGS-MODIFY: email OTP send code handler
+  onSendCode: (email: string) => Promise<void>;
   onSetPassword: () => void;
   onSocialSignIn: (provider: string) => void;
   serverConfigInit: boolean;
@@ -53,7 +58,9 @@ export const SignInEmailStep = ({
   oAuthSSOProviders,
   serverConfigInit,
   socialLoading,
+  codeLoading,
   onCheckUser,
+  onSendCode,
   onSetPassword,
   onSocialSignIn,
 }: SignInEmailStepProps) => {
@@ -135,7 +142,7 @@ export const SignInEmailStep = ({
         >
           <Form.Item
             name="email"
-            style={{ marginBottom: 0 }}
+            style={{ marginBottom: 12 }}
             rules={[
               { message: t('betterAuth.errors.emailRequired'), required: true },
               {
@@ -165,17 +172,35 @@ export const SignInEmailStep = ({
               style={{
                 padding: 6,
               }}
-              suffix={
-                <Button
-                  icon={ChevronRight}
-                  loading={loading}
-                  title={t('betterAuth.signin.nextStep')}
-                  variant={'filled'}
-                  onClick={() => form.submit()}
-                />
-              }
             />
           </Form.Item>
+          {/* UGS-MODIFY: dual auth buttons — password login + verification code login */}
+          <Flexbox gap={8}>
+            <Button block htmlType="submit" loading={loading} size="large" type="primary">
+              {t('ugs.signin.passwordLogin', { defaultValue: '密码登录' })}
+            </Button>
+            <Button
+              block
+              icon={<Icon icon={MessageSquareCode} />}
+              loading={codeLoading}
+              size="large"
+              onClick={() => {
+                const emailValue = form.getFieldValue('email');
+                if (!emailValue) {
+                  form
+                    .validateFields(['email'])
+                    .then(() => {
+                      onSendCode(form.getFieldValue('email'));
+                    })
+                    .catch(() => {});
+                  return;
+                }
+                onSendCode(emailValue);
+              }}
+            >
+              {t('ugs.signin.codeLogin', { defaultValue: '验证码登录' })}
+            </Button>
+          </Flexbox>
         </Form>
       )}
       {isSocialOnly && (

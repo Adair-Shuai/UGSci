@@ -90,6 +90,11 @@ export const authRoutes: RouteObject[] = [
         element: lazyElement(() => import('@/routes/auth/reset-password')),
         path: 'reset-password',
       },
+      // UGS-MODIFY: password setup after OTP sign-in
+      {
+        element: lazyElement(() => import('@/routes/auth/set-password')),
+        path: 'set-password',
+      },
       {
         element: lazyElement(() => import('@/routes/auth/auth-error')),
         path: 'auth-error',

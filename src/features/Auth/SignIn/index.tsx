@@ -1,8 +1,10 @@
 'use client';
 
+// UGS-MODIFY: email OTP verification code step
+import { SignInEmailCodeStep } from './SignInEmailCodeStep';
 import { SignInEmailStep } from './SignInEmailStep';
 import { SignInPasswordStep } from './SignInPasswordStep';
-// UGS-MODIFY: UGS-005 phone sign-in step
+// UGS-MODIFY: UGS-005 phone sign-in step (code retained, default mode is now 'email')
 import { SignInPhoneStep } from './SignInPhoneStep';
 import { useSignIn } from './useSignIn';
 
@@ -31,26 +33,47 @@ const SignIn = () => {
     handleSendOtp,
     handleVerifyOtp,
     handleSwitchToEmail,
-    handleSwitchToPhone,
+    // UGS-MODIFY: email OTP sign-in
+    emailOtpSending,
+    emailCountdown,
+    handleSendEmailOtp,
+    handleVerifyEmailOtp,
+    handleBackToEmailFromCode,
   } = useSignIn();
 
-  // UGS-MODIFY: UGS-005 default to phone sign-in mode
+  // UGS-MODIFY: UGS-005 phone sign-in mode disabled (default 'email'), code retained
   if (mode === 'phone') {
     return (
       <SignInPhoneStep
         countdown={countdown}
         loading={loading}
+        otpSending={otpSending}
+        otpSent={otpSent}
         onSendOtp={handleSendOtp}
         onSwitchToEmail={handleSwitchToEmail}
         onVerify={handleVerifyOtp}
-        otpSent={otpSent}
-        otpSending={otpSending}
+      />
+    );
+  }
+
+  // UGS-MODIFY: email OTP verification code step
+  if (step === 'emailCode') {
+    return (
+      <SignInEmailCodeStep
+        countdown={emailCountdown}
+        email={email}
+        loading={loading}
+        otpSending={emailOtpSending}
+        onBack={handleBackToEmailFromCode}
+        onResend={handleSendEmailOtp}
+        onVerify={handleVerifyEmailOtp}
       />
     );
   }
 
   return step === 'email' ? (
     <SignInEmailStep
+      codeLoading={emailOtpSending}
       disableEmailPassword={disableEmailPassword}
       form={form as any}
       isSocialOnly={isSocialOnly}
@@ -60,6 +83,7 @@ const SignIn = () => {
       serverConfigInit={serverConfigInit}
       socialLoading={socialLoading}
       onCheckUser={handleCheckUser}
+      onSendCode={handleSendEmailOtp}
       onSetPassword={handleForgotPassword}
       onSocialSignIn={handleSocialSignIn}
     />

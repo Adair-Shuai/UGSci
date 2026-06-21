@@ -251,6 +251,8 @@ export function defineConfig(customOptions: CustomBetterAuthOptions) {
       customRules: {
         '/request-password-reset': { max: 3, window: 60 },
         '/send-verification-email': { max: 3, window: 60 },
+        // UGS-MODIFY: rate limit email OTP sending to prevent abuse
+        '/email-otp/send-verification-otp': { max: 3, window: 60 },
       },
     },
     plugins: [
@@ -265,7 +267,7 @@ export function defineConfig(customOptions: CustomBetterAuthOptions) {
         // Dev: log OTP to console. Prod: integrate SMS provider here.
         sendOTP: async ({ phoneNumber: phone, code }) => {
           if (process.env.NODE_ENV === 'development') {
-            console.log(`[UGS Phone OTP] ${phone}: ${code}`);
+            console.info(`[UGS Phone OTP] ${phone}: ${code}`);
           }
           // TODO prod: integrate SMS provider (e.g. Twilio / 阿里云短信)
         },
@@ -274,7 +276,7 @@ export function defineConfig(customOptions: CustomBetterAuthOptions) {
           getTempName: (phone) => phone,
         },
       }),
-      // Email OTP plugin for mobile verification
+      // UGS-MODIFY: Email OTP plugin for verification code login (web + mobile)
       emailOTP({
         expiresIn: OTP_EXPIRES_IN,
         otpLength: 6,
@@ -292,10 +294,15 @@ export function defineConfig(customOptions: CustomBetterAuthOptions) {
             userName: null,
           });
 
-          await emailService.sendMail({
-            to: email,
-            ...template,
-          });
+          try {
+            await emailService.sendMail({
+              to: email,
+              ...template,
+            });
+          } catch (error) {
+            console.error('[UGS emailOTP] Failed to send verification email:', error);
+            throw error;
+          }
         },
       }),
       passkey({

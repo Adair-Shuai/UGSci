@@ -1,7 +1,8 @@
 import urlJoin from 'url-join';
 
-export const OFFICIAL_URL = 'https://app.lobehub.com';
-export const OFFICIAL_SITE = 'https://lobehub.com';
+// UGS-MODIFY: use APP_URL env for custom deployment, fallback to localhost
+export const OFFICIAL_URL = process.env.APP_URL || 'http://localhost:3010';
+export const OFFICIAL_SITE = process.env.APP_URL || 'http://localhost:3010';
 export const OFFICIAL_DOMAIN = 'lobehub.com';
 
 export const OG_URL = '/og/og.webp?v=1';

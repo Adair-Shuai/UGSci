@@ -94,8 +94,8 @@ export const getDesktopEnv = memoize(() =>
       // - unset NODE_ENV should behave like "not production" in logger runtime paths
       NODE_ENV: z.enum(['development', 'production', 'test']).optional(),
 
-      // cloud server url (can be overridden for selfhost/dev)
-      OFFICIAL_CLOUD_SERVER: z.string().optional().default('https://app.lobehub.com'),
+      // UGS-MODIFY: default cloud server points to local dev server
+      OFFICIAL_CLOUD_SERVER: z.string().optional().default('http://localhost:3010'),
 
       // updater
       // process.env.xxx will replace in build stage
