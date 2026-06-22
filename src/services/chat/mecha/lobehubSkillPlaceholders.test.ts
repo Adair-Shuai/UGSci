@@ -1,12 +1,12 @@
-import { builtinSkills, LobeHubIdentifier } from '@lobechat/builtin-skills';
+import { builtinSkills, UGSciIdentifier } from '@lobechat/builtin-skills';
 import { renderPlaceholderTemplate } from '@lobechat/context-engine';
 import { describe, expect, it } from 'vitest';
 
-const LobeHubSkill = builtinSkills.find((s) => s.identifier === LobeHubIdentifier);
-if (!LobeHubSkill) {
-  throw new Error(`LobeHubSkill not found in builtinSkills (looking for "${LobeHubIdentifier}")`);
+const UGSciSkill = builtinSkills.find((s) => s.identifier === UGSciIdentifier);
+if (!UGSciSkill) {
+  throw new Error(`UGSciSkill not found in builtinSkills (looking for "${UGSciIdentifier}")`);
 }
-const lobeHubContent = LobeHubSkill.content;
+const lobeHubContent = UGSciSkill.content;
 
 /**
  * Regression for .
