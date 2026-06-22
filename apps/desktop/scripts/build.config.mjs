@@ -191,7 +191,7 @@ export const EXTERNAL_RUNTIME = [
  * @param {string} unpackedDir - unpacked 产物目录绝对路径
  * @returns {Array<{label: string, pattern: string}>}
  */
-export function getVerificationChecks(platform, unpackedDir) {
+export function getVerificationChecks(platform, _unpackedDir) {
   const checks = [];
 
   if (platform === 'darwin') {
@@ -202,7 +202,7 @@ export function getVerificationChecks(platform, unpackedDir) {
     );
   } else if (platform === 'win32') {
     checks.push(
-      { label: 'UGSci.exe (主入口)',          pattern: 'UGSci.exe' },
+      { label: 'UGSci.exe (主入口)',          pattern: 'UGSci*.exe' },
       { label: 'app.asar (业务包)',              pattern: 'resources/app.asar' },
       { label: 'app.asar.unpacked (native)',     pattern: 'resources/app.asar.unpacked/node_modules' },
     );

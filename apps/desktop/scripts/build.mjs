@@ -577,6 +577,13 @@ async function verifyBuild(outputDir, flags) {
   if (flags.platform === 'darwin') {
     // electron-builder --dir 输出 release/mac/
     unpackedDir = path.join(outputDir, platform.unpackedDirName);
+    if (!dirExists(unpackedDir)) {
+      // macOS Intel runner outputs mac-x64 instead of mac-arm64
+      const altDir = path.join(outputDir, 'mac-x64');
+      if (dirExists(altDir)) {
+        unpackedDir = altDir;
+      }
+    }
   } else if (flags.platform === 'win32') {
     unpackedDir = path.join(outputDir, platform.unpackedDirName);
   } else {
