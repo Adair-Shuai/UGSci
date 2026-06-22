@@ -96,25 +96,25 @@ export const PLATFORMS = {
 export const CHANNELS = {
   stable: {
     iconPrefix: 'Icon',
-    protocolScheme: 'lobehub',
+    protocolScheme: 'ugsci',
     isPreRelease: false,
     label: '稳定版',
   },
   beta: {
     iconPrefix: 'Icon-beta',
-    protocolScheme: 'lobehub',
+    protocolScheme: 'ugsci-beta',
     isPreRelease: true,
     label: '公测版',
   },
   nightly: {
     iconPrefix: 'Icon-nightly',
-    protocolScheme: 'lobehub-nightly',
+    protocolScheme: 'ugsci-nightly',
     isPreRelease: true,
     label: '每夜版',
   },
   canary: {
     iconPrefix: 'Icon',
-    protocolScheme: 'lobehub-canary',
+    protocolScheme: 'ugsci-canary',
     isPreRelease: true,
     label: '金丝雀版',
   },
@@ -202,13 +202,13 @@ export function getVerificationChecks(platform, unpackedDir) {
     );
   } else if (platform === 'win32') {
     checks.push(
-      { label: 'LobeHub.exe (主入口)',          pattern: 'LobeHub.exe' },
+      { label: 'UGSci.exe (主入口)',          pattern: 'UGSci.exe' },
       { label: 'app.asar (业务包)',              pattern: 'resources/app.asar' },
       { label: 'app.asar.unpacked (native)',     pattern: 'resources/app.asar.unpacked/node_modules' },
     );
   } else {
     checks.push(
-      { label: '可执行文件',     pattern: 'lobehub' },
+      { label: '可执行文件',     pattern: 'ugsci' },
       { label: 'app.asar',       pattern: 'resources/app.asar' },
     );
   }

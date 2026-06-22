@@ -1045,7 +1045,7 @@ async function main() {
     const out = finalOutput || releaseDir;
     console.log(`${colors.bold}产物目录:${colors.reset} ${path.relative(repoRoot, out)}`);
     if (flags.platform === 'win32') {
-      const exe = path.join(out, platform.unpackedDirName, `LobeHub${platform.exeExtension}`);
+      const exe = path.join(out, platform.unpackedDirName, `UGSci${platform.exeExtension}`);
       if (fileExists(exe)) {
         console.log(`${colors.bold}主程序:${colors.reset}   ${path.relative(repoRoot, exe)}`);
       }
