@@ -152,6 +152,7 @@ jobs:
           name: release-${{ matrix.os }}
           path: |
             apps/desktop/release/latest*
+            apps/desktop/release/mac-arm64/
             apps/desktop/release/*.dmg*
             apps/desktop/release/*.zip*
             apps/desktop/release/*.exe*
@@ -197,6 +198,7 @@ jobs:
           name: release-windows-2025
           path: |
             apps/desktop/release/latest*
+            apps/desktop/release/win-unpacked/
             apps/desktop/release/*.dmg*
             apps/desktop/release/*.zip*
             apps/desktop/release/*.exe*
