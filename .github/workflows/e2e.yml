@@ -1,6 +1,9 @@
 name: E2E CI
 
-on: [push, pull_request]
+on:
+  push:
+    branches-ignore: ['ugs/custom']
+  pull_request:
 
 permissions:
   actions: write

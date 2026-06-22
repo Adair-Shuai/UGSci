@@ -19,6 +19,7 @@
  */
 
 import { execSync } from 'node:child_process';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -27,14 +28,14 @@ const buildScript = path.join(__dirname, 'build.mjs');
 
 // 将旧参数映射到 build.mjs 的参数
 const args = process.argv.slice(2);
-const mappedArgs = ['--package', '--platform=win32'];
+const mappedArgs = ['--package', `--platform=${os.platform()}`];
 
 for (const arg of args) {
   if (arg === '--nsis') mappedArgs.push('--nsis');
   else if (arg === '--verify') {
     // 验证模式：替换为 --verify
     mappedArgs.length = 0;
-    mappedArgs.push('--verify', '--platform=win32');
+    mappedArgs.push('--verify', `--platform=${os.platform()}`);
   } else if (arg === '--skip-prepare') mappedArgs.push('--skip-prepare');
   else if (arg === '--verbose') mappedArgs.push('--verbose');
   else if (arg.startsWith('--output')) mappedArgs.push(arg);

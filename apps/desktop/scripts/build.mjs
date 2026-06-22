@@ -1052,7 +1052,13 @@ async function main() {
     const out = finalOutput || releaseDir;
     console.log(`${colors.bold}产物目录:${colors.reset} ${path.relative(repoRoot, out)}`);
     if (flags.platform === 'win32') {
-      const exe = path.join(out, platform.unpackedDirName, `UGSci${platform.exeExtension}`);
+      // 从 package.json 读取 productName（渠道不同名称会变）
+      let exeName = 'UGSci';
+      try {
+        const appPkg = JSON.parse(fsp.readFileSync(path.join(projectRoot, 'package.json'), 'utf8'));
+        if (appPkg.productName) exeName = appPkg.productName.replace(/\s/g, '');
+      } catch {}
+      const exe = path.join(out, platform.unpackedDirName, `${exeName}${platform.exeExtension}`);
       if (fileExists(exe)) {
         console.log(`${colors.bold}主程序:${colors.reset}   ${path.relative(repoRoot, exe)}`);
       }
