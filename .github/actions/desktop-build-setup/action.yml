@@ -26,6 +26,25 @@ runs:
       with:
         node-version: ${{ inputs.node-version }}
 
+    # ── Cache ──────────────────────────────────────────────────
+    - name: Get pnpm store directory
+      id: pnpm-store
+      shell: bash
+      run: |
+        echo "path=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
+
+    - name: Cache pnpm store
+      uses: actions/cache@v4
+      with:
+        path: |
+          ${{ steps.pnpm-store.outputs.path }}
+          apps/desktop/node_modules
+          node_modules
+        key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-pnpm-
+
+    # ── Cloud overlay ──────────────────────────────────────────
     - name: Overlay Cloud repository for desktop build
       if: inputs.cloud-token != ''
       shell: bash
@@ -90,6 +109,7 @@ runs:
         echo "✅ Cloud repository overlaid at $cloud_root"
 
     - name: Install dependencies
+      if: steps.pnpm-store.outputs.cache-hit != 'true'
       shell: bash
       run: |
         set -euo pipefail
@@ -110,6 +130,7 @@ runs:
         fi
 
     - name: Install deps on Desktop
+      if: steps.pnpm-store.outputs.cache-hit != 'true'
       shell: bash
       run: |
         set -euo pipefail
