@@ -36,10 +36,7 @@ runs:
     - name: Cache pnpm store
       uses: actions/cache@v4
       with:
-        path: |
-          ${{ steps.pnpm-store.outputs.path }}
-          apps/desktop/node_modules
-          node_modules
+        path: ${{ steps.pnpm-store.outputs.path }}
         key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
         restore-keys: |
           ${{ runner.os }}-pnpm-
@@ -109,7 +106,6 @@ runs:
         echo "✅ Cloud repository overlaid at $cloud_root"
 
     - name: Install dependencies
-      if: steps.pnpm-store.outputs.cache-hit != 'true'
       shell: bash
       run: |
         set -euo pipefail
@@ -130,7 +126,6 @@ runs:
         fi
 
     - name: Install deps on Desktop
-      if: steps.pnpm-store.outputs.cache-hit != 'true'
       shell: bash
       run: |
         set -euo pipefail
