@@ -208,7 +208,7 @@ export function getVerificationChecks(platform, unpackedDir) {
     );
   } else {
     checks.push(
-      { label: '可执行文件',     pattern: 'ugsci' },
+      { label: '可执行文件',     pattern: 'ugsci*' },
       { label: 'app.asar',       pattern: 'resources/app.asar' },
     );
   }
