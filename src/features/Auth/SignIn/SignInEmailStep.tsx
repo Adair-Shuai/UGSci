@@ -32,7 +32,6 @@ const getProviderName = (provider: string) =>
   provider.toLowerCase().replaceAll(/(^|[_-])([a-z])/g, (_, __, c) => c.toUpperCase());
 
 export interface SignInEmailStepProps {
-  // UGS-MODIFY: code loading state
   codeLoading: boolean;
   disableEmailPassword?: boolean;
   form: FormInstance<{ email: string }>;
@@ -41,16 +40,15 @@ export interface SignInEmailStepProps {
   loading: boolean;
   oAuthSSOProviders: string[];
   onCheckUser: (values: { email: string }) => Promise<void>;
-  // UGS-MODIFY: email OTP send code handler
-  onSendCode: (email: string) => Promise<void>;
   onPasswordLogin: (password: string) => Promise<void>;
-  userCheckStatus: 'unchecked' | 'exists' | 'exists_no_password' | 'not_found';
-  userCheckLoading: boolean;
   onResetUser: () => void;
+  onSendCode: (email: string) => Promise<void>;
   onSetPassword: () => void;
   onSocialSignIn: (provider: string) => void;
   serverConfigInit: boolean;
   socialLoading: string | null;
+  userCheckLoading: boolean;
+  userCheckStatus: 'unchecked' | 'exists' | 'exists_no_password' | 'not_found';
 }
 
 export const SignInEmailStep = ({
@@ -59,8 +57,8 @@ export const SignInEmailStep = ({
   isSocialOnly,
   lastAuthProvider,
   loading,
-  userCheckStatus,
   userCheckLoading,
+  userCheckStatus,
   oAuthSSOProviders,
   serverConfigInit,
   socialLoading,

@@ -34,8 +34,8 @@ export interface SignInPhoneStepProps {
   onSendOtp: (phone: string) => Promise<void>;
   onSwitchToEmail: () => void;
   onVerify: (phone: string, code: string) => Promise<void>;
-  otpSent: boolean;
   otpSending: boolean;
+  otpSent: boolean;
 }
 
 interface PhoneFormValues {
