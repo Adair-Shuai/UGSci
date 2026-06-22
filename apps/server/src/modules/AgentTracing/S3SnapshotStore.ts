@@ -6,8 +6,11 @@ import debug from 'debug';
 
 import { FileS3 } from '@/server/modules/S3';
 
-const compressZstd = promisify(zstdCompress);
-const decompressZstd = promisify(zstdDecompress);
+// UGS-COMPAT: zstdCompress/zstdDecompress require Node.js v22+ or --experimental-zstd flag.
+// Fall back to uncompressed data when unavailable.
+const hasZstd = typeof zstdCompress === 'function';
+const compressZstd = hasZstd ? promisify(zstdCompress) : async (value: Buffer) => value;
+const decompressZstd = hasZstd ? promisify(zstdDecompress) : async (value: Buffer) => value;
 
 const log = debug('lobe-server:agent-tracing:s3');
 

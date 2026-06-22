@@ -358,12 +358,12 @@ export function defineConfig(config: CustomNextConfig) {
     serverExternalPackages: config.serverExternalPackages ?? [
       'pdfkit',
       '@napi-rs/canvas',
-      '@lobehub/editor',
       'discord.js',
       'ffmpeg-static',
       'pdfjs-dist',
       'ajv',
       'oidc-provider',
+      '@lobehub/editor',
     ],
 
     transpilePackages: ['mermaid'],

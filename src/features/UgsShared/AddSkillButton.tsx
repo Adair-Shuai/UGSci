@@ -58,12 +58,16 @@ const AddSkillButton = ({ customLabel, customTitle, onPostInstall }: AddSkillBut
   const { allowed: canCreate } = usePermission('create_content');
   const { allowed: canEdit } = usePermission('edit_own_content');
 
-  // 弹窗关闭时统一触发 onPostInstall（用户可能在弹窗中完成安装）
-  const handleAnyClose = (open: boolean) => {
-    if (!open) {
-      onPostInstall?.();
-    }
-  };
+   // 弹窗关闭时统一触发 onPostInstall（用户可能在弹窗中完成安装）
+   const handleAnyClose = (open: boolean) => {
+     if (!open) {
+       setMcpModal(false);
+       setUrlModal(false);
+       setGithubModal(false);
+       setUploadModal(false);
+       onPostInstall?.();
+     }
+   };
 
   return (
     <div

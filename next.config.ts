@@ -20,6 +20,15 @@ const vercelConfig = {
   },
 };
 const nextConfig = defineConfig({
+  serverExternalPackages: [
+    'pdfkit',
+    '@napi-rs/canvas',
+    'discord.js',
+    'ffmpeg-static',
+    'pdfjs-dist',
+    'ajv',
+    'oidc-provider',
+  ],
   ...(isVercel ? vercelConfig : {}),
 });
 

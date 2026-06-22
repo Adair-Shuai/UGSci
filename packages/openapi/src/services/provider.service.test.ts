@@ -41,9 +41,9 @@ vi.mock('@lobechat/business-const', async () => {
 
   return {
     ...actual,
-    BRANDING_PROVIDER: 'lobehub',
+    BRANDING_PROVIDER: 'ugsci',
     ENABLE_BUSINESS_FEATURES: true,
-    isOfficialProvider: (id: string) => id === 'lobehub',
+    isOfficialProvider: (id: string) => id === 'ugsci',
   };
 });
 
@@ -66,7 +66,7 @@ describe('ProviderService', () => {
       await expect(
         service.createProvider({
           enabled: false,
-          id: 'lobehub',
+          id: 'ugsci',
         }),
       ).rejects.toMatchObject({
         message: OFFICIAL_PROVIDER_DISABLE_ERROR,
@@ -80,7 +80,7 @@ describe('ProviderService', () => {
       await expect(
         service.updateProvider({
           enabled: false,
-          id: 'lobehub',
+          id: 'ugsci',
         }),
       ).rejects.toMatchObject({
         message: OFFICIAL_PROVIDER_DISABLE_ERROR,

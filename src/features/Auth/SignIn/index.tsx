@@ -3,7 +3,6 @@
 // UGS-MODIFY: email OTP verification code step
 import { SignInEmailCodeStep } from './SignInEmailCodeStep';
 import { SignInEmailStep } from './SignInEmailStep';
-import { SignInPasswordStep } from './SignInPasswordStep';
 // UGS-MODIFY: UGS-005 phone sign-in step (code retained, default mode is now 'email')
 import { SignInPhoneStep } from './SignInPhoneStep';
 import { useSignIn } from './useSignIn';
@@ -17,7 +16,11 @@ const SignIn = () => {
     handleCheckUser,
     handleForgotPassword,
     handleSignIn,
+    handlePasswordLogin,
     handleSocialSignIn,
+    handleResetUserExists,
+    userCheckStatus,
+    userCheckLoading,
     isSocialOnly,
     lastAuthProvider,
     loading,
@@ -71,7 +74,8 @@ const SignIn = () => {
     );
   }
 
-  return step === 'email' ? (
+  // UGS-MODIFY: unified email+password step (user existence check inline)
+  return (
     <SignInEmailStep
       codeLoading={emailOtpSending}
       disableEmailPassword={disableEmailPassword}
@@ -82,19 +86,14 @@ const SignIn = () => {
       oAuthSSOProviders={oAuthSSOProviders}
       serverConfigInit={serverConfigInit}
       socialLoading={socialLoading}
+      userCheckLoading={userCheckLoading}
+      userCheckStatus={userCheckStatus}
       onCheckUser={handleCheckUser}
+      onPasswordLogin={handlePasswordLogin}
+      onResetUser={handleResetUserExists}
       onSendCode={handleSendEmailOtp}
       onSetPassword={handleForgotPassword}
       onSocialSignIn={handleSocialSignIn}
-    />
-  ) : (
-    <SignInPasswordStep
-      email={email}
-      form={form as any}
-      loading={loading}
-      onBackToEmail={handleBackToEmail}
-      onForgotPassword={handleForgotPassword}
-      onSubmit={handleSignIn}
     />
   );
 };

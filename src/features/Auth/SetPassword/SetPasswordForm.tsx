@@ -1,7 +1,7 @@
 // UGS-MODIFY: Set password form after email OTP sign-in
 'use client';
 
-import { Button, Icon, InputPassword } from '@lobehub/ui';
+import { Button, Flexbox, Icon, InputPassword } from '@lobehub/ui';
 import type { InputRef } from 'antd';
 import { Form } from 'antd';
 import { Lock } from 'lucide-react';
@@ -19,7 +19,7 @@ interface SetPasswordFormValues {
 
 const SetPasswordForm = () => {
   const { t } = useTranslation('auth');
-  const { loading, onSubmit } = useSetPassword();
+  const { loading, onSubmit, handleSkip } = useSetPassword();
   const [form] = Form.useForm<SetPasswordFormValues>();
   const passwordInputRef = useRef<InputRef>(null);
 
@@ -29,10 +29,10 @@ const SetPasswordForm = () => {
 
   return (
     <AuthCard
+      title={t('ugs.setPassword.title', { defaultValue: '设置登录密码' })}
       desc={t('ugs.setPassword.desc', {
         defaultValue: '为你的账户设置一个密码，以后可以使用密码或验证码登录',
       })}
-      title={t('ugs.setPassword.title', { defaultValue: '设置登录密码' })}
     >
       <Form form={form} layout="vertical" onFinish={onSubmit}>
         <Form.Item
@@ -50,12 +50,12 @@ const SetPasswordForm = () => {
           ]}
         >
           <InputPassword
-            placeholder={t('ugs.setPassword.passwordPlaceholder', {
-              defaultValue: '请输入密码（至少8位）',
-            })}
             prefix={<Icon icon={Lock} style={{ marginInline: 6 }} />}
             ref={passwordInputRef}
             size="large"
+            placeholder={t('ugs.setPassword.passwordPlaceholder', {
+              defaultValue: '请输入密码（至少8位）',
+            })}
           />
         </Form.Item>
         <Form.Item
@@ -88,6 +88,11 @@ const SetPasswordForm = () => {
         <Button block htmlType="submit" loading={loading} size="large" type="primary">
           {t('ugs.setPassword.submit', { defaultValue: '设置密码并进入' })}
         </Button>
+        <Flexbox align="center" style={{ marginTop: 16 }}>
+          <Button block size="large" variant="text" onClick={handleSkip}>
+            {t('ugs.setPassword.skip', { defaultValue: '跳过，以后再说' })}
+          </Button>
+        </Flexbox>
       </Form>
     </AuthCard>
   );

@@ -193,11 +193,11 @@ describe('videoRouter', () => {
       const result = await caller.createVideo({
         ...defaultInput,
         model: 'onboarding-video',
-        provider: 'lobehub',
+        provider: 'ugsci',
       });
 
       expect(result.success).toBe(true);
-      expect(mockResolveBusinessModelMapping).toHaveBeenCalledWith('lobehub', 'onboarding-video');
+      expect(mockResolveBusinessModelMapping).toHaveBeenCalledWith('ugsci', 'onboarding-video');
       expect(mockIsLobeHubModelAvailable).toHaveBeenCalledWith(
         'dreamina-seedance-2-0-260128',
         'video',
@@ -223,7 +223,7 @@ describe('videoRouter', () => {
         caller.createVideo({
           ...defaultInput,
           model: 'restricted-video-model',
-          provider: 'lobehub',
+          provider: 'ugsci',
         }),
       ).rejects.toMatchObject({
         code: 'BAD_REQUEST',

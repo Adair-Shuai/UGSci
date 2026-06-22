@@ -5,7 +5,9 @@ import { zstdDecompress } from 'node:zlib';
 
 import type { ExecutionSnapshot } from '../types';
 
-const decompressZstd = promisify(zstdDecompress);
+// UGS-COMPAT: zstd requires Node v22+ or --experimental-zstd flag
+const hasZstd = typeof zstdDecompress === 'function';
+const decompressZstd = hasZstd ? promisify(zstdDecompress) : async (v) => v;
 
 const REMOTE_DIR = '_remote';
 const ENV_FILE = '.env';

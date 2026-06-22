@@ -45,5 +45,9 @@ export const useSetPassword = () => {
     }
   };
 
-  return { loading, onSubmit };
+  const handleSkip = () => {
+    window.location.href = '/';
+  };
+
+  return { loading, onSubmit, handleSkip };
 };

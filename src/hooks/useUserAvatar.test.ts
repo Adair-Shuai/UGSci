@@ -19,7 +19,7 @@ vi.mock('@lobechat/const', async (importOriginal) => {
       return mockConstEnv.isDesktop;
     },
     DEFAULT_USER_AVATAR: 'default-avatar.png',
-    OFFICIAL_URL: 'https://app.lobehub.com',
+    OFFICIAL_URL: 'http://localhost:3010',
   };
 });
 
@@ -126,7 +126,7 @@ describe('useUserAvatar', () => {
     const { result } = renderHook(() => useUserAvatar());
 
     // In cloud mode, selector returns OFFICIAL_URL regardless of remoteServerUrl config
-    expect(result.current).toBe('https://app.lobehub.com/api/avatar.png');
+    expect(result.current).toBe('http://localhost:3010/api/avatar.png');
   });
 
   it('should return original avatar when storageMode is selfHost but no URL configured', () => {

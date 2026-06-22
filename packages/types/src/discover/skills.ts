@@ -47,6 +47,7 @@ export enum SkillSorts {
   CreatedAt = 'createdAt',
   InstallCount = 'installCount',
   Name = 'name',
+  Recommended = 'recommended',
   Relevance = 'relevance',
   Stars = 'stars',
   UpdatedAt = 'updatedAt',

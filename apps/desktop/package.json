@@ -11,11 +11,14 @@
   "author": "LobeHub",
   "main": "./dist/main/index.js",
   "scripts": {
+    "build": "node scripts/build.mjs --build",
     "build:cli": "cd ../cli && cross-env MINIFY=1 bun run build",
     "build:main": "cross-env NODE_OPTIONS=--max-old-space-size=8192 electron-vite build",
     "build:run-unpack": "electron .",
+    "clean": "node scripts/build.mjs --clean",
     "dev": "electron-vite dev",
     "dev:static": "cross-env DESKTOP_RENDERER_STATIC=1 npm run dev",
+    "dev:unified": "node scripts/build.mjs --dev",
     "download:agent-browser": "node scripts/download-agent-browser.mjs",
     "format": "prettier --write ",
     "i18n": "tsx scripts/i18nWorkflow/index.ts && lobe-i18n",
@@ -48,7 +51,8 @@
     "@napi-rs/canvas": "^0.1.70",
     "electron-log": "^5.4.3",
     "get-windows": "^9.3.0",
-    "node-screenshots": "^0.2.8"
+    "node-screenshots": "^0.2.8",
+    "node-screenshots-darwin-arm64": "0.2.8"
   },
   "devDependencies": {
     "@electron-toolkit/eslint-config-prettier": "^3.0.0",
@@ -80,7 +84,7 @@
     "cookie": "^1.1.1",
     "cross-env": "^10.1.0",
     "diff": "^8.0.4",
-    "electron": "41.3.0",
+    "electron": "40.4.0",
     "electron-builder": "26.14.0",
     "electron-devtools-installer": "4.0.0",
     "electron-is": "^3.0.0",

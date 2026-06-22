@@ -13,7 +13,7 @@ vi.mock('node:net');
 vi.mock('node:os');
 vi.mock('node:path');
 
-const appId = 'lobehub';
+const appId = 'ugsci';
 describe('ElectronIpcClient', () => {
   // Swallow unhandledRejection during timeout tests to avoid Vitest global capture
   const onUnhandled = (/* reason, promise */) => {};

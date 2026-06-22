@@ -1,8 +1,10 @@
 'use client';
 
 import { Avatar, Block, Button, Flexbox, Skeleton, Text } from '@lobehub/ui';
-import React, { memo } from 'react';
+import { LogIn } from 'lucide-react';
+import React, { memo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 
 import AuthCard from '@/features/AuthCard';
 import { useSession } from '@/libs/better-auth/auth-client';
@@ -16,6 +18,7 @@ interface LoginConfirmProps {
 }
 
 const LoginConfirmClient = memo<LoginConfirmProps>(({ uid, clientMetadata }) => {
+  const navigate = useNavigate();
   const { t } = useTranslation('oauth'); // Assuming translations are in 'oauth'
 
   const clientDisplayName = clientMetadata?.clientName || 'the application';
@@ -31,6 +34,15 @@ const LoginConfirmClient = memo<LoginConfirmProps>(({ uid, clientMetadata }) => 
   const descriptionText = t('login.description', { clientName: clientDisplayName });
   const buttonText = t('login.button'); // Or "Continue"
 
+  // UGS-MODIFY: redirect unauthenticated users to sign-in page
+  const consentUrl = window.location.pathname + window.location.search;
+  const signInUrl = `/signin?callbackUrl=${encodeURIComponent(consentUrl)}`;
+
+  useEffect(() => {
+    if (isUserStateInit || isPending) return;
+    navigate(signInUrl, { replace: true });
+  }, [isUserStateInit, isPending]);
+
   return (
     <Flexbox gap={16} width={'min(100%,400px)'}>
       <OAuthApplicationLogo
@@ -42,29 +54,37 @@ const LoginConfirmClient = memo<LoginConfirmProps>(({ uid, clientMetadata }) => 
         subtitle={descriptionText}
         title={titleText}
         footer={
-          <form
-            action="/oidc/consent"
-            method="post"
-            style={{ width: '100%' }}
-            onSubmit={() => setIsLoading(true)}
-          >
-            {/* Adjust action URL */}
-            <input name="uid" type="hidden" value={uid} />
-            <input name="choice" type="hidden" value={'accept'} />
-            {/* Single confirmation button */}
+          isUserStateInit ? (
+            <form
+              action="/oidc/consent"
+              method="post"
+              style={{ width: '100%' }}
+              onSubmit={() => setIsLoading(true)}
+            >
+              <input name="uid" type="hidden" value={uid} />
+              <input name="consent" type="hidden" value="accept" />
+              <Button
+                block
+                htmlType="submit"
+                loading={isLoading}
+                name="confirm"
+                size="large"
+                type="primary"
+              >
+                {buttonText}
+              </Button>
+            </form>
+          ) : (
             <Button
               block
-              disabled={!isUserStateInit}
-              htmlType="submit"
-              loading={isLoading}
-              name="consent"
+              icon={LogIn}
               size="large"
               type="primary"
-              value="accept"
+              onClick={() => navigate(signInUrl)}
             >
-              {buttonText}
+              {t('signIn', 'Sign in')}
             </Button>
-          </form>
+          )
         }
       >
         <Block padding={16} variant={'outlined'}>

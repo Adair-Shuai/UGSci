@@ -291,15 +291,21 @@ const MarketDetailContent: FC<{ identifier: string; type: UgsMarketType }> = ({ 
         message.success(t('assistants.addAgentSuccess', { defaultValue: '添加成功' }));
         if (result?.agentId) navigate(`/agent/${result.agentId}`);
       } else if (type === 'mcp') {
-        await installMCPPlugin(identifier);
-        // 安装成功后同步创建 connector 记录，确保能力中心列表正确展示
-        try {
-          const toolStore = useToolStore.getState();
-          await toolStore.syncPluginTools(identifier);
-        } catch (syncErr) {
-          console.warn('[UgsMarket] MCP connector 同步失败:', syncErr);
+        const installResult = await installMCPPlugin(identifier);
+        if (installResult === true) {
+          try {
+            const toolStore = useToolStore.getState();
+            await toolStore.syncPluginTools(identifier);
+            message.success('MCP 安装成功');
+          } catch (syncErr) {
+            console.warn('[UgsMarket] MCP connector 同步失败:', syncErr);
+            message.warning('MCP 已安装，但同步能力列表失败，请稍后重试');
+          }
+        } else if (installResult === false) {
+          message.info('请完成配置以继续安装');
+        } else {
+          message.error('MCP 安装失败，请检查日志或重试');
         }
-        message.success('MCP 安装成功');
       } else if (type === 'skill') {
         await agentSkillService.importFromMarket(identifier);
         message.success('技能安装成功');

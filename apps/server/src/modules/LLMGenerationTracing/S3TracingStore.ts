@@ -11,8 +11,10 @@ import debug from 'debug';
 
 import { FileS3 } from '@/server/modules/S3';
 
-const compressZstd = promisify(zstdCompress);
-const decompressZstd = promisify(zstdDecompress);
+// UGS-COMPAT: zstd requires Node v22+ or --experimental-zstd flag
+const hasZstd = typeof zstdCompress === 'function';
+const compressZstd = hasZstd ? promisify(zstdCompress) : async (v) => v;
+const decompressZstd = hasZstd ? promisify(zstdDecompress) : async (v) => v;
 
 const log = debug('lobe-server:llm-generation-tracing:s3');
 

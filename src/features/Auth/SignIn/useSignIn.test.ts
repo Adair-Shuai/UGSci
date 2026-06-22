@@ -48,7 +48,7 @@ vi.mock('@/libs/better-auth/utils/client', () => ({
 }));
 
 vi.mock('@lobechat/business-const', () => ({
-  BRANDING_NAME: 'LobeHub',
+  BRANDING_NAME: 'UGSci',
   ENABLE_BUSINESS_FEATURES: false,
 }));
 
@@ -417,7 +417,7 @@ describe('useSignIn', () => {
         await result.current.handleSocialSignIn('google');
       });
 
-      expect(localStorage.getItem('lobehub:auth:last-provider:v1')).toBe('google');
+      expect(localStorage.getItem('ugsci:auth:last-provider:v1')).toBe('google');
     });
   });
 
@@ -487,13 +487,13 @@ describe('useSignIn', () => {
 
   describe('provider sorting', () => {
     it('should sort last used provider first', () => {
-      localStorage.setItem('lobehub:auth:last-provider:v1', 'github');
+      localStorage.setItem('ugsci:auth:last-provider:v1', 'github');
 
       const { result } = renderHook(() => useSignIn());
 
       expect(result.current.oAuthSSOProviders[0]).toBe('github');
 
-      localStorage.removeItem('lobehub:auth:last-provider:v1');
+      localStorage.removeItem('ugsci:auth:last-provider:v1');
     });
   });
 });

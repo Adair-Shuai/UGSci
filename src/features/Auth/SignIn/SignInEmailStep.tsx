@@ -233,23 +233,23 @@ export const SignInEmailStep = ({
             <>
               <Form.Item
                 name="password"
+                style={{ marginBottom: 12 }}
                 rules={[
                   { message: t('betterAuth.errors.passwordRequired'), required: true },
                 ]}
-                style={{ marginBottom: 12 }}
               >
                 <InputPassword
                   placeholder={t('betterAuth.signin.passwordPlaceholder')}
                   ref={passwordInputRef}
-                  onKeyDown={handlePasswordKeyDown}
                   size="large"
+                  style={{ padding: 6 }}
                   prefix={
                     <Icon
                       icon={Lock}
                       style={{ marginInline: 6 }}
                     />
                   }
-                  style={{ padding: 6 }}
+                  onKeyDown={handlePasswordKeyDown}
                 />
               </Form.Item>
               <Flexbox justify="flex-end" style={{ marginBottom: 12 }}>
@@ -261,7 +261,7 @@ export const SignInEmailStep = ({
           )}
           {/* UGS-MODIFY: unified auth buttons */}
           <Flexbox gap={8}>
-            <Button block htmlType="submit" loading={loading || userCheckLoading || codeLoading} size="large" type="primary" disabled={codeLoading}>
+            <Button block disabled={codeLoading} htmlType="submit" loading={loading || userCheckLoading || codeLoading} size="large" type="primary">
               {userCheckStatus === 'unchecked'
                 ? t('ugs.signin.checkUser', { defaultValue: '下一步' })
                 : userCheckStatus === 'exists'
@@ -270,9 +270,9 @@ export const SignInEmailStep = ({
             </Button>
             <Button
               block
+              disabled={codeLoading}
               icon={<Icon icon={MessageSquareCode} />}
               loading={codeLoading}
-              disabled={codeLoading}
               size="large"
               onClick={() => {
                 const emailValue = form.getFieldValue('email');

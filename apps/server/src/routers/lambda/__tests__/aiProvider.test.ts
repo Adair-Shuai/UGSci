@@ -21,9 +21,9 @@ vi.mock('@lobechat/business-const', async () => {
 
   return {
     ...actual,
-    BRANDING_PROVIDER: 'lobehub',
+    BRANDING_PROVIDER: 'ugsci',
     ENABLE_BUSINESS_FEATURES: true,
-    isOfficialProvider: (id: string) => id === 'lobehub',
+    isOfficialProvider: (id: string) => id === 'ugsci',
   };
 });
 
@@ -171,7 +171,7 @@ describe('aiProviderRouter', () => {
       await expect(
         caller.toggleProviderEnabled({
           enabled: false,
-          id: 'lobehub',
+          id: 'ugsci',
         }),
       ).rejects.toMatchObject({
         code: 'BAD_REQUEST',

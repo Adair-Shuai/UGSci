@@ -21,7 +21,7 @@ export const PHONE_REGEX = /^\+?[1-9]\d{6,14}$/;
  * - 其他 → 补 +86 前缀
  */
 export const normalizePhone = (raw: string): string => {
-  const trimmed = raw.trim().replace(/[\s-]/g, '');
+  const trimmed = raw.trim().replaceAll(/[\s-]/g, '');
   if (!trimmed) return trimmed;
   if (trimmed.startsWith('+')) return trimmed;
   if (CN_MOBILE_REGEX.test(trimmed)) return `${DEFAULT_COUNTRY_CODE}${trimmed}`;
@@ -80,12 +80,13 @@ export const SignInPhoneStep = ({
       >
         <Form.Item
           name="phone"
+          style={{ marginBottom: 12 }}
           rules={[
             { message: t('ugs.phoneSignin.phoneRequired', { defaultValue: '请输入手机号' }), required: true },
             {
               validator: (_, value) => {
                 if (!value) return Promise.resolve();
-                const trimmed = (value as string).trim().replace(/[\s-]/g, '');
+                const trimmed = (value as string).trim().replaceAll(/[\s-]/g, '');
                 // 接受：纯 11 位中国手机号，或已带国际区号的号码
                 if (CN_MOBILE_REGEX.test(trimmed) || PHONE_REGEX.test(trimmed)) return Promise.resolve();
                 return Promise.reject(
@@ -94,7 +95,6 @@ export const SignInPhoneStep = ({
               },
             },
           ]}
-          style={{ marginBottom: 12 }}
         >
           <Input
             addonBefore={DEFAULT_COUNTRY_CODE}
@@ -108,16 +108,16 @@ export const SignInPhoneStep = ({
         {otpSent && (
           <Form.Item
             name="code"
+            style={{ marginBottom: 12 }}
             rules={[
               { message: t('ugs.phoneSignin.codeRequired', { defaultValue: '请输入验证码' }), required: true },
               { len: 6, message: t('ugs.phoneSignin.codeLength', { defaultValue: '验证码为6位数字' }) },
             ]}
-            style={{ marginBottom: 12 }}
           >
             <Input
+              maxLength={6}
               placeholder={t('ugs.phoneSignin.codePlaceholder', { defaultValue: '6位验证码' })}
               size="large"
-              maxLength={6}
               style={{ padding: 6 }}
             />
           </Form.Item>
@@ -138,7 +138,7 @@ export const SignInPhoneStep = ({
                     })}
               </Text>
               {canResend && (
-                <Button loading={otpSending} onClick={handleSendOtp} size="small" type="link">
+                <Button loading={otpSending} size="small" type="link" onClick={handleSendOtp}>
                   {t('ugs.phoneSignin.resendBtn', { defaultValue: '重新发送' })}
                 </Button>
               )}
@@ -147,14 +147,14 @@ export const SignInPhoneStep = ({
         )}
 
         {!otpSent && (
-          <Button block loading={otpSending} onClick={handleSendOtp} size="large" type="primary">
+          <Button block loading={otpSending} size="large" type="primary" onClick={handleSendOtp}>
             {t('ugs.phoneSignin.sendCode', { defaultValue: '发送验证码' })}
           </Button>
         )}
       </Form>
 
       <Flexbox align="center" style={{ marginTop: 16 }}>
-        <Button onClick={onSwitchToEmail} type="link">
+        <Button type="link" onClick={onSwitchToEmail}>
           {t('ugs.phoneSignin.switchToEmail', { defaultValue: '使用邮箱登录' })}
         </Button>
       </Flexbox>

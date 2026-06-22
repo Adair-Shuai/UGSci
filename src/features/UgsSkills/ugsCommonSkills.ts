@@ -14,7 +14,7 @@
 // |-----------------------|-----------------|-----------------------------------|
 // | lobe-agent-browser    | Agent Browser   | 浏览器自动化（导航/表单/截图/爬取） |
 // | lobe-artifacts        | Artifacts       | 生成 SVG/HTML/React 交互式内容     |
-// | lobehub               | LobeHub         | 平台管理（agent/topic/plugin/bot） |
+// | ugsc                  | UGSci           | 平台管理（agent/topic/plugin/bot） |
 // | task                  | Task            | 任务管理与执行（CLI）              |
 
 /**
@@ -56,9 +56,9 @@ export const UGS_COMMON_SKILLS: UgsCommonSkillEntry[] = [
     identifier: 'lobe-agent-browser',
   },
   {
-    customDescription: 'LobeHub 平台管理，配置 agent / 知识库 / 插件 / 消息平台集成',
+    customDescription: 'UGSci 平台管理，配置 agent / 知识库 / 插件 / 消息平台集成',
     group: 'productivity',
-    identifier: 'lobehub',
+    identifier: 'ugsc',
   },
   // ===== 油气专业（占位，待 Lobe 新增油气 builtinSkill 后填充） =====
   // { identifier: 'lobe-pvt-analysis', group: 'oil-gas', customDescription: 'PVT 相态分析' },
