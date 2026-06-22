@@ -39,8 +39,8 @@ export interface SignInPhoneStepProps {
 }
 
 interface PhoneFormValues {
-  phone: string;
   code: string;
+  phone: string;
 }
 
 export const SignInPhoneStep = ({
