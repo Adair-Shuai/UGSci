@@ -165,3 +165,7 @@ docs/superpowers/
 .workbuddy/
 UGS_CUSTOMIZATIONS.md
 nul
+
+# Old release build artifacts
+release.old-*/
+electron-test-main.js

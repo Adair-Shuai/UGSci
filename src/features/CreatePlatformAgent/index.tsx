@@ -521,7 +521,7 @@ const CreatePlatformAgentModal = memo<CreatePlatformAgentModalProps>(
 
     return (
       <Modal
-        destroyOnClose
+        destroyOnHidden
         footer={renderFooter()}
         open={open}
         title={t('platformAgent.create.title')}

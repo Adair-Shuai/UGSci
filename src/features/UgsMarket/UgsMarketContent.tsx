@@ -8,33 +8,30 @@
 //
 // 卡片与详情 Modal 自建（轻量），点击卡片在弹窗内弹出二级 Modal 展示详情 + 安装按钮，
 // 不跳转到社区详情页，保持弹窗内闭环。
-import { Avatar, Block, Center, Flexbox, Icon, Input, Tag } from '@lobehub/ui';
+import { Avatar, Center, Flexbox, Icon, Input, Tag } from '@lobehub/ui';
 import { createModal } from '@lobehub/ui/base-ui';
-import { createStaticStyles } from 'antd-style';
 import { App, Button, Pagination, Skeleton } from 'antd';
+import { createStaticStyles } from 'antd-style';
+import debug from 'debug';
 import { Plus, Search } from 'lucide-react';
 import { type FC, memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useWorkspaceAwareNavigate } from '@/features/Workspace/useWorkspaceAwareNavigate';
-import { useCategory as useAssistantCategory } from '@/routes/(main)/community/(list)/agent/features/Category/useCategory';
-import { usePermission } from '@/hooks/usePermission';
 import { useCategory as useMcpCategory } from '@/hooks/useMCPCategory';
+import { usePermission } from '@/hooks/usePermission';
 import { useSkillCategory } from '@/hooks/useSkillCategory';
+import { useCategory as useAssistantCategory } from '@/routes/(main)/community/(list)/agent/features/Category/useCategory';
 import { agentSkillService } from '@/services/skill';
 import { useAgentStore } from '@/store/agent';
 import { useDiscoverStore } from '@/store/discover';
 import { useToolStore } from '@/store/tool';
-import {
-  AssistantCategory,
-  AssistantSorts,
-  McpCategory,
-  McpSorts,
-  SkillCategory,
-  SkillSorts,
-} from '@/types/discover';
+import type { AssistantCategory, McpCategory, SkillCategory } from '@/types/discover';
+import { AssistantSorts, McpSorts, SkillSorts } from '@/types/discover';
 
 import { type UgsMarketType } from './index';
+
+const marketLog = debug('ugs:market:install');
 
 const styles = createStaticStyles(({ css, cssVar }) => ({
   container: css`
@@ -43,169 +40,195 @@ const styles = createStaticStyles(({ css, cssVar }) => ({
     height: 70vh;
   `,
   sidebar: css`
-    flex-shrink: 0;
-    width: 200px;
     overflow-y: auto;
-    border-right: 1px solid ${cssVar.colorBorderSecondary};
-    padding-right: 12px;
+    flex-shrink: 0;
+
+    width: 200px;
+    padding-inline-end: 12px;
+    border-inline-end: 1px solid ${cssVar.colorBorderSecondary};
 
     &::-webkit-scrollbar {
       width: 4px;
     }
+
     &::-webkit-scrollbar-thumb {
-      background: ${cssVar.colorFillSecondary};
       border-radius: 2px;
+      background: ${cssVar.colorFillSecondary};
     }
   `,
   sidebarTitle: css`
-    color: ${cssVar.colorTextTertiary};
+    margin-block-end: 8px;
+    padding-block: 0;
+    padding-inline: 4px;
+
     font-size: 11px;
     font-weight: 600;
+    color: ${cssVar.colorTextTertiary};
     text-transform: uppercase;
-    margin-bottom: 8px;
-    padding: 0 4px;
   `,
   categoryItem: css`
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 10px;
-    border-radius: ${cssVar.borderRadius};
     cursor: pointer;
+
+    display: flex;
+    gap: 8px;
+    align-items: center;
+
+    padding-block: 6px;
+    padding-inline: 10px;
+    border-radius: ${cssVar.borderRadius};
+
     font-size: 13px;
     color: ${cssVar.colorTextSecondary};
+
     transition: all 0.15s ease;
 
     &:hover {
-      background: ${cssVar.colorFillTertiary};
       color: ${cssVar.colorText};
+      background: ${cssVar.colorFillTertiary};
     }
   `,
   categoryItemActive: css`
-    background: ${cssVar.colorPrimaryBg};
-    color: ${cssVar.colorPrimary};
     font-weight: 500;
+    color: ${cssVar.colorPrimary};
+    background: ${cssVar.colorPrimaryBg};
 
     &:hover {
-      background: ${cssVar.colorPrimaryBg};
       color: ${cssVar.colorPrimary};
+      background: ${cssVar.colorPrimaryBg};
     }
   `,
   categoryIcon: css`
-    flex-shrink: 0;
     display: flex;
+    flex-shrink: 0;
     align-items: center;
   `,
   categoryLabel: css`
-    flex: 1;
     overflow: hidden;
+    flex: 1;
     text-overflow: ellipsis;
     white-space: nowrap;
   `,
   main: css`
-    flex: 1;
+    overflow: hidden;
     display: flex;
+    flex: 1;
     flex-direction: column;
     gap: 12px;
-    overflow: hidden;
+
     min-width: 0;
   `,
   listScroll: css`
-    flex: 1;
     overflow-y: auto;
     display: grid;
     grid-template-columns: repeat(3, 1fr);
+    flex: 1;
     gap: 10px;
     align-content: start;
 
     &::-webkit-scrollbar {
       width: 4px;
     }
+
     &::-webkit-scrollbar-thumb {
-      background: ${cssVar.colorFillSecondary};
       border-radius: 2px;
+      background: ${cssVar.colorFillSecondary};
     }
   `,
   card: css`
     cursor: pointer;
+
     height: 100%;
+    padding: 12px;
     border: 1px solid ${cssVar.colorBorderSecondary};
     border-radius: ${cssVar.borderRadiusLG};
+
     background: ${cssVar.colorBgContainer};
-    padding: 12px;
+
     transition: all 0.15s ease;
 
     &:hover {
+      transform: translateY(-1px);
       border-color: ${cssVar.colorPrimary};
       box-shadow: ${cssVar.boxShadowTertiary};
-      transform: translateY(-1px);
     }
   `,
   cardTitle: css`
-    color: ${cssVar.colorText};
+    overflow: hidden;
+
     font-size: 13px;
     font-weight: 600;
-    overflow: hidden;
+    color: ${cssVar.colorText};
     text-overflow: ellipsis;
     white-space: nowrap;
   `,
   cardDesc: css`
-    color: ${cssVar.colorTextSecondary};
-    font-size: 11px;
-    line-height: 1.5;
-    margin-top: 6px;
     overflow: hidden;
     display: -webkit-box;
-    -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+
+    margin-block-start: 6px;
+
+    font-size: 11px;
+    line-height: 1.5;
+    color: ${cssVar.colorTextSecondary};
   `,
   cardMeta: css`
-    color: ${cssVar.colorTextTertiary};
-    font-size: 10px;
-    margin-top: 8px;
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
     align-items: center;
-    flex-wrap: wrap;
+
+    margin-block-start: 8px;
+
+    font-size: 10px;
+    color: ${cssVar.colorTextTertiary};
   `,
   pagination: css`
-    flex-shrink: 0;
     display: flex;
+    flex-shrink: 0;
     justify-content: center;
-    padding-top: 4px;
+    padding-block-start: 4px;
   `,
   loading: css`
     padding: 40px;
   `,
   detailSection: css`
-    margin-bottom: 16px;
+    margin-block-end: 16px;
   `,
   detailLabel: css`
-    color: ${cssVar.colorTextTertiary};
+    margin-block-end: 4px;
+
     font-size: 11px;
     font-weight: 600;
+    color: ${cssVar.colorTextTertiary};
     text-transform: uppercase;
-    margin-bottom: 4px;
   `,
   detailText: css`
-    color: ${cssVar.colorTextSecondary};
+    overflow-y: auto;
+
+    max-height: 200px;
+
     font-size: 13px;
     line-height: 1.6;
+    color: ${cssVar.colorTextSecondary};
     white-space: pre-wrap;
-    max-height: 200px;
-    overflow-y: auto;
   `,
   detailPrompt: css`
-    color: ${cssVar.colorTextSecondary};
+    overflow-y: auto;
+
+    max-height: 280px;
+    padding-block: 10px;
+    padding-inline: 12px;
+    border-radius: ${cssVar.borderRadius};
+
+    font-family: 'SF Mono', Menlo, monospace;
     font-size: 12px;
     line-height: 1.6;
+    color: ${cssVar.colorTextSecondary};
     white-space: pre-wrap;
-    max-height: 280px;
-    overflow-y: auto;
+
     background: ${cssVar.colorFillQuaternary};
-    padding: 10px 12px;
-    border-radius: ${cssVar.borderRadius};
-    font-family: 'SF Mono', 'Menlo', monospace;
   `,
 }));
 
@@ -221,12 +244,14 @@ const MarketCard: FC<{
 }> = ({ avatar, category, description, identifier, name, onClick, tags }) => {
   const { t } = useTranslation('discover');
   const categoryLabel = category
-    ? t(`category.assistant.${category}`, { defaultValue: t(`mcp.categories.${category}.name`, { defaultValue: category }) })
+    ? t(`category.assistant.${category}`, {
+        defaultValue: t(`mcp.categories.${category}.name`, { defaultValue: category }),
+      })
     : null;
 
   return (
     <div className={styles.card} onClick={onClick}>
-      <Flexbox align="center" gap={10} horizontal>
+      <Flexbox horizontal align="center" gap={10}>
         <Avatar avatar={avatar ?? identifier} shape="square" size={36} />
         <Flexbox flex={1} gap={2} style={{ minWidth: 0 }}>
           <span className={styles.cardTitle}>{name}</span>
@@ -242,16 +267,22 @@ const MarketCard: FC<{
         <span style={{ fontFamily: 'monospace' }}>
           {identifier.length > 20 ? identifier.slice(0, 20) + '…' : identifier}
         </span>
-        {tags && tags.slice(0, 2).map((tag) => (
-          <Tag key={tag} size="small" style={{ margin: 0, fontSize: 10 }}>{tag}</Tag>
-        ))}
+        {tags &&
+          tags.slice(0, 2).map((tag) => (
+            <Tag key={tag} size="small" style={{ margin: 0, fontSize: 10 }}>
+              {tag}
+            </Tag>
+          ))}
       </div>
     </div>
   );
 };
 
 // ===== 详情 Modal 内容（弹窗内二级 Modal，不跳转） =====
-const MarketDetailContent: FC<{ identifier: string; type: UgsMarketType }> = ({ identifier, type }) => {
+const MarketDetailContent: FC<{ identifier: string; type: UgsMarketType }> = ({
+  identifier,
+  type,
+}) => {
   const { t } = useTranslation(['discover', 'common']);
   const { message } = App.useApp();
   const navigate = useWorkspaceAwareNavigate();
@@ -298,7 +329,7 @@ const MarketDetailContent: FC<{ identifier: string; type: UgsMarketType }> = ({ 
             await toolStore.syncPluginTools(identifier);
             message.success('MCP 安装成功');
           } catch (syncErr) {
-            console.warn('[UgsMarket] MCP connector 同步失败:', syncErr);
+            marketLog('MCP connector 同步失败: %s', syncErr);
             message.warning('MCP 已安装，但同步能力列表失败，请稍后重试');
           }
         } else if (installResult === false) {
@@ -341,7 +372,7 @@ const MarketDetailContent: FC<{ identifier: string; type: UgsMarketType }> = ({ 
   return (
     <Flexbox gap={16} style={{ maxHeight: '70vh', overflowY: 'auto' }}>
       {/* 头部 */}
-      <Flexbox align="flex-start" gap={12} horizontal>
+      <Flexbox horizontal align="flex-start" gap={12}>
         <Avatar avatar={d.avatar ?? identifier} shape="square" size={56} />
         <Flexbox flex={1} gap={4} style={{ minWidth: 0 }}>
           <span style={{ color: 'var(--colorText)', fontSize: 18, fontWeight: 600 }}>
@@ -372,9 +403,11 @@ const MarketDetailContent: FC<{ identifier: string; type: UgsMarketType }> = ({ 
       {d.tags && d.tags.length > 0 && (
         <div className={styles.detailSection}>
           <div className={styles.detailLabel}>标签</div>
-          <Flexbox gap={6} horizontal wrap="wrap">
+          <Flexbox horizontal gap={6} wrap="wrap">
             {d.tags.map((tag: string) => (
-              <Tag key={tag} size="small">{tag}</Tag>
+              <Tag key={tag} size="small">
+                {tag}
+              </Tag>
             ))}
           </Flexbox>
         </div>
@@ -393,7 +426,7 @@ const MarketDetailContent: FC<{ identifier: string; type: UgsMarketType }> = ({ 
       {/* 统计信息 */}
       <div className={styles.detailSection}>
         <div className={styles.detailLabel}>统计</div>
-        <Flexbox gap={16} horizontal>
+        <Flexbox horizontal gap={16}>
           {d.installCount !== undefined && (
             <span style={{ color: 'var(--colorTextSecondary)', fontSize: 12 }}>
               安装：{d.installCount}
@@ -424,8 +457,8 @@ const MarketDetailContent: FC<{ identifier: string; type: UgsMarketType }> = ({ 
           disabled={!canCreate}
           icon={<Plus size={14} />}
           loading={installing}
-          onClick={handleInstall}
           type="primary"
+          onClick={handleInstall}
         >
           {type === 'agent' ? '添加专家' : type === 'mcp' ? '安装能力' : '安装技能'}
         </Button>
@@ -538,8 +571,8 @@ export const UgsMarketContent: FC<UgsMarketContentProps> = ({ type }) => {
         const isActive = activeCategory === item.key;
         return (
           <div
-            key={item.key}
             className={`${styles.categoryItem} ${isActive ? styles.categoryItemActive : ''}`}
+            key={item.key}
             onClick={() => {
               setActiveCategory(item.key);
               setPage(1);
@@ -603,8 +636,8 @@ export const UgsMarketContent: FC<UgsMarketContentProps> = ({ type }) => {
             identifier={item.identifier}
             key={item.identifier}
             name={item.title ?? item.name}
-            onClick={() => handleCardClick(item.identifier)}
             tags={item.tags}
+            onClick={() => handleCardClick(item.identifier)}
           />
         ))}
       </div>
@@ -619,11 +652,11 @@ export const UgsMarketContent: FC<UgsMarketContentProps> = ({ type }) => {
       <div className={styles.pagination}>
         <Pagination
           current={currentPage}
-          onChange={(p) => setPage(p)}
           pageSize={pageSize}
           showSizeChanger={false}
           size="small"
           total={totalCount}
+          onChange={(p) => setPage(p)}
         />
       </div>
     );
@@ -635,14 +668,14 @@ export const UgsMarketContent: FC<UgsMarketContentProps> = ({ type }) => {
       <div className={styles.main}>
         <Input
           allowClear
-          onChange={(e) => {
-            setKeyword(e.target.value);
-            setPage(1);
-          }}
           placeholder="搜索..."
           prefix={<Search size={14} />}
           size="middle"
           value={keyword}
+          onChange={(e) => {
+            setKeyword(e.target.value);
+            setPage(1);
+          }}
         />
         {renderList()}
         {renderPagination()}

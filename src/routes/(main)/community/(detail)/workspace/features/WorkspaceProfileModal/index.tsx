@@ -28,7 +28,7 @@ export const openWorkspaceProfileModal = ({
   return createModal({
     content: <Content user={user} onSuccess={onSuccess} />,
     footer: null,
-    maskClosable: true,
+    mask: { closable: true },
     styles: {
       content: { padding: 0 },
     },

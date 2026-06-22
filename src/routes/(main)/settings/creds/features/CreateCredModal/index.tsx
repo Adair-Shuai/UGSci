@@ -9,7 +9,7 @@ export const createCreateCredModal = (props?: CreateCredModalContentProps): Moda
   createModal({
     content: <CreateCredModalContent {...props} />,
     footer: null,
-    maskClosable: true,
+    mask: { closable: true },
     styles: {
       content: { paddingBlock: 16, paddingInline: 24 },
     },

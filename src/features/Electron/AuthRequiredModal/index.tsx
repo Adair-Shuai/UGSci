@@ -132,13 +132,13 @@ export const useAuthRequiredModal = () => {
             isSigningIn = next;
             instanceRef.current?.update?.({
               footer: renderFooter(),
-              maskClosable: !next,
+              mask: { closable: !next },
             } as Partial<ImperativeModalProps>);
           }}
         />
       ),
       footer: renderFooter(),
-      maskClosable: false,
+      mask: { closable: false },
       title: (
         <Flexbox horizontal align="center" gap={8}>
           <Icon icon={AlertCircle} />

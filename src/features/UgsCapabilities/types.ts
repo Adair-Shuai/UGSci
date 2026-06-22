@@ -27,6 +27,8 @@ export interface CapabilityCardData {
   category: CapabilityCategory;
   /** 连接状态 */
   connectionStatus: 'connected' | 'disconnected' | 'error' | 'untested' | 'planned';
+  /** 简述 */
+  description: string;
   /** 功能数量 */
   functionCount: number;
   /** 图标（emoji 或 URL） */
@@ -39,8 +41,6 @@ export interface CapabilityCardData {
   lobeTool?: LobeTool;
   /** 能力名称 */
   name: string;
-  /** 简述 */
-  description: string;
 }
 
 /**
@@ -100,3 +100,13 @@ export const CATEGORY_MAP: Record<CapabilityCategory, CategoryMeta> = CATEGORIES
   (acc, cat) => ({ ...acc, [cat.key]: cat }),
   {} as Record<CapabilityCategory, CategoryMeta>,
 );
+
+/** 能力中心分类展示顺序 */
+export const CATEGORY_ORDER: CapabilityCategory[] = [
+  'data-connection',
+  'engineering-calc',
+  'numerical-sim',
+  'optimization',
+  'knowledge-retrieval',
+  'system-collab',
+];

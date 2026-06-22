@@ -96,7 +96,7 @@ export const openRenameBranchModal = (options: {
   createModal({
     content: <RenameBranchContent currentName={options.currentName} onSubmit={options.onSubmit} />,
     footer: null,
-    maskClosable: true,
+    mask: { closable: true },
     styles: { header: { borderBottom: 'none' } },
     title: t('workingDirectory.renameBranchTitle', { ns: 'device' }),
     width: 'min(90vw, 480px)',

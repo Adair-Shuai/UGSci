@@ -9,7 +9,7 @@ export const createEditCredModal = (props: EditCredModalContentProps): ModalInst
   createModal({
     content: <EditCredModalContent {...props} />,
     footer: null,
-    maskClosable: true,
+    mask: { closable: true },
     styles: {
       content: { paddingBlock: 16, paddingInline: 24 },
     },

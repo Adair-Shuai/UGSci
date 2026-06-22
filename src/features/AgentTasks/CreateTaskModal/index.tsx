@@ -8,7 +8,7 @@ export const createTaskModal = (props?: CreateTaskContentProps): ModalInstance =
   createModal({
     content: <CreateTaskContent {...props} />,
     footer: null,
-    maskClosable: true,
+    mask: { closable: true },
     styles: {
       content: {
         overflow: 'hidden',

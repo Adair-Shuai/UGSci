@@ -67,7 +67,7 @@ export const createDatasetImportModal = ({
       />
     ),
     footer: renderFooter(),
-    maskClosable: false,
+    mask: { closable: false },
     title: t('dataset.import.title', { ns: 'eval' }),
     width: 720,
   });

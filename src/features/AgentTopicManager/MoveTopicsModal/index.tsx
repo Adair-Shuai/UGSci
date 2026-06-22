@@ -9,7 +9,7 @@ export const createMoveTopicsModal = (props: MoveTopicsContentProps): ModalInsta
   createModal({
     content: <MoveTopicsContent {...props} />,
     footer: null,
-    maskClosable: true,
+    mask: { closable: true },
     styles: {
       content: { overflow: 'hidden', padding: 0 },
     },

@@ -8,7 +8,7 @@ export const createMessengerLinkModal = (props: LinkModalContentProps): ModalIns
   createModal({
     content: <LinkModalContent {...props} />,
     footer: null,
-    maskClosable: true,
+    mask: { closable: true },
     title: null,
     width: 'min(90vw, 480px)',
   });

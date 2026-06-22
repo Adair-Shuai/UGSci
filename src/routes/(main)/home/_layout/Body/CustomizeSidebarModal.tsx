@@ -564,7 +564,7 @@ export const openCustomizeSidebarModal = (): ModalInstance =>
   createModal({
     content: <CustomizeSidebarContent />,
     footer: null,
-    maskClosable: true,
+    mask: { closable: true },
     title: t('navPanel.customizeSidebar', { ns: 'common' }),
     width: 360,
   });

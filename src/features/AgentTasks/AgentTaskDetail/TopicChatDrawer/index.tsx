@@ -208,8 +208,8 @@ const TopicChatDrawer = memo(() => {
       open={open}
       placement={'right'}
       push={false}
+      size={640}
       title={<Freeze frozen={!open}>{title}</Freeze>}
-      width={640}
       styles={{
         body: { padding: 0 },
         bodyContent: { height: '100%' },

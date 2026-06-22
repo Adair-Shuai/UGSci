@@ -98,7 +98,7 @@ export const openShareModal = ({
       </ShareDataProvider>
     ),
     footer: null,
-    maskClosable: true,
+    mask: { closable: true },
     onOpenChangeComplete: (open) => {
       if (!open) afterClose?.();
     },

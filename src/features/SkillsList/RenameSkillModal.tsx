@@ -96,7 +96,7 @@ export const openRenameSkillModal = (options: {
   createModal({
     content: <RenameSkillContent currentName={options.currentName} onSubmit={options.onSubmit} />,
     footer: null,
-    maskClosable: true,
+    mask: { closable: true },
     styles: { header: { borderBottom: 'none' } },
     title: t('workingPanel.skills.rename.title', { ns: 'chat' }),
     width: 'min(90vw, 480px)',

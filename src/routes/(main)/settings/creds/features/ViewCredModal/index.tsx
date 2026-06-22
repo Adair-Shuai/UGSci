@@ -9,7 +9,7 @@ export const createViewCredModal = (props: ViewCredModalContentProps): ModalInst
   createModal({
     content: <ViewCredModalContent {...props} />,
     footer: null,
-    maskClosable: true,
+    mask: { closable: true },
     styles: {
       content: { paddingBlock: 16, paddingInline: 24 },
     },

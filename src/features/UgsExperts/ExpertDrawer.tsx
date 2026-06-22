@@ -2,16 +2,16 @@
 // Tabs: Profile / Skills / Tools / Team / Workflows
 // 复用现有 toolStore（只读 connectorList）展示关联工具，不修改任何 store / 编辑器组件。
 // 视觉与能力中心统一：createStaticStyles + cssVar（深浅色自动适配）
-import { MessageSquarePlus } from 'lucide-react';
-import { createStaticStyles } from 'antd-style';
 import { Avatar, Button, Drawer, Empty, List, Steps, Tabs, Tag, Typography } from 'antd';
+import { createStaticStyles } from 'antd-style';
+import { MessageSquarePlus } from 'lucide-react';
 import { type FC, useMemo, useState } from 'react';
 
 import { useToolStore } from '@/store/tool';
 import { connectorSelectors } from '@/store/tool/slices/connector';
 
 import { selectTeamsByExpertSlug } from './expertSelectors';
-import { type ExpertMeta, EXPERT_CATEGORIES, UGS_EXPERTS } from './ugsExpertsData';
+import { EXPERT_CATEGORIES, type ExpertMeta, UGS_EXPERTS } from './ugsExpertsData';
 
 const { Paragraph, Text, Title } = Typography;
 
@@ -22,83 +22,83 @@ const styles = createStaticStyles(({ css, cssVar }) => ({
     }
   `,
   sectionLabel: css`
-    color: ${cssVar.colorTextTertiary};
     font-size: 12px;
+    color: ${cssVar.colorTextTertiary};
   `,
   sectionBody: css`
-    color: ${cssVar.colorTextSecondary};
+    margin-block-start: 4px;
     font-size: 13px;
-    margin-top: 4px;
+    color: ${cssVar.colorTextSecondary};
   `,
   name: css`
     color: ${cssVar.colorText} !important;
   `,
   title: css`
-    color: ${cssVar.colorPrimary};
     font-size: 13px;
+    color: ${cssVar.colorPrimary};
   `,
   description: css`
-    color: ${cssVar.colorTextSecondary};
+    margin-block: 4px 0;
     font-size: 13px;
-    margin-top: 4px;
-    margin-bottom: 0;
+    color: ${cssVar.colorTextSecondary};
   `,
   tag: css`
-    background: ${cssVar.colorFillTertiary};
     border-color: transparent;
     color: ${cssVar.colorTextSecondary};
+    background: ${cssVar.colorFillTertiary};
   `,
   skillNumber: css`
-    background: ${cssVar.colorPrimary};
-    color: #fff;
-    font-size: 12px;
     flex-shrink: 0;
+    font-size: 12px;
+    color: #fff;
+    background: ${cssVar.colorPrimary};
   `,
   skillText: css`
-    color: ${cssVar.colorText};
     font-size: 13px;
+    color: ${cssVar.colorText};
   `,
   listItem: css`
-    border-bottom: 1px dashed ${cssVar.colorBorderSecondary} !important;
+    border-block-end: 1px dashed ${cssVar.colorBorderSecondary} !important;
   `,
   toolName: css`
-    color: ${cssVar.colorText};
     font-size: 13px;
+    color: ${cssVar.colorText};
   `,
   toolMeta: css`
-    color: ${cssVar.colorTextTertiary};
+    margin-block-start: 4px;
     font-size: 11px;
-    margin-top: 4px;
+    color: ${cssVar.colorTextTertiary};
   `,
   teamName: css`
-    color: ${cssVar.colorText};
     font-size: 13px;
     font-weight: 500;
+    color: ${cssVar.colorText};
   `,
   teamDesc: css`
-    color: ${cssVar.colorTextSecondary};
+    margin-block: 6px;
+    margin-inline: 0;
     font-size: 12px;
-    margin: 6px 0;
+    color: ${cssVar.colorTextSecondary};
   `,
   workflowStepTitle: css`
-    color: ${cssVar.colorText};
     font-size: 13px;
+    color: ${cssVar.colorText};
   `,
   workflowStepDesc: css`
-    color: ${cssVar.colorTextTertiary};
     font-size: 12px;
+    color: ${cssVar.colorTextTertiary};
   `,
   emptyHint: css`
-    color: ${cssVar.colorTextTertiary};
     font-size: 12px;
+    color: ${cssVar.colorTextTertiary};
   `,
 }));
 
 interface ExpertDrawerProps {
   expert: ExpertMeta | null;
   loading?: boolean;
-  onClose?: () => void;
   onChat?: () => void;
+  onClose?: () => void;
   open: boolean;
 }
 
@@ -138,7 +138,14 @@ const ExpertDrawer: FC<ExpertDrawerProps> = ({ expert, loading, onClose, onChat,
   const profileTab = (
     <div style={{ padding: '4px 4px 16px' }}>
       <div style={{ alignItems: 'center', display: 'flex', gap: 14, marginBottom: 16 }}>
-        <Avatar size={56} style={{ background: 'var(--colorFillTertiary)', color: 'var(--colorPrimary)', fontSize: 30 }}>
+        <Avatar
+          size={56}
+          style={{
+            background: 'var(--colorFillTertiary)',
+            color: 'var(--colorPrimary)',
+            fontSize: 30,
+          }}
+        >
           {expert.avatar}
         </Avatar>
         <div>
@@ -163,7 +170,7 @@ const ExpertDrawer: FC<ExpertDrawerProps> = ({ expert, loading, onClose, onChat,
         <Text className={styles.sectionLabel}>技能标签</Text>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
           {expert.tags.map((tag) => (
-            <Tag key={tag} className={styles.tag}>
+            <Tag className={styles.tag} key={tag}>
               {tag}
             </Tag>
           ))}
@@ -177,6 +184,8 @@ const ExpertDrawer: FC<ExpertDrawerProps> = ({ expert, loading, onClose, onChat,
         </Text>
         <List
           dataSource={expert.skills}
+          size="small"
+          style={{ marginTop: 6 }}
           renderItem={(s) => (
             <List.Item className={styles.listItem} style={{ padding: '6px 0' }}>
               <Text className={styles.skillText}>
@@ -185,8 +194,6 @@ const ExpertDrawer: FC<ExpertDrawerProps> = ({ expert, loading, onClose, onChat,
               </Text>
             </List.Item>
           )}
-          size="small"
-          style={{ marginTop: 6 }}
         />
       </div>
     </div>
@@ -198,6 +205,7 @@ const ExpertDrawer: FC<ExpertDrawerProps> = ({ expert, loading, onClose, onChat,
       <Text className={styles.sectionLabel}>核心能力点</Text>
       <List
         dataSource={expert.skills}
+        style={{ marginTop: 8 }}
         renderItem={(s, i) => (
           <List.Item style={{ padding: '10px 0' }}>
             <div style={{ alignItems: 'center', display: 'flex', gap: 10, width: '100%' }}>
@@ -208,13 +216,12 @@ const ExpertDrawer: FC<ExpertDrawerProps> = ({ expert, loading, onClose, onChat,
             </div>
           </List.Item>
         )}
-        style={{ marginTop: 8 }}
       />
       <div style={{ marginTop: 16 }}>
         <Text className={styles.sectionLabel}>标签</Text>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
           {expert.tags.map((tag) => (
-            <Tag key={tag} color="blue">
+            <Tag color="blue" key={tag}>
               {tag}
             </Tag>
           ))}
@@ -229,13 +236,16 @@ const ExpertDrawer: FC<ExpertDrawerProps> = ({ expert, loading, onClose, onChat,
       <Text className={styles.sectionLabel}>关联能力 / 工具（来自能力中心）</Text>
       {matchedTools.length === 0 ? (
         <Empty
-          description={<span className={styles.emptyHint}>该专家为知识型专家，暂无关联外部工具</span>}
+          description={
+            <span className={styles.emptyHint}>该专家为知识型专家，暂无关联外部工具</span>
+          }
           image={Empty.PRESENTED_IMAGE_SIMPLE}
           style={{ marginTop: 24 }}
         />
       ) : (
         <List
           dataSource={matchedTools}
+          style={{ marginTop: 8 }}
           renderItem={(t) => (
             <List.Item style={{ padding: '12px 0' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
@@ -258,7 +268,6 @@ const ExpertDrawer: FC<ExpertDrawerProps> = ({ expert, loading, onClose, onChat,
               </div>
             </List.Item>
           )}
-          style={{ marginTop: 8 }}
         />
       )}
     </div>
@@ -277,6 +286,7 @@ const ExpertDrawer: FC<ExpertDrawerProps> = ({ expert, loading, onClose, onChat,
       ) : (
         <List
           dataSource={teams}
+          style={{ marginTop: 8 }}
           renderItem={(team) => (
             <List.Item style={{ padding: '12px 0', alignItems: 'flex-start' }}>
               <div style={{ width: '100%' }}>
@@ -288,8 +298,8 @@ const ExpertDrawer: FC<ExpertDrawerProps> = ({ expert, loading, onClose, onChat,
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                   {team.memberSlugs.map((slug) => (
                     <Tag
-                      key={slug}
                       color={slug === expert.slug ? 'blue' : 'default'}
+                      key={slug}
                       style={{ fontSize: 11, margin: 0 }}
                     >
                       {memberName(slug)}
@@ -299,7 +309,6 @@ const ExpertDrawer: FC<ExpertDrawerProps> = ({ expert, loading, onClose, onChat,
               </div>
             </List.Item>
           )}
-          style={{ marginTop: 8 }}
         />
       )}
     </div>
@@ -312,12 +321,12 @@ const ExpertDrawer: FC<ExpertDrawerProps> = ({ expert, loading, onClose, onChat,
       <Steps
         current={expert.workflowSteps.length - 1}
         direction="vertical"
+        size="small"
+        style={{ marginTop: 16 }}
         items={expert.workflowSteps.map((step, i) => ({
           description: <span className={styles.workflowStepDesc}>{`第 ${i + 1} 步`}</span>,
           title: <span className={styles.workflowStepTitle}>{step}</span>,
         }))}
-        size="small"
-        style={{ marginTop: 16 }}
       />
     </div>
   );
@@ -345,32 +354,32 @@ const ExpertDrawer: FC<ExpertDrawerProps> = ({ expert, loading, onClose, onChat,
   return (
     <Drawer
       className={styles.drawerBody}
+      open={open}
+      size={520}
       extra={
         <Button
           disabled={isPlanned}
           icon={<MessageSquarePlus size={14} />}
           loading={loading}
-          onClick={onChat}
           type="primary"
+          onClick={onChat}
         >
           进入对话
         </Button>
       }
-      onClose={onClose}
-      open={open}
       title={
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: 20 }}>{expert.avatar}</span>
           <span style={{ color: 'var(--colorText)' }}>{expert.name}</span>
         </div>
       }
-      width={520}
+      onClose={onClose}
     >
       <Tabs
         activeKey={activeTab}
         items={tabItems}
-        onChange={(k) => setActiveTab(k as TabKey)}
         size="small"
+        onChange={(k) => setActiveTab(k as TabKey)}
       />
     </Drawer>
   );

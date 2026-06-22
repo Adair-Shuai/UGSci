@@ -95,7 +95,7 @@ export const openAddWorkingDirModal = (options: {
   createModal({
     content: <AddWorkingDirContent placeholder={options.placeholder} onSubmit={options.onSubmit} />,
     footer: null,
-    maskClosable: true,
+    mask: { closable: true },
     styles: { header: { borderBottom: 'none' } },
     title: t('workingDirectory.addFolderTitle', { ns: 'device' }),
     width: 'min(90vw, 480px)',

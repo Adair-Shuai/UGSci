@@ -12,7 +12,7 @@ export const openChangelogModal = () =>
   createModal({
     content: <ChangelogModalContent />,
     footer: null,
-    maskClosable: true,
+    mask: { closable: true },
     styles: {
       content: { padding: 0 },
     },

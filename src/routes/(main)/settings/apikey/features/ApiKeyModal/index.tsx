@@ -9,7 +9,7 @@ export const createApiKeyModal = (props: ApiKeyModalContentProps): ModalInstance
   createModal({
     content: <ApiKeyModalContent {...props} />,
     footer: null,
-    maskClosable: true,
+    mask: { closable: true },
     styles: {
       content: { paddingBlock: 16, paddingInline: 24 },
     },

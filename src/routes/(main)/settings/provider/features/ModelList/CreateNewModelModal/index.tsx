@@ -26,7 +26,7 @@ export const createCreateNewModelModal = (
       />
     ),
     footer: <CreateNewModelFooter formRef={formRef} />,
-    maskClosable: true,
+    mask: { closable: true },
     title: t('providerModels.createNew.title', { ns: 'modelProvider' }),
     width: 'min(90vw, 640px)',
   });

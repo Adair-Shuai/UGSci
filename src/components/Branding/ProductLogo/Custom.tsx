@@ -48,6 +48,9 @@ const CustomTextLogo = memo<FlexboxProps & { size: number }>(({ size, style, ...
 
 const CustomImageLogo = memo<Omit<ImageProps, 'alt' | 'src'> & { size: number }>(
   ({ size, ...rest }) => {
+    // UGS-MODIFY: INC-004 二级兜底 — 即使上层的 hasLogoUrl 守卫被未来重构旁路，
+    // CustomImageLogo 自身也对空 src 免疫，直接 fallback 到 UGSciLogo。
+    if (!BRANDING_LOGO_URL) return <UGSciLogo size={size} />;
     return (
       <Image
         alt={BRANDING_NAME}

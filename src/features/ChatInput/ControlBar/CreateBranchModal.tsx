@@ -85,7 +85,7 @@ export const openCreateBranchModal = (options: {
   createModal({
     content: <CreateBranchContent onSubmit={options.onSubmit} />,
     footer: null,
-    maskClosable: true,
+    mask: { closable: true },
     styles: { header: { borderBottom: 'none' } },
     title: t('workingDirectory.createBranchTitle', { ns: 'device' }),
     width: 'min(90vw, 480px)',

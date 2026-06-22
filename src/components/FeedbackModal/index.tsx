@@ -21,7 +21,7 @@ export const openFeedbackModal = ({ initialValues }: OpenFeedbackModalOptions = 
   return createModal({
     content: <FeedbackContent initialValues={initialValues} />,
     footer: null,
-    maskClosable: true,
+    mask: { closable: true },
     title: t('feedback.title', { ns: 'common' }),
     width: 600,
   });

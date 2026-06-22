@@ -195,7 +195,7 @@ export const createSettingModal = (props: SettingContentProps): ModalInstance =>
   createModal({
     content: <SettingContent {...props} />,
     footer: null,
-    maskClosable: true,
+    mask: { closable: true },
 
     title: (
       <Flexbox horizontal align={'center'} gap={8}>

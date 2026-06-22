@@ -273,7 +273,7 @@ const RemoteAgentConfigCard = memo<RemoteAgentConfigCardProps>(
 
         {/* Change Device Modal */}
         <Modal
-          destroyOnClose
+          destroyOnHidden
           okText={t('platformAgentConfig.changeDevice')}
           open={changeDeviceOpen}
           title={t('platformAgentConfig.changeDevice')}

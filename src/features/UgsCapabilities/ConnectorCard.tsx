@@ -1,21 +1,28 @@
 // UGS-MODIFY: UGS-016 能力中心 — Connector 卡片（弹窗模式，LobeHub 设计语言）
+// UGS-MODIFY: UGS-XXX 分类映射重构 — 卡面显示推断分类标签
 import { Modal } from '@lobehub/ui/base-ui';
+import { Switch, Tag } from 'antd';
 import { createStaticStyles } from 'antd-style';
 import { ChevronRight, LinkIcon } from 'lucide-react';
 import { memo, useCallback, useState } from 'react';
-import { Switch, Tag } from 'antd';
 
 import ConnectorDetail from '@/features/Connectors/ConnectorDetail';
 import { useIsMobile } from '@/hooks/useIsMobile';
-import type { ConnectorWithTools } from '@/store/tool/slices/connector';
 import { useToolStore } from '@/store/tool';
+import type { ConnectorWithTools } from '@/store/tool/slices/connector';
+
+import { inferCategory } from './capabilityData';
+import { CATEGORY_MAP } from './types';
 
 const styles = createStaticStyles(({ css, cssVar }) => ({
   card: css`
     cursor: pointer;
+
     border: 1px solid ${cssVar.colorBorderSecondary};
     border-radius: ${cssVar.borderRadiusLG};
+
     background: ${cssVar.colorBgContainer};
+
     transition: all 0.2s ease;
 
     &:hover {
@@ -24,29 +31,40 @@ const styles = createStaticStyles(({ css, cssVar }) => ({
     }
   `,
   cardBody: css`
-    padding: 12px 16px;
+    padding-block: 12px;
+    padding-inline: 16px;
   `,
   connectorName: css`
-    color: ${cssVar.colorText};
     font-size: 14px;
     font-weight: 500;
+    color: ${cssVar.colorText};
   `,
   meta: css`
-    color: ${cssVar.colorTextTertiary};
     font-size: 12px;
+    color: ${cssVar.colorTextTertiary};
+  `,
+  categoryTag: css`
+    display: inline-flex;
+    gap: 2px;
+    align-items: center;
+
+    margin-block-start: 4px;
+
+    font-size: 11px;
+    color: ${cssVar.colorTextQuaternary};
   `,
   modalBody: css`
-    max-height: 60vh;
     overflow-y: auto;
+    max-height: 60vh;
   `,
   modalBodyMobile: css`
-    max-height: 70vh;
     overflow-y: auto;
+    max-height: 70vh;
   `,
   modalTitle: css`
     display: flex;
-    align-items: center;
     gap: 8px;
+    align-items: center;
   `,
 }));
 
@@ -58,6 +76,8 @@ const ConnectorCard = memo<ConnectorCardProps>(({ connector }) => {
   const isMobile = useIsMobile();
   const [modalOpen, setModalOpen] = useState(false);
   const updateConnector = useToolStore((s) => s.updateConnector);
+  const category = inferCategory(connector);
+  const categoryMeta = CATEGORY_MAP[category];
 
   const handleToggleEnabled = useCallback(
     (checked: boolean) => {
@@ -78,7 +98,7 @@ const ConnectorCard = memo<ConnectorCardProps>(({ connector }) => {
     <>
       <div className={styles.card} onClick={handleCardClick}>
         <div className={styles.cardBody} style={{ alignItems: 'center', display: 'flex', gap: 10 }}>
-          <LinkIcon size={16} color="var(--colorPrimary)" />
+          <LinkIcon color="var(--colorPrimary)" size={16} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ alignItems: 'center', display: 'flex', gap: 8 }}>
               <span className={styles.connectorName}>{connector.name}</span>
@@ -89,12 +109,15 @@ const ConnectorCard = memo<ConnectorCardProps>(({ connector }) => {
             <span className={styles.meta}>
               {toolCount > 0 ? `${toolCount} 个工具` : '无工具'} · {connector.sourceType}
             </span>
+            <div className={styles.categoryTag}>
+              {categoryMeta.icon} {categoryMeta.label}
+            </div>
           </div>
           {/* 启用/禁用开关（点击不触发弹窗） */}
           <div onClick={(e) => e.stopPropagation()}>
-            <Switch checked={connector.isEnabled} onChange={handleToggleEnabled} size="small" />
+            <Switch checked={connector.isEnabled} size="small" onChange={handleToggleEnabled} />
           </div>
-          <ChevronRight size={16} color="var(--colorTextQuaternary)" />
+          <ChevronRight color="var(--colorTextQuaternary)" size={16} />
         </div>
       </div>
 
@@ -103,9 +126,10 @@ const ConnectorCard = memo<ConnectorCardProps>(({ connector }) => {
         centered={!isMobile}
         footer={null}
         open={modalOpen}
+        width={isMobile ? '100%' : 720}
         title={
           <div className={styles.modalTitle}>
-            <LinkIcon size={16} color="var(--colorPrimary)" />
+            <LinkIcon color="var(--colorPrimary)" size={16} />
             <span style={{ color: 'var(--colorText)', fontSize: 16, fontWeight: 600 }}>
               {connector.name}
             </span>
@@ -114,7 +138,6 @@ const ConnectorCard = memo<ConnectorCardProps>(({ connector }) => {
             </Tag>
           </div>
         }
-        width={isMobile ? '100%' : 720}
         onCancel={() => setModalOpen(false)}
       >
         <div className={isMobile ? styles.modalBodyMobile : styles.modalBody}>

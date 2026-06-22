@@ -123,7 +123,7 @@ export const createTaskTemplateDetailModal = ({
   createModal({
     content: <TaskTemplateDetailContent template={template} onCreated={onCreated} />,
     footer: null,
-    maskClosable: true,
+    mask: { closable: true },
     styles: {
       content: { overflow: 'hidden', padding: 0 },
     },

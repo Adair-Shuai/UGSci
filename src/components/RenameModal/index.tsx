@@ -89,7 +89,7 @@ export const openRenameModal = ({
       <RenameModalContent defaultValue={defaultValue} description={description} onSave={onSave} />
     ),
     footer: null,
-    maskClosable: true,
+    mask: { closable: true },
     styles: {
       header: { borderBottom: 'none' },
     },

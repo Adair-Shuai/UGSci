@@ -1,9 +1,15 @@
 // UGS-MODIFY: UGS-016 预置 MCP 自动安装 hook
-import { pluginSelectors } from '@/store/tool/slices/plugin/selectors';
-import { useToolStore } from '@/store/tool';
+// UGS-MODIFY: UGS-021 console.log/warn → debug 包
+import debug from 'debug';
 import { useEffect, useRef } from 'react';
 
+import { useToolStore } from '@/store/tool';
+import { pluginSelectors } from '@/store/tool/slices/plugin/selectors';
+
 import { UGS_PRESET_MCPS } from './presetMcps';
+
+const log = debug('ugs:capabilities:presetMcp');
+const warn = debug('ugs:capabilities:presetMcp');
 
 /**
  * 自动安装预置 MCP Server（NeqSim + pyResToolbox）
@@ -33,9 +39,9 @@ export const useInitPresetMcps = () => {
         try {
           await installCustomPlugin(mcp);
           newlyInstalled.push(mcp.identifier);
-          console.log(`[UgsCapabilities] 预置 MCP 已安装: ${mcp.identifier}`);
+          log('预置 MCP 已安装: %s', mcp.identifier);
         } catch (err) {
-          console.warn(`[UgsCapabilities] 预置 MCP 安装失败: ${mcp.identifier}`, err);
+          warn('预置 MCP 安装失败: %s', mcp.identifier, err);
         }
       }
 
@@ -43,9 +49,9 @@ export const useInitPresetMcps = () => {
       for (const identifier of newlyInstalled) {
         try {
           await syncPluginTools(identifier);
-          console.log(`[UgsCapabilities] 预置 MCP connector 已同步: ${identifier}`);
+          log('预置 MCP connector 已同步: %s', identifier);
         } catch (err) {
-          console.warn(`[UgsCapabilities] 预置 MCP connector 同步失败: ${identifier}`, err);
+          warn('预置 MCP connector 同步失败: %s', identifier, err);
         }
       }
 
