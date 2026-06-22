@@ -23,9 +23,9 @@ on:
         default: true
         type: boolean
       build_linux:
-        description: 'Build Linux artifacts'
+        description: 'Build Linux artifacts (currently disabled)'
         required: true
-        default: true
+        default: false
         type: boolean
       version:
         description: 'Override desktop version (e.g. 1.2.3). Leave empty to auto-generate.'
