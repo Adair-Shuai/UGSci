@@ -21,7 +21,7 @@ import { buildOnboardingRedirectUrl, sanitizeRedirectPath } from '@/utils/onboar
 
 import { EMAIL_REGEX, USERNAME_REGEX } from './SignInEmailStep';
 
-const LAST_AUTH_PROVIDER_KEY = 'lobehub:auth:last-provider:v1';
+const LAST_AUTH_PROVIDER_KEY = 'ugsci:auth:last-provider:v1';
 
 type Step = 'email' | 'password' | 'emailCode';
 // UGS-MODIFY: UGS-005 add phone sign-in mode
@@ -50,7 +50,10 @@ export const useSignIn = () => {
   const [socialLoading, setSocialLoading] = useState<string | null>(null);
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
-  const [isSocialOnly, setIsSocialOnly] = useState(false);
+const [isSocialOnly, setIsSocialOnly] = useState(false);
+  type UserCheckStatus = 'unchecked' | 'exists' | 'exists_no_password' | 'not_found';
+  const [userCheckStatus, setUserCheckStatus] = useState<UserCheckStatus>('unchecked');
+  const [userCheckLoading, setUserCheckLoading] = useState(false);
   // UGS-MODIFY: UGS-005 phone sign-in state (default to 'email', phone code retained for future)
   const [mode, setMode] = useState<SignInMode>('email');
   const [otpSending, setOtpSending] = useState(false);
@@ -144,7 +147,7 @@ export const useSignIn = () => {
   };
 
   const handleCheckUser = async (values: Pick<SignInFormValues, 'email'>) => {
-    setLoading(true);
+    setUserCheckLoading(true);
     await trackLoginOrSignupClicked({ spm: 'signin.email_step.submit' });
 
     try {
@@ -159,39 +162,24 @@ export const useSignIn = () => {
       });
       const data: CheckUserResponseData = await response.json();
 
-      if (!data.exists) {
-        if (identifierType === 'username') {
-          message.error(t('betterAuth.errors.usernameNotRegistered'));
-          return;
-        }
-        // UGS-MODIFY: new user → prompt to use verification code instead of redirecting to /signup
-        setEmail(targetEmail);
-        message.info(
-          t('ugs.emailCode.newUserHint', { defaultValue: '该邮箱未注册，请使用验证码注册登录' }),
-        );
-        // Auto-switch to verification code flow for new users
-        await handleSendEmailOtp(targetEmail);
+      if (identifierType === 'username' && !data.exists) {
+        message.error(t('betterAuth.errors.usernameNotRegistered'));
         return;
       }
 
       setEmail(targetEmail);
-      if (data.hasPassword) {
-        setStep('password');
-        return;
+      if (!data.exists) {
+        setUserCheckStatus('not_found');
+      } else if (!data.hasPassword) {
+        setUserCheckStatus('exists_no_password');
+      } else {
+        setUserCheckStatus('exists');
       }
-
-      if (enableMagicLink) {
-        await handleSendMagicLink(targetEmail);
-        return;
-      }
-
-      // User has no password and magic link is disabled, they can only sign in via social
-      setIsSocialOnly(true);
     } catch (error) {
       console.error('Error checking user:', error);
       message.error(t('betterAuth.signin.error'));
     } finally {
-      setLoading(false);
+      setUserCheckLoading(false);
     }
   };
 
@@ -201,11 +189,13 @@ export const useSignIn = () => {
 
     try {
       const callbackUrl = searchParams.get('callbackUrl') || '/';
+      message.loading({ content: t('betterAuth.signin.signingIn', { defaultValue: '正在登录...' }), duration: 0 });
       const result = await signIn.email(
         { callbackURL: callbackUrl, email, password: values.password },
         {
           onError: (ctx) => {
             console.error('Sign in error:', ctx.error);
+            message.destroy();
             if (ctx.error.status === 403) {
               navigate(
                 `/verify-email?email=${encodeURIComponent(email)}&callbackUrl=${encodeURIComponent(callbackUrl)}`,
@@ -214,6 +204,7 @@ export const useSignIn = () => {
           },
           // callbackUrl targets the main app, outside this auth SPA — full page load required
           onSuccess: () => {
+            message.destroy();
             window.location.href = sanitizeRedirectPath(callbackUrl);
           },
         },
@@ -337,7 +328,7 @@ export const useSignIn = () => {
     }
   };
 
-  const handleVerifyOtp = async (phone: string, code: string) => {
+  const handleVerifyOtp = async (code: string, phone: string) => {
     setLoading(true);
     try {
       const callbackUrl = searchParams.get('callbackUrl') || '/';
@@ -498,7 +489,11 @@ export const useSignIn = () => {
     handleForgotPassword,
     handleGoToSignup,
     handleSignIn,
+    handlePasswordLogin,
     handleSocialSignIn,
+    handleResetUserExists,
+    userCheckStatus,
+    userCheckLoading,
     isSocialOnly,
     lastAuthProvider,
     loading,
@@ -524,3 +519,51 @@ export const useSignIn = () => {
     handleBackToEmailFromCode,
   };
 };
+  // UGS-MODIFY: password login from the unified email+password page
+  const handlePasswordLogin = async (password: string) => {
+    if (!email) return;
+    if (userCheckStatus !== 'exists') {
+      message.error(t('betterAuth.signin.error'));
+      return;
+    }
+    setLoading(true);
+    await trackLoginOrSignupClicked({ spm: 'signin.password_step.submit' });
+
+    try {
+      const callbackUrl = searchParams.get('callbackUrl') || '/';
+      message.loading({ content: t('betterAuth.signin.signingIn', { defaultValue: '正在登录...' }), duration: 0 });
+      const result = await signIn.email(
+        { callbackURL: callbackUrl, email, password },
+        {
+          onError: (ctx) => {
+            console.error('Sign in error:', ctx.error);
+            message.destroy();
+            if (ctx.error.status === 403) {
+              navigate(
+                `/verify-email?email=${encodeURIComponent(email)}&callbackUrl=${encodeURIComponent(callbackUrl)}`,
+              );
+            }
+          },
+          onSuccess: () => {
+            message.destroy();
+            window.location.href = sanitizeRedirectPath(callbackUrl);
+          },
+        },
+      );
+
+      if (result.error && result.error.status !== 403) {
+        message.error(result.error.message || t('betterAuth.signin.error'));
+      }
+    } catch (error) {
+      console.error('Sign in error:', error);
+      message.error(t('betterAuth.signin.error'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetUserExists = () => {
+    setUserCheckStatus('unchecked');
+    setEmail('');
+    setIsSocialOnly(false);
+  };

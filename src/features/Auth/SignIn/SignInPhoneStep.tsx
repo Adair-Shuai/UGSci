@@ -33,7 +33,7 @@ export interface SignInPhoneStepProps {
   loading: boolean;
   onSendOtp: (phone: string) => Promise<void>;
   onSwitchToEmail: () => void;
-  onVerify: (phone: string, code: string) => Promise<void>;
+  onVerify: (code: string, phone: string) => Promise<void>;
   otpSending: boolean;
   otpSent: boolean;
 }
@@ -76,7 +76,7 @@ export const SignInPhoneStep = ({
       <Form
         form={form}
         layout="vertical"
-        onFinish={(values) => onVerify(normalizePhone(values.phone), values.code)}
+        onFinish={(values) => onVerify(values.code, normalizePhone(values.phone))}
       >
         <Form.Item
           name="phone"
