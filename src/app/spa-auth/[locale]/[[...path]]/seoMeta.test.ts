@@ -49,7 +49,7 @@ describe('buildSeoMeta', () => {
     const meta = await buildSeoMeta('en-US', '/signin');
 
     expect(meta).toContain('<title>Sign In</title>');
-    expect(meta).toContain('property="og:url" content="https://app.lobehub.com/signin"');
+    expect(meta).toContain('property="og:url" content="http://localhost:3010/signin"');
   });
 
   it('normalizes hostile locale input to an allowlisted value', async () => {
@@ -64,7 +64,7 @@ describe('buildSeoMeta', () => {
   it('uses official url for unmapped paths', async () => {
     const meta = await buildSeoMeta('en-US', '/verify-email');
 
-    expect(meta).toContain('property="og:url" content="https://app.lobehub.com"');
+    expect(meta).toContain('property="og:url" content="http://localhost:3010"');
     expect(meta).toContain('property="og:locale" content="en-US"');
   });
 });

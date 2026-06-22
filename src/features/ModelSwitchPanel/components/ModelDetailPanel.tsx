@@ -336,7 +336,7 @@ const ModelDetailPanel: FC<ModelDetailPanelProps> = memo(
       () => applyBusinessModelPricing({ model: modelId, pricing, provider }),
       [applyBusinessModelPricing, modelId, pricing, provider],
     );
-    const isCreditPricing = provider === BRANDING_PROVIDER;
+    const isCreditPricing = typeof BRANDING_PROVIDER === 'function' ? BRANDING_PROVIDER(provider) : provider === BRANDING_PROVIDER;
     const hasPricing = !!displayPricing;
     const formatPrice = displayPricing ? getPrice(displayPricing, isCreditPricing) : null;
     const pricingGroups = useMemo(

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { BRANDING_PROVIDER } from '@lobechat/business-const';
 
 import { AsyncTaskStatus, AsyncTaskType } from '@/types/asyncTask';
 
@@ -224,14 +225,14 @@ describe('imageRouter', () => {
       const ctx = createMockCtx();
       const input = createDefaultInput({
         model: 'onboarding-image',
-        provider: 'lobehub',
+        provider: BRANDING_PROVIDER,
       });
 
       const caller = imageRouter.createCaller(ctx);
       const result = await caller.createImage(input);
 
       expect(result.success).toBe(true);
-      expect(mockResolveBusinessModelMapping).toHaveBeenCalledWith('lobehub', 'onboarding-image');
+      expect(mockResolveBusinessModelMapping).toHaveBeenCalledWith(BRANDING_PROVIDER, 'onboarding-image');
       expect(mockIsLobeHubModelAvailable).toHaveBeenCalledWith('gpt-image-1', 'image', {
         getUserEmail: expect.any(Function),
       });
@@ -248,7 +249,7 @@ describe('imageRouter', () => {
       const ctx = createMockCtx();
       const input = createDefaultInput({
         model: 'restricted-image-model',
-        provider: 'lobehub',
+        provider: BRANDING_PROVIDER,
       });
 
       const caller = imageRouter.createCaller(ctx);

@@ -169,6 +169,6 @@ describe('Desktop onboarding LoginStep', () => {
 
     expect(screen.queryByText('Authorization Successful')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Sign in Cloud' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Use self-hosted server' })).toBeInTheDocument();
+    // UGS-MODIFY: self-hosted server removed in UGSci fork
   });
 });

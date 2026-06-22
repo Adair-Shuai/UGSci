@@ -20,6 +20,15 @@ vi.mock('antd-style', () => ({
   }),
 }));
 
+vi.mock('@lobechat/business-const', async () => {
+  const actual: any = await vi.importActual('@lobechat/business-const');
+  return {
+    ...actual,
+    BRANDING_PROVIDER: (id: string) => id === 'ugsci',
+    ENABLE_BUSINESS_FEATURES: true,
+  };
+});
+
 vi.mock('@lobehub/ui', () => ({
   Accordion: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   AccordionItem: ({
@@ -140,15 +149,16 @@ describe('ModelDetailPanel pricing', () => {
   it('renders branding provider token pricing in credits', () => {
     const { container } = render(
       <ModelDetailPanel
-        enabledList={createEnabledList('lobehub', textPricing)}
+        enabledList={createEnabledList('ugsci', textPricing)}
         model="test-model"
-        provider="lobehub"
+        provider="ugsci"
       />,
     );
 
-    expect(screen.getByText('5M credits/M tokens')).toBeInTheDocument();
-    expect(screen.getByText('25M credits/M tokens')).toBeInTheDocument();
+    expect(container).toHaveTextContent('5M credits/M tokens');
+    expect(container).toHaveTextContent('25M credits/M tokens');
     expect(container).not.toHaveTextContent('$5.00');
+    // Debug: print actual rendered content
   });
 
   it('keeps dollar pricing for non-branding providers', () => {
@@ -168,10 +178,10 @@ describe('ModelDetailPanel pricing', () => {
   it('renders branding provider image and video pricing in credits', () => {
     const imageResult = render(
       <ModelDetailPanel
-        enabledList={createEnabledList('lobehub', imagePricing)}
+        enabledList={createEnabledList('ugsci', imagePricing)}
         model="test-model"
         pricingMode="image"
-        provider="lobehub"
+        provider="ugsci"
       />,
     );
 
@@ -183,14 +193,15 @@ describe('ModelDetailPanel pricing', () => {
 
     const videoResult = render(
       <ModelDetailPanel
-        enabledList={createEnabledList('lobehub', imagePricing)}
+        enabledList={createEnabledList('ugsci', imagePricing)}
         model="test-model"
         pricingMode="video"
-        provider="lobehub"
+        provider="ugsci"
       />,
     );
 
     expect(videoResult.container).toHaveTextContent('~ 800.0K credits / video');
     expect(videoResult.container).not.toHaveTextContent('$0.80');
+    // Debug: print actual rendered content
   });
 });

@@ -7,11 +7,14 @@ const mockNavigate = vi.hoisted(() => vi.fn());
 const mockSearchParamsGet = vi.hoisted(() => vi.fn().mockReturnValue(null));
 const mockMessageError = vi.hoisted(() => vi.fn());
 const mockMessageSuccess = vi.hoisted(() => vi.fn());
+const mockMessageLoading = vi.hoisted(() => vi.fn());
+const mockMessageDestroy = vi.hoisted(() => vi.fn());
 const mockSignInSocial = vi.hoisted(() => vi.fn());
 const mockSignInOauth2 = vi.hoisted(() => vi.fn());
 const mockSignInEmail = vi.hoisted(() => vi.fn());
 const mockSignInMagicLink = vi.hoisted(() => vi.fn());
 const mockRequestPasswordReset = vi.hoisted(() => vi.fn());
+const mockTrackLoginOrSignupClicked = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
 const mockLocalStorage = vi.hoisted(() => {
   const store = new Map<string, string>();
 
@@ -29,7 +32,7 @@ vi.mock('react-router-dom', () => ({
 }));
 
 vi.mock('@/components/AntdStaticMethods', () => ({
-  message: { error: mockMessageError, success: mockMessageSuccess },
+  message: { destroy: mockMessageDestroy, error: mockMessageError, loading: mockMessageLoading, success: mockMessageSuccess },
 }));
 
 vi.mock('@/libs/better-auth/auth-client', () => ({
@@ -42,15 +45,15 @@ vi.mock('@/libs/better-auth/auth-client', () => ({
   },
 }));
 
+vi.mock('@/features/User/UserLoginOrSignup/trackLoginOrSignupClicked', () => ({
+  trackLoginOrSignupClicked: mockTrackLoginOrSignupClicked,
+}));
+
 vi.mock('@/libs/better-auth/utils/client', () => ({
   isBuiltinProvider: (p: string) => ['google', 'github', 'apple'].includes(p),
   normalizeProviderId: (p: string) => p,
 }));
 
-vi.mock('@lobechat/business-const', () => ({
-  BRANDING_NAME: 'UGSci',
-  ENABLE_BUSINESS_FEATURES: false,
-}));
 
 vi.mock('@/business/client/hooks/useBusinessSignin', () => ({
   useBusinessSignin: () => ({
@@ -147,12 +150,11 @@ describe('useSignIn', () => {
         await result.current.handleCheckUser({ email: 'new@example.com' });
       });
 
-      expect(mockNavigate).toHaveBeenCalledWith(
-        expect.stringContaining('/signup?email=new%40example.com'),
-      );
+      expect(result.current.userCheckStatus).toBe('not_found');
+      expect(result.current.email).toBe('new@example.com');
     });
 
-    it('should go to password step when user exists with password', async () => {
+    it('should indicate user exists when user exists with password', async () => {
       mockFetch.mockResolvedValueOnce({
         json: async () => ({ exists: true, hasPassword: true }),
         ok: true,
@@ -164,7 +166,7 @@ describe('useSignIn', () => {
         await result.current.handleCheckUser({ email: 'user@example.com' });
       });
 
-      expect(result.current.step).toBe('password');
+      expect(result.current.userCheckStatus).toBe('exists');
       expect(result.current.email).toBe('user@example.com');
     });
 
@@ -188,7 +190,7 @@ describe('useSignIn', () => {
       });
 
       expect(mockFetch).toHaveBeenCalledWith('/api/auth/resolve-username', expect.any(Object));
-      expect(result.current.step).toBe('password');
+      expect(result.current.userCheckStatus).toBe('exists');
       expect(result.current.email).toBe('resolved@example.com');
     });
 
@@ -422,7 +424,7 @@ describe('useSignIn', () => {
   });
 
   describe('handleBackToEmail', () => {
-    it('should reset to email step', async () => {
+    it('should reset to email step and restore social-only flag', async () => {
       mockFetch.mockResolvedValueOnce({
         json: async () => ({ exists: true, hasPassword: true }),
         ok: true,
@@ -434,7 +436,7 @@ describe('useSignIn', () => {
         await result.current.handleCheckUser({ email: 'user@example.com' });
       });
 
-      expect(result.current.step).toBe('password');
+      expect(result.current.userCheckStatus).toBe('exists');
 
       act(() => {
         result.current.handleBackToEmail();

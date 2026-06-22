@@ -651,7 +651,7 @@ describe('mcpStore actions', () => {
         globalHelpers: desktopGlobalHelpers,
         cleanup,
       } = await bootstrapToolStoreWithDesktop(true);
-
+      
       const mockData = {
         items: [{ identifier: 'desktop-plugin', name: 'Desktop Plugin' }] as PluginItem[],
         categories: [],
