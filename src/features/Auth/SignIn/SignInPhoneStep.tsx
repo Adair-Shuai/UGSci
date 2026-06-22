@@ -1,7 +1,7 @@
 // UGS-MODIFY: UGS-005 phone number sign-in step component
-import { Alert, Button, Flexbox, Icon, Input, Text } from '@lobehub/ui';
+import { Button, Flexbox, Input, Text } from '@lobehub/ui';
 import { Form } from 'antd';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import AuthCard from '@/features/AuthCard';

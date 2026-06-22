@@ -1,10 +1,10 @@
 import { BRANDING_NAME } from '@lobechat/business-const';
-import { Alert, Button, Flexbox, Icon, Input, Skeleton, Text } from '@lobehub/ui';
+import { Alert, Button, Flexbox, Icon, Input, InputPassword, Skeleton, Text } from '@lobehub/ui';
 import { type FormInstance, type InputRef } from 'antd';
 import { Badge, Divider, Form } from 'antd';
 import { createStaticStyles } from 'antd-style';
 // UGS-MODIFY: email OTP — add MessageSquareCode icon for verification code button
-import { Mail, MessageSquareCode } from 'lucide-react';
+import { Lock, Mail, MessageSquareCode } from 'lucide-react';
 import { type CSSProperties, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -43,6 +43,10 @@ export interface SignInEmailStepProps {
   onCheckUser: (values: { email: string }) => Promise<void>;
   // UGS-MODIFY: email OTP send code handler
   onSendCode: (email: string) => Promise<void>;
+  onPasswordLogin: (password: string) => Promise<void>;
+  userCheckStatus: 'unchecked' | 'exists' | 'exists_no_password' | 'not_found';
+  userCheckLoading: boolean;
+  onResetUser: () => void;
   onSetPassword: () => void;
   onSocialSignIn: (provider: string) => void;
   serverConfigInit: boolean;
@@ -55,21 +59,62 @@ export const SignInEmailStep = ({
   isSocialOnly,
   lastAuthProvider,
   loading,
+  userCheckStatus,
+  userCheckLoading,
   oAuthSSOProviders,
   serverConfigInit,
   socialLoading,
   codeLoading,
   onCheckUser,
+  onPasswordLogin,
+  onResetUser,
   onSendCode,
   onSetPassword,
   onSocialSignIn,
 }: SignInEmailStepProps) => {
   const { t } = useTranslation('auth');
   const emailInputRef = useRef<InputRef>(null);
+  const passwordInputRef = useRef<any>(null);
+  const checkTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     emailInputRef.current?.focus();
   }, []);
+
+  // UGS-MODIFY: auto-check user on email blur
+  const handleEmailBlur = () => {
+    const emailValue = form.getFieldValue('email')?.trim();
+    if (!emailValue) return;
+    if (EMAIL_REGEX.test(emailValue) || USERNAME_REGEX.test(emailValue)) {
+      onCheckUser({ email: emailValue });
+    }
+  };
+
+  // UGS-MODIFY: when userCheckStatus becomes "exists", focus password field
+  useEffect(() => {
+    if (userCheckStatus === 'exists' && passwordInputRef.current) {
+      passwordInputRef.current.focus();
+    }
+  }, [userCheckStatus]);
+
+  const handlePasswordSubmit = () => {
+    const passwordValue = form.getFieldValue('password');
+    if (passwordValue) {
+      onPasswordLogin(passwordValue);
+    }
+  };
+
+  const handleEmailKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && userCheckStatus === 'exists') {
+      passwordInputRef.current?.focus();
+    }
+  };
+
+  const handlePasswordKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handlePasswordSubmit();
+    }
+  };
 
   const divider = (
     <Divider>
@@ -138,7 +183,18 @@ export const SignInEmailStep = ({
         <Form
           form={form}
           layout="vertical"
-          onFinish={(values) => onCheckUser(values as { email: string })}
+          onFinish={() => {
+            if (userCheckStatus === 'exists') {
+              handlePasswordSubmit();
+            } else if (userCheckStatus === 'unchecked') {
+              const emailValue = form.getFieldValue('email');
+              if (emailValue) onCheckUser({ email: emailValue });
+            } else {
+              // exists_no_password or not_found → send OTP directly
+              const emailValue = form.getFieldValue('email');
+              if (emailValue) onSendCode(emailValue);
+            }
+          }}
         >
           <Form.Item
             name="email"
@@ -174,15 +230,51 @@ export const SignInEmailStep = ({
               }}
             />
           </Form.Item>
-          {/* UGS-MODIFY: dual auth buttons — password login + verification code login */}
+          {/* UGS-MODIFY: password input, shown only when user exists */}
+          {userCheckStatus === 'exists' && (
+            <>
+              <Form.Item
+                name="password"
+                rules={[
+                  { message: t('betterAuth.errors.passwordRequired'), required: true },
+                ]}
+                style={{ marginBottom: 12 }}
+              >
+                <InputPassword
+                  placeholder={t('betterAuth.signin.passwordPlaceholder')}
+                  ref={passwordInputRef}
+                  onKeyDown={handlePasswordKeyDown}
+                  size="large"
+                  prefix={
+                    <Icon
+                      icon={Lock}
+                      style={{ marginInline: 6 }}
+                    />
+                  }
+                  style={{ padding: 6 }}
+                />
+              </Form.Item>
+              <Flexbox justify="flex-end" style={{ marginBottom: 12 }}>
+                <Button size="small" type="link" onClick={onSetPassword}>
+                  {t('betterAuth.signin.forgotPassword')}
+                </Button>
+              </Flexbox>
+            </>
+          )}
+          {/* UGS-MODIFY: unified auth buttons */}
           <Flexbox gap={8}>
-            <Button block htmlType="submit" loading={loading} size="large" type="primary">
-              {t('ugs.signin.passwordLogin', { defaultValue: '密码登录' })}
+            <Button block htmlType="submit" loading={loading || userCheckLoading || codeLoading} size="large" type="primary" disabled={codeLoading}>
+              {userCheckStatus === 'unchecked'
+                ? t('ugs.signin.checkUser', { defaultValue: '下一步' })
+                : userCheckStatus === 'exists'
+                  ? t('ugs.signin.passwordLogin', { defaultValue: '密码登录' })
+                  : t('ugs.signin.codeLoginRegister', { defaultValue: '验证码登录/注册' })}
             </Button>
             <Button
               block
               icon={<Icon icon={MessageSquareCode} />}
               loading={codeLoading}
+              disabled={codeLoading}
               size="large"
               onClick={() => {
                 const emailValue = form.getFieldValue('email');
@@ -198,9 +290,20 @@ export const SignInEmailStep = ({
                 onSendCode(emailValue);
               }}
             >
-              {t('ugs.signin.codeLogin', { defaultValue: '验证码登录' })}
+              {t('ugs.signin.codeLoginRegister', { defaultValue: '验证码登录/注册' })}
             </Button>
           </Flexbox>
+
+          {/* User status hint - different messages based on check result */}
+          {(userCheckStatus === 'exists_no_password' || userCheckStatus === 'not_found') && (
+            <Flexbox style={{ marginTop: 8 }}>
+              <div style={{ fontSize: 12, color: 'var(--ant-color-text-tertiary)', textAlign: 'center' }}>
+                {userCheckStatus === 'not_found'
+                  ? t('ugs.emailCode.newUserHint', { defaultValue: '该邮箱未注册，点击验证码登录/注册将自动注册' })
+                  : t('ugs.emailCode.noPasswordHint', { defaultValue: '该邮箱尚未设置密码，请使用验证码登录后设置' })}
+              </div>
+            </Flexbox>
+          )}
         </Form>
       )}
       {isSocialOnly && (
