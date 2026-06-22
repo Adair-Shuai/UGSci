@@ -35,7 +35,12 @@ vi.mock('@/components/AntdStaticMethods', () => ({
   message: { destroy: mockMessageDestroy, error: mockMessageError, loading: mockMessageLoading, success: mockMessageSuccess },
 }));
 
+const mockEmailOtpSendVerificationOtp = vi.hoisted(() => vi.fn());
+const mockPhoneNumberSendOtp = vi.hoisted(() => vi.fn());
+const mockPhoneNumberVerify = vi.hoisted(() => vi.fn());
 vi.mock('@/libs/better-auth/auth-client', () => ({
+  emailOtp: { sendVerificationOtp: mockEmailOtpSendVerificationOtp },
+  phoneNumber: { sendOtp: mockPhoneNumberSendOtp, verify: mockPhoneNumberVerify },
   requestPasswordReset: mockRequestPasswordReset,
   signIn: {
     email: mockSignInEmail,
@@ -139,8 +144,14 @@ describe('useSignIn', () => {
 
   describe('handleCheckUser', () => {
     it('should redirect to signup when user does not exist', async () => {
+      // First mock: handleCheckUser's check-user call
       mockFetch.mockResolvedValueOnce({
         json: async () => ({ exists: false }),
+        ok: true,
+      });
+      // Second mock: handleSendEmailOtp's inner check-user call (UGS-MODIFY: new auto-OTP flow)
+      mockFetch.mockResolvedValueOnce({
+        json: async () => ({ exists: false, hasPassword: false }),
         ok: true,
       });
 
