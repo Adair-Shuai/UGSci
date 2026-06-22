@@ -29,13 +29,13 @@ export const normalizePhone = (raw: string): string => {
 };
 
 export interface SignInPhoneStepProps {
-  loading: boolean;
-  otpSending: boolean;
-  otpSent: boolean;
   countdown: number;
+  loading: boolean;
   onSendOtp: (phone: string) => Promise<void>;
-  onVerify: (phone: string, code: string) => Promise<void>;
   onSwitchToEmail: () => void;
+  onVerify: (phone: string, code: string) => Promise<void>;
+  otpSent: boolean;
+  otpSending: boolean;
 }
 
 interface PhoneFormValues {
