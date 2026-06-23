@@ -17,7 +17,16 @@ let _client: any = null;
 
 function getClient() {
   if (!_client) {
-    const baseURL = electronSyncSelectors.remoteServerUrl(getElectronStoreState());
+    // UGS-MODIFY: cloud mode must NOT set baseURL — better-auth defaults to
+    // window.location.origin (app://renderer/), letting auth requests flow
+    // through BackendProxyProtocolManager to the correct cloud server.
+    // Setting baseURL to a raw http://localhost address bypasses the proxy
+    // and fails because no local server is listening.
+    const electronState = getElectronStoreState();
+    const mode = electronState?.dataSyncConfig?.storageMode;
+    const isCloud = mode === 'cloud';
+    const isLocalhost = electronState?.dataSyncConfig?.remoteServerUrl ? /localhost|127\.0\.0\.1|0\.0\.0\.0/.test(electronState.dataSyncConfig.remoteServerUrl) : false;
+    const baseURL = isCloud || isLocalhost ? undefined : electronSyncSelectors.remoteServerUrl(electronState);
 
     _client = createAuthClient({
       baseURL,

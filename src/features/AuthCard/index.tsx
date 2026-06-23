@@ -13,7 +13,7 @@ export interface AuthCardProps extends Omit<FlexboxProps, 'title'> {
 
 export const AuthCard = memo<AuthCardProps>(({ children, title, subtitle, footer, ...rest }) => {
   return (
-    <Flexbox width={'min(100%,440px)'} {...rest}>
+    <Flexbox width={'min(100%,600px)'} {...rest}>
       <Flexbox gap={16}>
         {title && (
           <Text fontSize={28} style={{ lineHeight: 1.4 }} weight={'bold'}>
