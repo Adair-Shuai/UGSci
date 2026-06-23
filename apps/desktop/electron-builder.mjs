@@ -225,6 +225,25 @@ const config = {
       // App will use fallback .icns icon on all macOS versions
       console.info(`⏭️  Skipping Assets.car (not found or copy failed)`);
     }
+
+    // UGS-MODIFY: ad-hoc sign the unsigned .app so macOS Gatekeeper no longer
+    // reports it as "damaged and can't be opened". Without an Apple Developer
+    // certificate (CSC_LINK absent), electron-builder emits a completely
+    // unsigned bundle which Gatekeeper quarantines. Ad-hoc signing
+    // (codesign --force --deep --sign -) attaches a local signature that lets
+    // the app launch; the "damaged" error from the unpacked bundle is resolved.
+    if (!hasAppleCertificate) {
+      const appBundle = path.join(
+        context.appOutDir,
+        `${context.packager.appInfo.productFilename}.app`,
+      );
+      try {
+        execSync(`codesign --force --deep --sign - "${appBundle}"`, { stdio: 'inherit' });
+        console.info('✅ Ad-hoc signed the unsigned macOS app bundle.');
+      } catch (signErr) {
+        console.warn('⚠️  Ad-hoc signing failed (non-critical):', signErr.message);
+      }
+    }
   },
   appId: 'com.ugsci.ugsci-desktop',
   productName: 'UGSci',
