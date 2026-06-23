@@ -186,6 +186,7 @@ const renderFooter = async ({
   }
   vi.doMock('@/store/serverConfig', () => ({
     useServerConfigStore: selectFromServerConfigStore,
+    featureFlagsSelectors: vi.fn(() => ({ enableCheckUpdates: false })),
   }));
   function selectFromUserStore(selector: (state: Record<string, unknown>) => unknown) {
     return selector(mockUserState);
