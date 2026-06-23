@@ -189,31 +189,37 @@ const config = {
     const assetsCarDest = path.join(resourcesPath, 'Assets.car');
 
     // Remove unused Electron Framework localizations to reduce app size
-    const frameworkResourcePath = path.join(
-      context.appOutDir,
-      `${context.packager.appInfo.productFilename}.app`,
-      'Contents',
-      'Frameworks',
-      'Electron Framework.framework',
-      'Versions',
-      'A',
-      'Resources',
-    );
-
-    try {
-      const entries = await fs.readdir(frameworkResourcePath);
-      await Promise.all(
-        entries.map(async (file) => {
-          if (!file.endsWith('.lproj')) return;
-
-          const lang = file.split('.')[0];
-          if (keepLanguages.has(lang)) return;
-
-          await fs.rm(path.join(frameworkResourcePath, file), { force: true, recursive: true });
-        }),
+    // UGS-MODIFY: only strip localizations when a real certificate is available
+    // — electron-builder re-signs the framework afterwards. Without a cert,
+    // stripping .lproj breaks the framework's pre-existing signature, causing
+    // macOS to report "damaged" instead of the milder "unidentified developer".
+    if (hasAppleCertificate) {
+      const frameworkResourcePath = path.join(
+        context.appOutDir,
+        `${context.packager.appInfo.productFilename}.app`,
+        'Contents',
+        'Frameworks',
+        'Electron Framework.framework',
+        'Versions',
+        'A',
+        'Resources',
       );
-    } catch {
-      // Non-critical: folder may not exist depending on packaging details
+
+      try {
+        const entries = await fs.readdir(frameworkResourcePath);
+        await Promise.all(
+          entries.map(async (file) => {
+            if (!file.endsWith('.lproj')) return;
+
+            const lang = file.split('.')[0];
+            if (keepLanguages.has(lang)) return;
+
+            await fs.rm(path.join(frameworkResourcePath, file), { force: true, recursive: true });
+          }),
+        );
+      } catch {
+        // Non-critical: folder may not exist depending on packaging details
+      }
     }
 
     try {
@@ -226,19 +232,40 @@ const config = {
       console.info(`⏭️  Skipping Assets.car (not found or copy failed)`);
     }
 
-    // UGS-MODIFY: ad-hoc sign the unsigned .app so macOS Gatekeeper no longer
-    // reports it as "damaged and can't be opened". Without an Apple Developer
-    // certificate (CSC_LINK absent), electron-builder emits a completely
-    // unsigned bundle which Gatekeeper quarantines. Ad-hoc signing
-    // (codesign --force --deep --sign -) attaches a local signature that lets
-    // the app launch; the "damaged" error from the unpacked bundle is resolved.
+    // UGS-MODIFY: ad-hoc sign each component individually. `--deep` fails on
+    // the Electron Framework ("bundle format is ambiguous"), leaving a broken
+    // signature that triggers the "damaged" error. By signing the framework
+    // version dir, helper apps, and main bundle separately, the app opens with
+    // just a right-click → Open (no xattr -cr needed).
     if (!hasAppleCertificate) {
       const appBundle = path.join(
         context.appOutDir,
         `${context.packager.appInfo.productFilename}.app`,
       );
+      const frameworksDir = path.join(appBundle, 'Contents', 'Frameworks');
+      const electronFrameworkVersion = path.join(
+        frameworksDir,
+        'Electron Framework.framework',
+        'Versions',
+        'A',
+      );
+
       try {
-        execSync(`codesign --force --deep --sign - "${appBundle}"`, { stdio: 'inherit' });
+        // 1. Sign Electron Framework by version dir (avoids "ambiguous" error)
+        execSync(`codesign --force --sign - "${electronFrameworkVersion}"`, {
+          stdio: 'inherit',
+        });
+        // 2. Sign helper .app bundles inside Frameworks
+        const dirEntries = await fs.readdir(frameworksDir);
+        for (const entry of dirEntries) {
+          if (entry.endsWith('.app')) {
+            execSync(`codesign --force --sign - "${path.join(frameworksDir, entry)}"`, {
+              stdio: 'inherit',
+            });
+          }
+        }
+        // 3. Sign main app bundle (subcomponents already signed above)
+        execSync(`codesign --force --sign - "${appBundle}"`, { stdio: 'inherit' });
         console.info('✅ Ad-hoc signed the unsigned macOS app bundle.');
       } catch (signErr) {
         console.warn('⚠️  Ad-hoc signing failed (non-critical):', signErr.message);
