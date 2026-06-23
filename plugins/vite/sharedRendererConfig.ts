@@ -245,6 +245,11 @@ export function sharedRendererDefine(options: { isElectron: boolean; isMobile: b
     '__MOBILE__': JSON.stringify(options.isMobile),
     '__TEST__': 'false',
     ...nextPublicDefine,
+    // UGS-MODIFY: default to disable auth so UGSci works without a server.
+    // Set NEXT_PUBLIC_DISABLE_AUTH=0 in .env to re-enable login.
+    'process.env.NEXT_PUBLIC_DISABLE_AUTH': JSON.stringify(
+      process.env.NEXT_PUBLIC_DISABLE_AUTH || '1',
+    ),
     // Keep a safe fallback so generic `process.env` access won't crash in browser runtime.
     'process.env': '{}',
   };
