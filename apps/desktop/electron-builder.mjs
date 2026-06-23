@@ -192,7 +192,8 @@ const config = {
     // UGS-MODIFY: only strip localizations when a real certificate is available
     // — electron-builder re-signs the framework afterwards. Without a cert,
     // stripping .lproj breaks the framework's pre-existing signature, causing
-    // macOS to report "damaged" instead of the milder "unidentified developer".
+    // macOS to report "已损坏" (damaged). We preserve lproj files so the
+    // app shows "unidentified developer" instead — usable via right-click → Open.
     if (hasAppleCertificate) {
       const frameworkResourcePath = path.join(
         context.appOutDir,
@@ -232,45 +233,14 @@ const config = {
       console.info(`⏭️  Skipping Assets.car (not found or copy failed)`);
     }
 
-    // UGS-MODIFY: ad-hoc sign each component individually. `--deep` fails on
-    // the Electron Framework ("bundle format is ambiguous"), leaving a broken
-    // signature that triggers the "damaged" error. By signing the framework
-    // version dir, helper apps, and main bundle separately, the app opens with
-    // just a right-click → Open (no xattr -cr needed).
-    if (!hasAppleCertificate) {
-      const appBundle = path.join(
-        context.appOutDir,
-        `${context.packager.appInfo.productFilename}.app`,
-      );
-      const frameworksDir = path.join(appBundle, 'Contents', 'Frameworks');
-      const electronFrameworkVersion = path.join(
-        frameworksDir,
-        'Electron Framework.framework',
-        'Versions',
-        'A',
-      );
-
-      try {
-        // 1. Sign Electron Framework by version dir (avoids "ambiguous" error)
-        execSync(`codesign --force --sign - "${electronFrameworkVersion}"`, {
-          stdio: 'inherit',
-        });
-        // 2. Sign helper .app bundles inside Frameworks
-        const dirEntries = await fs.readdir(frameworksDir);
-        for (const entry of dirEntries) {
-          if (entry.endsWith('.app')) {
-            execSync(`codesign --force --sign - "${path.join(frameworksDir, entry)}"`, {
-              stdio: 'inherit',
-            });
-          }
-        }
-        // 3. Sign main app bundle (subcomponents already signed above)
-        execSync(`codesign --force --sign - "${appBundle}"`, { stdio: 'inherit' });
-        console.info('✅ Ad-hoc signed the unsigned macOS app bundle.');
-      } catch (signErr) {
-        console.warn('⚠️  Ad-hoc signing failed (non-critical):', signErr.message);
-      }
-    }
+    // UGS-MODIFY: Do NOT ad-hoc sign when there's no Apple certificate.
+    // On modern macOS (26+), ad-hoc signing without hardened runtime also
+    // triggers "已损坏" (damaged). Preserving Electron Framework's original
+    // pre-signature and not deleting .lproj files (guarded above) yields
+    // the milder "unidentified developer" notice that users can bypass
+    // via right-click → Open.
+    // Do nothing here — electron-builder's identity=null + Gatekeeper's
+    // natural unsigned-app flow is the correct behavior without a cert.
   },
   appId: 'com.ugsci.ugsci-desktop',
   productName: 'UGSci',
