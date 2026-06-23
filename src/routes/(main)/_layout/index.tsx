@@ -59,7 +59,7 @@ const Layout: FC = () => {
           {isDesktop && <OverlayMessageDispatcher />}
           {showCloudPromotion && <CloudBanner />}
         </Suspense>
-        {isDesktop && <AuthRequiredModal />}
+        {isDesktop && process.env.NEXT_PUBLIC_DISABLE_AUTH !== '1' && <AuthRequiredModal />}
         {isDesktop && <ZoomHUD />}
 
         <Suspense fallback={null}>{isDesktop && <TitleBar />}</Suspense>

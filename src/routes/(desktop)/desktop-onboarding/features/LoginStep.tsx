@@ -26,8 +26,9 @@ const LoginStep = memo<LoginStepProps>(({ onBack, onNext }) => {
 
   const isAuthed = !!dataSyncConfig.active && dataSyncConfig.storageMode === 'cloud';
 
-  // If user is not authenticated, redirect immediately to /signin (no Cloud UI flash)
-  if (!isAuthed) {
+  // UGS-MODIFY: skip redirect when auth is disabled
+  const isAuthDisabled = process.env.NEXT_PUBLIC_DISABLE_AUTH === '1';
+  if (!isAuthed && !isAuthDisabled) {
     const cbUrl = encodeURIComponent(window.location.origin + '/');
     return <Navigate replace to={`/signin?callbackUrl=${cbUrl}`} />;
   }

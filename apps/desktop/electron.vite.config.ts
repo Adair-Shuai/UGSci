@@ -334,6 +334,10 @@ export default defineConfig({
     define: {
       ...sharedRendererDefine({ isMobile: false, isElectron: true }),
       __MAIN_VERSION__: JSON.stringify(desktopPackageJson.version),
+      // UGS-MODIFY: when 1, skip auth entirely so users don't need a server
+      'process.env.NEXT_PUBLIC_DISABLE_AUTH': JSON.stringify(
+        process.env.NEXT_PUBLIC_DISABLE_AUTH || '1',
+      ),
     },
     optimizeDeps: sharedOptimizeDeps,
     plugins: [

@@ -51,6 +51,14 @@
 | UGS-015c | 2026-06-18 | new-file+modify | `apps/server/src/services/file/impls/local.ts`（新增），`apps/server/src/services/file/impls/index.ts`（修改）                                                                                                                | 新增 `LocalFileImpl`（node:fs 本地存储），`createFileServiceModule` 检测 S3 四环境变量齐全才用 S3，否则 fallback 到本地，修复本地开发 "S3 environment variables are not set" 错误                                                                                                                                                       | 低      |
 | UGS-018  | 2026-06-18 | new-file        | `LESSONS_LEARNED.md`                                                                                                                                                                                                 | 事故复盘与规避清单文档：记录 INC-001（agents 表级联删除误判）、INC-002（lucide-react 导出未验证）、INC-003（菜单顺序修改位置误判）；AGENTS.md 顶部加必读指引                                                                                                                                                                                             | 无      |
 
+| UGS-022  | 2026-06-23 | new-file+modify | `CROSS_REFERENCE.md`（新增），`ARCHITECTURE.md`（修改），`AGENTS.md`（修改） | 系统架构更新：①新增 CROSS_REFERENCE.md 函数/代码/功能交叉引用文档；②ARCHITECTURE.md 新增第 12 节 UGS 定制层架构（Feature 矩阵、品牌体系、认证定制、桌面构建、内置 Agent、配套文档索引）；③AGENTS.md 新增 CROSS_REFERENCE.md 查阅规则 | 无（新文件） |
+| UGS-021  | 2026-06-22 | modify          | `src/features/UgsCapabilities/useInitPresetMcps.ts`, `src/features/UgsMarket/UgsMarketContent.tsx` | console.log/warn 替换为 debug 包：useInitPresetMcps 中 2 处 log + 2 处 warn 改用 debug (ugs:capabilities:presetMcp)；UgsMarketContent 中 1 处 warn 改用 debug (ugs:market:install) | 低      |
+| UGS-020  | 2026-06-22 | modify          | `src/components/Branding/ProductLogo/Custom.tsx` | CustomImageLogo 增加 BRANDING_LOGO_URL 为空时的二级兜底（fallback UGSciLogo） | 低      |
+| UGS-021b | 2026-06-23 | modify          | `src/libs/better-auth/auth-client.desktop.ts` | 补 emailOTPClient 和 phoneNumberClient 插件导出，修复 rolldown 构建失败 | 中      |
+| UGS-022b | 2026-06-23 | modify          | `src/spa/router/desktopRouter.config.tsx`, `src/spa/router/desktopRouter.config.desktop.tsx`, `src/routes/(desktop)/desktop-onboarding/features/LoginStep.tsx`, `src/features/Electron/AuthRequiredModal/index.tsx`, `src/features/Auth/SignIn/useSignIn.ts`, `packages/locales/src/default/auth.ts`, `locales/en-US/auth.json`, `locales/zh-CN/auth.json`, `src/services/electron/remoteServer.ts`, `src/store/electron/actions/sync.ts` | 桌面端登录对齐：补齐 desktopRouter 缺失的Auth路由（verify-email/reset-password/set-password/auth-error）；登录流程重构（LoginStep/AuthRequiredModal 大幅简化）；useSignIn 共享邮箱 OTP 逻辑；新增 36 个 UGS 翻译键；远程服务配置 + Electron sync 改进 | 中      |
+| UGS-023  | 2026-06-23 | new-file        | `CROSS_REFERENCE.md` | 新增跨模块引用文档 | 无（新文件） |
+
+
 ## 临时 Workaround（不提交 git，仅记录）
 
 | 日期         | 问题                        | 处理方式                                                                                            |
@@ -79,3 +87,31 @@
 **问题：** LobeHub 有两个 SPA 入口 ——`index.html`（主应用，`entry.web.tsx` → `desktopRoutes`）和 `index.auth.html`（auth 页面，`entry.auth.tsx` → `authRoutes`）。生产环境 Next.js 按路径自动分流，但 vite dev 模式下只有一个 dev server，默认所有路由返回 `index.html`，导致 `/signin` 等路由在客户端找不到匹配 → 404。
 
 **修复：** 在 `vite.config.ts` 添加 `ugs-auth-html-router` 中间件插件，拦截 auth 路由（`/signin`, `/signup`, `/verify-email`, `/reset-password`, `/auth-error`, `/market-auth-callback`, `/oauth/*`），返回 `index.auth.html` 的内容（经 `transformIndexHtml` 注入 HMR client）。API/trpc/oidc/webapi 和静态资源请求不受影响。
+
+### UGS-023: 桌面端免认证登录
+
+**目标**：桌面客户端用户无需登录即可直接使用，无需后端服务器。
+
+**实现方式**：
+- 新增 `NEXT_PUBLIC_DISABLE_AUTH` 环境变量（默认 `1`）
+- 当值为 `1` 时，路由层跳过 `AuthShell` 包装，直接渲染子页面
+- 用户打开客户端直接进入主界面，无需访问登录页
+- 将值设为 `0` 或不设置可恢复登录流程
+
+**配置文件**：
+- `.env.desktop` — `NEXT_PUBLIC_DISABLE_AUTH=1`（桌面端默认）
+- `apps/desktop/electron.vite.config.ts` — renderer define 中注入编译常量
+
+**路由配置**：
+- `src/spa/router/desktopRouter.config.tsx` — 条件式选择 `AuthShell` 或空 `Suspense`
+- `src/spa/router/desktopRouter.config.desktop.tsx` — 同上（同步维护）
+
+**涉及文件**：
+- `.env.desktop`
+- `apps/desktop/electron.vite.config.ts`
+- `src/spa/router/desktopRouter.config.tsx`
+- `src/spa/router/desktopRouter.config.desktop.tsx`
+
+**验证方式**：
+- 桌面端构建后打开应用，应直接进入主界面，无登录页
+- 运行桌面路由同步测试：`bunx vitest run --silent='passed-only' 'src/spa/router/desktopRouter.sync.test.tsx'`

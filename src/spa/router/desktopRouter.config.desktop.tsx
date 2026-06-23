@@ -646,15 +646,24 @@ export const sharedMainAreaChildren: RouteObject[] = [
 
 // Desktop router configuration — all sync imports for Electron local build
 export const desktopRoutes: RouteObject[] = [
-  // Auth pages wrapped with AuthShell - matched before the DesktopLayout
+  // UGS-MODIFY: DISABLE_AUTH controls whether auth pages are shown.
+const AUTH_DISABLED = process.env.NEXT_PUBLIC_DISABLE_AUTH === '1';
+
+const authElement = AUTH_DISABLED ? (
+  <Suspense fallback={<Loading debugId="Desktop > AuthRoutes" />}>
+    <Outlet />
+  </Suspense>
+) : (
+  <AuthShell>
+    <Suspense fallback={<Loading debugId="Desktop > AuthRoutes" />}>
+      <Outlet />
+    </Suspense>
+  </AuthShell>
+);
+
+// Auth pages wrapped with AuthShell - matched before the DesktopLayout
   {
-    element: (
-      <AuthShell>
-        <Suspense fallback={<Loading debugId="Desktop > AuthRoutes" />}>
-          <Outlet />
-        </Suspense>
-      </AuthShell>
-    ),
+    element: authElement,
     children: [
       {
         element: dynamicElement(() => import('@/routes/auth/signin'), 'Desktop > SignIn'),
