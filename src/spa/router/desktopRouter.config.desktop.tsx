@@ -644,9 +644,7 @@ export const sharedMainAreaChildren: RouteObject[] = [
   },
 ];
 
-// Desktop router configuration — all sync imports for Electron local build
-export const desktopRoutes: RouteObject[] = [
-  // UGS-MODIFY: DISABLE_AUTH controls whether auth pages are shown.
+// UGS-MODIFY: DISABLE_AUTH controls whether auth pages are shown.
 const AUTH_DISABLED = process.env.NEXT_PUBLIC_DISABLE_AUTH === '1';
 
 const authElement = AUTH_DISABLED ? (
@@ -661,7 +659,9 @@ const authElement = AUTH_DISABLED ? (
   </AuthShell>
 );
 
-// Auth pages wrapped with AuthShell - matched before the DesktopLayout
+// Desktop router configuration — all sync imports for Electron local build
+export const desktopRoutes: RouteObject[] = [
+  // Auth pages wrapped with AuthShell - matched before the DesktopLayout
   {
     element: authElement,
     children: [

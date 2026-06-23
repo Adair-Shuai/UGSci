@@ -734,17 +734,10 @@ export const sharedMainAreaChildren: RouteObject[] = [
   },
 ];
 
-// Desktop router configuration (declarative mode)
 // UGS-MODIFY: DISABLE_AUTH controls whether auth pages are shown.
-// When 1 (default for desktop), the auth path renders an empty layout
-// so users can access the app directly without signing in.
-// Auth pages are still available at their original routes for reference.
 const AUTH_DISABLED = process.env.NEXT_PUBLIC_DISABLE_AUTH === '1';
 
 const authElement = AUTH_DISABLED ? (
-  // No auth wrapper — skip AuthShell/AuthContainer entirely.
-  // The Outlet still resolves to the same auth pages if navigated to,
-  // but the main app treats /signin as just another page.
   <Suspense fallback={<Loading debugId="Desktop > AuthRoutes" />}>
     <Outlet />
   </Suspense>
@@ -756,6 +749,7 @@ const authElement = AUTH_DISABLED ? (
   </AuthShell>
 );
 
+// Desktop router configuration (declarative mode)
 export const desktopRoutes: RouteObject[] = [
   // Auth pages (wrapped conditionally)
   {
