@@ -113,11 +113,13 @@ export const createI18nNext = (lang?: string) => {
         showSupportNotice: false,
       });
 
-      if (initialLang !== DEFAULT_LANG) {
-        initPromise.then(() => {
-          void instance.reloadResources([initialLang], bundledNamespaces);
-        });
-      }
+      // Always reload the initial language's resources from JSON files,
+      // even when it matches DEFAULT_LANG. The synced bundled resources
+      // use the default TS files (English), so they must be replaced with
+      // the actual translated JSON resources asynchronously.
+      initPromise.then(() => {
+        void instance.reloadResources([initialLang], bundledNamespaces);
+      });
 
       return initPromise;
     },

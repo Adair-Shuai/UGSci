@@ -17,13 +17,11 @@ export const loadI18nNamespaceModule = async (
 ): Promise<{ default: Record<string, unknown> }> => {
   const { defaultLang, normalizeLocale, lng, ns } = params;
 
-  if (lng === defaultLang) {
-    const key = getDefaultKey(ns);
-    const load = defaultLoaders[key];
-    if (!load) throw new Error(`Missing default namespace: ${ns}`);
-    return load() as Promise<{ default: Record<string, unknown> }>;
-  }
-
+  // Always try JSON locale files first, even for the default language.
+  // When DEFAULT_LANG matches the detected language, the synced bundled
+  // resources may be in a different language (e.g. English defaults under
+  // zh-CN key). Loading from JSON ensures the correct translated resources
+  // are fetched regardless.
   const normalizedLng = normalizeLocale(lng);
   const localeKey = getLocaleKey(normalizedLng, ns);
   const loadLocale = localeLoaders[localeKey];
@@ -31,6 +29,7 @@ export const loadI18nNamespaceModule = async (
     return loadLocale() as Promise<{ default: Record<string, unknown> }>;
   }
 
+  // Fallback to default TS files when no JSON locale exists for this language
   const loadDefault = defaultLoaders[getDefaultKey(ns)];
   if (!loadDefault) throw new Error(`Missing default namespace: ${ns}`);
   return loadDefault() as Promise<{ default: Record<string, unknown> }>;
