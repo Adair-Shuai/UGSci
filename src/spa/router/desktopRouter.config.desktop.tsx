@@ -10,34 +10,26 @@ import {
   ShapesIcon,
   Sparkles,
   Users,
-  Video,
   Wrench,
 } from 'lucide-react';
-import type { RouteObject } from 'react-router-dom';
+import { Suspense } from 'react';
+import { Outlet, type RouteObject } from 'react-router-dom';
 
 import {
   BusinessDesktopRoutesWithMainLayout,
   BusinessDesktopRoutesWithoutMainLayout,
 } from '@/business/client/BusinessDesktopRoutes';
+import Loading from '@/components/Loading/BrandTextLoading';
 import { agentDocumentRouteMeta } from '@/features/AgentDocumentPage/routeMeta';
 import { taskRouteMeta, tasksRouteMeta } from '@/features/AgentTasks/routeMeta';
+import AuthShell from '@/features/AuthShell';
 import { fleetRouteMeta } from '@/features/Fleet/routeMeta';
 import { pageRouteMeta } from '@/features/Pages/routeMeta';
 import DesktopOnboarding from '@/routes/(desktop)/desktop-onboarding';
 // Layouts — sync import (Electron local, no network overhead)
 import DesktopMainLayout from '@/routes/(main)/_layout';
 import ImagePage from '@/routes/(main)/(create)/image';
-// UGS-MODIFY: UGS-015
-import UgsExpertsPage from '@/routes/(main)/ugs-experts';
-// UGS-MODIFY: UGS-016/017
-import UgsCapabilitiesPage from '@/routes/(main)/ugs-capabilities';
-import UgsSkillsPage from '@/routes/(main)/ugs-skills';
 import DesktopImageLayout from '@/routes/(main)/(create)/image/_layout';
-// UGS-MODIFY: UGS-015
-import DesktopUgsExpertsLayout from '@/routes/(main)/ugs-experts/_layout';
-// UGS-MODIFY: UGS-016/017
-import DesktopUgsCapabilitiesLayout from '@/routes/(main)/ugs-capabilities/_layout';
-import DesktopUgsSkillsLayout from '@/routes/(main)/ugs-skills/_layout';
 import VideoPage from '@/routes/(main)/(create)/video';
 import DesktopVideoLayout from '@/routes/(main)/(create)/video/_layout';
 import TaskWorkspaceLayout from '@/routes/(main)/(task-workspace)/_layout';
@@ -130,6 +122,16 @@ import { settingsRouteMeta } from '@/routes/(main)/settings/features/routeMeta';
 import { ProviderDetailPage, ProviderLayout } from '@/routes/(main)/settings/provider';
 import TaskDetailRoute from '@/routes/(main)/task/[taskId]';
 import AllTasksPage from '@/routes/(main)/tasks';
+// UGS-MODIFY: UGS-016/017
+import UgsCapabilitiesPage from '@/routes/(main)/ugs-capabilities';
+// UGS-MODIFY: UGS-016/017
+import DesktopUgsCapabilitiesLayout from '@/routes/(main)/ugs-capabilities/_layout';
+// UGS-MODIFY: UGS-015
+import UgsExpertsPage from '@/routes/(main)/ugs-experts';
+// UGS-MODIFY: UGS-015
+import DesktopUgsExpertsLayout from '@/routes/(main)/ugs-experts/_layout';
+import UgsSkillsPage from '@/routes/(main)/ugs-skills';
+import DesktopUgsSkillsLayout from '@/routes/(main)/ugs-skills/_layout';
 import SharePagePage from '@/routes/share/page/[id]';
 import ShareTopicPage from '@/routes/share/t/[id]';
 import ShareTopicLayout from '@/routes/share/t/[id]/_layout';
@@ -137,7 +139,7 @@ import { shareTopicRouteMeta } from '@/routes/share/t/[id]/routeMeta';
 import VerifyImPage from '@/routes/verify-im';
 import { routeMeta } from '@/spa/router/routeMeta';
 import { SettingsTabs } from '@/store/global/initialState';
-import { ErrorBoundary, redirectElement } from '@/utils/router';
+import { dynamicElement, ErrorBoundary, redirectElement } from '@/utils/router';
 
 /**
  * Children shared between `/` and `/:workspaceSlug` for the Electron build.
@@ -644,6 +646,53 @@ export const sharedMainAreaChildren: RouteObject[] = [
 
 // Desktop router configuration — all sync imports for Electron local build
 export const desktopRoutes: RouteObject[] = [
+  // Auth pages wrapped with AuthShell - matched before the DesktopLayout
+  {
+    element: (
+      <AuthShell>
+        <Suspense fallback={<Loading debugId="Desktop > AuthRoutes" />}>
+          <Outlet />
+        </Suspense>
+      </AuthShell>
+    ),
+    children: [
+      {
+        element: dynamicElement(() => import('@/routes/auth/signin'), 'Desktop > SignIn'),
+        path: 'signin',
+      },
+      {
+        element: dynamicElement(() => import('@/routes/auth/signup'), 'Desktop > SignUp'),
+        path: 'signup',
+      },
+      // UGS-MODIFY: email OTP flow routes — align with web authRouter.config.tsx
+      {
+        element: dynamicElement(
+          () => import('@/routes/auth/verify-email'),
+          'Desktop > VerifyEmail',
+        ),
+        path: 'verify-email',
+      },
+      {
+        element: dynamicElement(
+          () => import('@/routes/auth/reset-password'),
+          'Desktop > ResetPassword',
+        ),
+        path: 'reset-password',
+      },
+      {
+        element: dynamicElement(
+          () => import('@/routes/auth/set-password'),
+          'Desktop > SetPassword',
+        ),
+        path: 'set-password',
+      },
+      {
+        element: dynamicElement(() => import('@/routes/auth/auth-error'), 'Desktop > AuthError'),
+        path: 'auth-error',
+      },
+    ],
+    path: '/',
+  },
   {
     children: [
       ...sharedMainAreaChildren,

@@ -10,17 +10,19 @@ import {
   ShapesIcon,
   Sparkles,
   Users,
-  Video,
   Wrench,
 } from 'lucide-react';
-import { type RouteObject } from 'react-router-dom';
+import { Suspense } from 'react';
+import { Outlet, type RouteObject } from 'react-router-dom';
 
 import {
   BusinessDesktopRoutesWithMainLayout,
   BusinessDesktopRoutesWithoutMainLayout,
 } from '@/business/client/BusinessDesktopRoutes';
+import Loading from '@/components/Loading/BrandTextLoading';
 import { agentDocumentRouteMeta } from '@/features/AgentDocumentPage/routeMeta';
 import { taskRouteMeta, tasksRouteMeta } from '@/features/AgentTasks/routeMeta';
+import AuthShell from '@/features/AuthShell';
 import { fleetRouteMeta } from '@/features/Fleet/routeMeta';
 import { pageRouteMeta } from '@/features/Pages/routeMeta';
 import { agentRouteMeta } from '@/routes/(main)/agent/features/routeMeta';
@@ -583,10 +585,7 @@ export const sharedMainAreaChildren: RouteObject[] = [
   {
     children: [
       {
-        element: dynamicElement(
-          () => import('@/routes/(main)/ugs-skills'),
-          'Desktop > UgsSkills',
-        ),
+        element: dynamicElement(() => import('@/routes/(main)/ugs-skills'), 'Desktop > UgsSkills'),
         handle: {
           meta: routeMeta({ icon: Sparkles, titleKey: 'navigation.ugsSkills' }),
         },
@@ -737,6 +736,54 @@ export const sharedMainAreaChildren: RouteObject[] = [
 
 // Desktop router configuration (declarative mode)
 export const desktopRoutes: RouteObject[] = [
+  // Auth pages wrapped with AuthShell - matched before the DesktopLayout
+  {
+    element: (
+      <AuthShell>
+        <Suspense fallback={<Loading debugId="Desktop > AuthRoutes" />}>
+          <Outlet />
+        </Suspense>
+      </AuthShell>
+    ),
+    children: [
+      {
+        element: dynamicElement(() => import('@/routes/auth/signin'), 'Desktop > SignIn'),
+        path: 'signin',
+      },
+      {
+        element: dynamicElement(() => import('@/routes/auth/signup'), 'Desktop > SignUp'),
+        path: 'signup',
+      },
+      // UGS-MODIFY: email OTP flow routes — align with web authRouter.config.tsx
+      {
+        element: dynamicElement(
+          () => import('@/routes/auth/verify-email'),
+          'Desktop > VerifyEmail',
+        ),
+        path: 'verify-email',
+      },
+      {
+        element: dynamicElement(
+          () => import('@/routes/auth/reset-password'),
+          'Desktop > ResetPassword',
+        ),
+        path: 'reset-password',
+      },
+      {
+        element: dynamicElement(
+          () => import('@/routes/auth/set-password'),
+          'Desktop > SetPassword',
+        ),
+        path: 'set-password',
+      },
+      {
+        element: dynamicElement(() => import('@/routes/auth/auth-error'), 'Desktop > AuthError'),
+        path: 'auth-error',
+      },
+    ],
+    path: '/',
+  },
+
   {
     children: [
       ...sharedMainAreaChildren,
@@ -979,6 +1026,7 @@ export const desktopRoutes: RouteObject[] = [
     errorElement: <ErrorBoundary />,
     path: '/',
   },
+
   // Onboarding route (outside main layout)
 
   ...BusinessDesktopRoutesWithoutMainLayout,

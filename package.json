@@ -14,13 +14,13 @@
     "tts",
     "stt"
   ],
-  "homepage": "https://github.com/Adair-Shuai/lobehub",
+  "homepage": "https://github.com/Adair-Shuai/UGSci",
   "bugs": {
-    "url": "https://github.com/Adair-Shuai/lobehub/issues/new/choose"
+    "url": "https://github.com/Adair-Shuai/UGSci/issues/new/choose"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/Adair-Shuai/lobehub.git"
+    "url": "https://github.com/Adair-Shuai/UGSci.git"
   },
   "license": "MIT",
   "author": "UGSci Team",
@@ -61,6 +61,7 @@
     "desktop:build:all": "npm run desktop:build:main",
     "desktop:build:main": "npm run build:main --prefix=./apps/desktop",
     "desktop:build-channel": "tsx scripts/electronWorkflow/buildDesktopChannel.ts",
+    "desktop:clean": "node apps/desktop/scripts/build.mjs --clean",
     "desktop:dev": "node apps/desktop/scripts/build.mjs --dev",
     "desktop:main:build": "npm run desktop:main:build --prefix=./apps/desktop",
     "desktop:package": "node apps/desktop/scripts/build.mjs --package",
@@ -69,7 +70,6 @@
     "desktop:package:local": "npm run desktop:build:all && npm run package:local --prefix=./apps/desktop",
     "desktop:package:local:reuse": "npm run package:local:reuse --prefix=./apps/desktop",
     "desktop:verify": "node apps/desktop/scripts/build.mjs --verify",
-    "desktop:clean": "node apps/desktop/scripts/build.mjs --clean",
     "dev": "tsx scripts/devStartupSequence.mts",
     "dev:bun": "bun --bun next dev -p 3010",
     "dev:desktop": "cd apps/desktop && pnpm run dev",

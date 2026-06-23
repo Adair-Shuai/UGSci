@@ -18,8 +18,23 @@ const buildElectron = () => {
   const buildScript = path.join(rootDir, 'apps', 'desktop', 'scripts', 'build.mjs');
 
   try {
+    // 确定安装器标志：当 BUILD_INSTALLER=true 时传递 --dmg 或 --nsis
+    const installerFlag =
+      process.env.BUILD_INSTALLER === 'true'
+        ? platform === 'darwin'
+          ? '--dmg'
+          : platform === 'win32'
+            ? '--nsis'
+            : ''
+        : '';
+    const packageArgs = `--package${installerFlag ? ' ' + installerFlag : ''}`;
+
+    if (installerFlag) {
+      console.log(`📦 Installer mode enabled: ${installerFlag}`);
+    }
+
     // 使用统一构建脚本的 --package 模式
-    execSync(`node "${buildScript}" --package`, {
+    execSync(`node "${buildScript}" ${packageArgs}`, {
       cwd: rootDir,
       stdio: 'inherit',
       env: {

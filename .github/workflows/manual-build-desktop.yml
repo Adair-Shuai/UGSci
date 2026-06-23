@@ -27,6 +27,12 @@ on:
         required: true
         default: false
         type: boolean
+
+      build_installer:
+        description: 'Build installer (.dmg on macOS / .exe on Windows) instead of --dir mode'
+        required: true
+        default: false
+        type: boolean
       version:
         description: 'Override desktop version (e.g. 1.2.3). Leave empty to auto-generate.'
         required: false
@@ -125,7 +131,7 @@ jobs:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-
+          BUILD_INSTALLER: ${{ inputs.build_installer }}
       - name: Rename macOS latest-mac.yml for multi-architecture support
         if: runner.os == 'macOS'
         run: |
@@ -191,7 +197,7 @@ jobs:
           NEXT_PUBLIC_DESKTOP_UMAMI_BASE_URL: ${{ inputs.channel == 'stable' && secrets.UMAMI_STABLE_DESKTOP_BASE_URL || secrets.UMAMI_BETA_DESKTOP_BASE_URL }}
           TEMP: C:\temp
           TMP: C:\temp
-
+          BUILD_INSTALLER: ${{ inputs.build_installer }}
       - name: Upload artifact
         uses: actions/upload-artifact@v6
         with:

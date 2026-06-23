@@ -523,6 +523,20 @@ export default class RemoteServerConfigCtr extends ControllerModule {
   }
 
   /**
+   * Save an auth token received from the renderer after a successful email OTP
+   * sign-in.  Replaces the old OIDC-token approach: instead of the main process
+   * running the PKCE / OIDC flow, the renderer calls /api/auth/exchange and
+   * passes the resulting token here.
+   */
+  @IpcMethod()
+  async saveAuthToken(params: { accessToken: string; expiresIn?: number }) {
+    logger.info('Saving auth token received from renderer');
+    await this.saveTokens(params.accessToken, params.accessToken, params.expiresIn);
+    await this.setRemoteServerConfig({ active: true });
+    return { success: true };
+  }
+
+  /**
    * Setup subscription webview session with OIDC token injection
    * This configures a webRequest interceptor on the given partition session
    * to automatically inject the Oidc-Auth token header for official domain requests.

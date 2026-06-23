@@ -42,23 +42,14 @@ export class ElectronRemoteServerActionImpl {
       // Get current configuration
       const config = await remoteServerService.getRemoteServerConfig();
 
-      // If already active, need to clear first
+      // Save the config (not active yet — activated by saveAuthToken after email OTP sign-in)
       if (!isEqual(config, values)) {
         await remoteServerService.setRemoteServerConfig({ ...values, active: false });
       }
 
-      // Request authorization
-      const result = await remoteServerService.requestAuthorization(values);
-
-      if (!result.success) {
-        console.error('Authorization request failed:', result.error);
-
-        this.#set({
-          remoteServerSyncError: { message: result.error, type: 'AUTH_ERROR' },
-        });
-      }
-      // Refresh state
-      await this.#get().refreshServerConfig();
+      // Navigate to sign-in page — email OTP flow handles auth + saveAuthToken
+      const callbackUrl = encodeURIComponent(window.location.href);
+      window.location.href = '/signin?callbackUrl=' + callbackUrl;
     } catch (error) {
       console.error('Remote server configuration error:', error);
       this.#set({

@@ -50,7 +50,7 @@ export const useSignIn = () => {
   const [socialLoading, setSocialLoading] = useState<string | null>(null);
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
-const [isSocialOnly, setIsSocialOnly] = useState(false);
+  const [isSocialOnly, setIsSocialOnly] = useState(false);
   type UserCheckStatus = 'unchecked' | 'exists' | 'exists_no_password' | 'not_found';
   const [userCheckStatus, setUserCheckStatus] = useState<UserCheckStatus>('unchecked');
   const [userCheckLoading, setUserCheckLoading] = useState(false);
@@ -189,7 +189,10 @@ const [isSocialOnly, setIsSocialOnly] = useState(false);
 
     try {
       const callbackUrl = searchParams.get('callbackUrl') || '/';
-      message.loading({ content: t('betterAuth.signin.signingIn', { defaultValue: '正在登录...' }), duration: 0 });
+      message.loading({
+        content: t('betterAuth.signin.signingIn', { defaultValue: '正在登录...' }),
+        duration: 0,
+      });
       const result = await signIn.email(
         { callbackURL: callbackUrl, email, password: values.password },
         {
@@ -424,6 +427,7 @@ const [isSocialOnly, setIsSocialOnly] = useState(false);
     setLoading(true);
     try {
       const callbackUrl = searchParams.get('callbackUrl') || '/';
+      let signInSuccess = false;
       const result = await signIn.emailOtp(
         {
           email,
@@ -443,16 +447,31 @@ const [isSocialOnly, setIsSocialOnly] = useState(false);
             }
           },
           onSuccess: () => {
-            // UGS-MODIFY: new users go to set-password first
-            if (isNewUserNoPassword) {
-              window.location.href = '/set-password';
-            } else {
-              window.location.href = sanitizeRedirectPath(callbackUrl);
-            }
+            signInSuccess = true;
           },
         },
       );
-      if (result.error && result.error.status !== 403) {
+      if (signInSuccess) {
+        // Exchange better-auth session for OIDC token (desktop only, best-effort)
+        try {
+          const exchangeRes = await fetch('/api/auth/exchange', { method: 'POST' });
+          if (exchangeRes.ok) {
+            const { access_token, expires_in } = await exchangeRes.json();
+            const { remoteServerService } = await import('@/services/electron/remoteServer');
+            await remoteServerService.saveAuthToken({
+              accessToken: access_token,
+              expiresIn: expires_in,
+            });
+          }
+        } catch {
+          // Non-critical: web environment or API not available
+        }
+        if (isNewUserNoPassword) {
+          window.location.href = '/set-password';
+        } else {
+          window.location.href = sanitizeRedirectPath(callbackUrl);
+        }
+      } else if (result.error && result.error.status !== 403) {
         message.error(
           result.error.message || t('ugs.emailCode.verifyError', { defaultValue: '验证失败' }),
         );
@@ -519,51 +538,54 @@ const [isSocialOnly, setIsSocialOnly] = useState(false);
     handleBackToEmailFromCode,
   };
 };
-  // UGS-MODIFY: password login from the unified email+password page
-  const handlePasswordLogin = async (password: string) => {
-    if (!email) return;
-    if (userCheckStatus !== 'exists') {
-      message.error(t('betterAuth.signin.error'));
-      return;
-    }
-    setLoading(true);
-    await trackLoginOrSignupClicked({ spm: 'signin.password_step.submit' });
+// UGS-MODIFY: password login from the unified email+password page
+const handlePasswordLogin = async (password: string) => {
+  if (!email) return;
+  if (userCheckStatus !== 'exists') {
+    message.error(t('betterAuth.signin.error'));
+    return;
+  }
+  setLoading(true);
+  await trackLoginOrSignupClicked({ spm: 'signin.password_step.submit' });
 
-    try {
-      const callbackUrl = searchParams.get('callbackUrl') || '/';
-      message.loading({ content: t('betterAuth.signin.signingIn', { defaultValue: '正在登录...' }), duration: 0 });
-      const result = await signIn.email(
-        { callbackURL: callbackUrl, email, password },
-        {
-          onError: (ctx) => {
-            console.error('Sign in error:', ctx.error);
-            message.destroy();
-            if (ctx.error.status === 403) {
-              navigate(
-                `/verify-email?email=${encodeURIComponent(email)}&callbackUrl=${encodeURIComponent(callbackUrl)}`,
-              );
-            }
-          },
-          onSuccess: () => {
-            message.destroy();
-            window.location.href = sanitizeRedirectPath(callbackUrl);
-          },
+  try {
+    const callbackUrl = searchParams.get('callbackUrl') || '/';
+    message.loading({
+      content: t('betterAuth.signin.signingIn', { defaultValue: '正在登录...' }),
+      duration: 0,
+    });
+    const result = await signIn.email(
+      { callbackURL: callbackUrl, email, password },
+      {
+        onError: (ctx) => {
+          console.error('Sign in error:', ctx.error);
+          message.destroy();
+          if (ctx.error.status === 403) {
+            navigate(
+              `/verify-email?email=${encodeURIComponent(email)}&callbackUrl=${encodeURIComponent(callbackUrl)}`,
+            );
+          }
         },
-      );
+        onSuccess: () => {
+          message.destroy();
+          window.location.href = sanitizeRedirectPath(callbackUrl);
+        },
+      },
+    );
 
-      if (result.error && result.error.status !== 403) {
-        message.error(result.error.message || t('betterAuth.signin.error'));
-      }
-    } catch (error) {
-      console.error('Sign in error:', error);
-      message.error(t('betterAuth.signin.error'));
-    } finally {
-      setLoading(false);
+    if (result.error && result.error.status !== 403) {
+      message.error(result.error.message || t('betterAuth.signin.error'));
     }
-  };
+  } catch (error) {
+    console.error('Sign in error:', error);
+    message.error(t('betterAuth.signin.error'));
+  } finally {
+    setLoading(false);
+  }
+};
 
-  const handleResetUserExists = () => {
-    setUserCheckStatus('unchecked');
-    setEmail('');
-    setIsSocialOnly(false);
-  };
+const handleResetUserExists = () => {
+  setUserCheckStatus('unchecked');
+  setEmail('');
+  setIsSocialOnly(false);
+};

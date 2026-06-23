@@ -81,6 +81,16 @@ function electronDesktopHtmlPlugin(): PluginOption {
 
         if (!looksLikeAsset && (pathname === '/popup' || pathname.startsWith('/popup/'))) {
           req.url = '/apps/desktop/popup.html';
+          next();
+          return;
+        }
+
+        // SPA catch-all — any unrecognized non-asset path serves the main SPA HTML
+        // so React Router can handle deep links like /signin, /chat, /settings, etc.
+        if (!looksLikeAsset && !pathname.startsWith('/overlay')) {
+          req.url = '/apps/desktop/index.html';
+          next();
+          return;
         }
         next();
       });

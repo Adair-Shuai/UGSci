@@ -291,6 +291,7 @@ const config = {
   },
   mac: {
     compression: 'maximum',
+    icon: path.join(__dirname, 'build', 'Icon.icns'),
     entitlementsInherit: 'build/entitlements.mac.plist',
     extendInfo: {
       CFBundleIconName: 'AppIcon',

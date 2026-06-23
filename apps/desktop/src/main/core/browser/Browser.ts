@@ -6,7 +6,7 @@ import type { MainBroadcastEventKey, MainBroadcastParams } from '@lobechat/elect
 import type { BrowserWindowConstructorOptions } from 'electron';
 import { app, BrowserWindow, ipcMain, screen, session as electronSession, shell } from 'electron';
 
-import { preloadDir, resourcesDir } from '@/const/dir';
+import { buildDir, preloadDir, resourcesDir } from '@/const/dir';
 import { DESKTOP_EXTERNAL_NAVIGATION_HOSTS, isMac } from '@/const/env';
 import RemoteServerConfigCtr from '@/controllers/RemoteServerConfigCtr';
 import { backendProxyProtocolManager } from '@/core/infrastructure/BackendProxyProtocolManager';
@@ -159,6 +159,7 @@ export default class Browser {
       frame: false,
       height: resolvedState.height,
       show: false,
+      icon: path.join(buildDir, 'icon-dev.png'),
       title,
       webPreferences: {
         backgroundThrottling: false,
