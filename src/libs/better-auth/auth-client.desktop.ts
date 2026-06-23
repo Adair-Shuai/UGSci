@@ -4,6 +4,8 @@ import {
   genericOAuthClient,
   inferAdditionalFields,
   magicLinkClient,
+  // UGS-MODIFY: UGS-005 phone number client plugin
+  phoneNumberClient,
 } from 'better-auth/client/plugins';
 import { createAuthClient } from 'better-auth/react';
 
@@ -25,6 +27,8 @@ function getClient() {
         inferAdditionalFields<typeof auth>(),
         genericOAuthClient(),
         magicLinkClient(),
+        // UGS-MODIFY: UGS-005 phone number client plugin
+        phoneNumberClient(),
       ],
     });
   }
@@ -59,3 +63,5 @@ export const signOut = lazyProp('signOut');
 export const signUp = lazyProp('signUp');
 export const unlinkAccount = lazyProp('unlinkAccount');
 export const useSession = lazyProp('useSession');
+// UGS-MODIFY: UGS-005 expose phoneNumber methods
+export const phoneNumber = lazyProp('phoneNumber');
