@@ -326,12 +326,9 @@ const config = {
     allowToChangeInstallationDirectory: true,
     artifactName: '${productName}-${version}-setup.${ext}',
     createDesktopShortcut: 'always',
-    installerHeader: './build/nsis-header.bmp',
-    installerSidebar: './build/nsis-sidebar.bmp',
     oneClick: false,
     shortcutName: '${productName}',
     uninstallDisplayName: '${productName}',
-    uninstallerSidebar: './build/nsis-sidebar.bmp',
   },
   protocols: [
     {
