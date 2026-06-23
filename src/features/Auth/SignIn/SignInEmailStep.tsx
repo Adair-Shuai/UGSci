@@ -34,7 +34,7 @@ const getProviderName = (provider: string) =>
 export interface SignInEmailStepProps {
   codeLoading: boolean;
   disableEmailPassword?: boolean;
-  form: FormInstance<{ email: string }>;
+  form: FormInstance<{ email: string; password: string }>;
   isSocialOnly: boolean;
   lastAuthProvider?: string | null;
   loading: boolean;
@@ -234,21 +234,14 @@ export const SignInEmailStep = ({
               <Form.Item
                 name="password"
                 style={{ marginBottom: 12 }}
-                rules={[
-                  { message: t('betterAuth.errors.passwordRequired'), required: true },
-                ]}
+                rules={[{ message: t('betterAuth.errors.passwordRequired'), required: true }]}
               >
                 <InputPassword
                   placeholder={t('betterAuth.signin.passwordPlaceholder')}
                   ref={passwordInputRef}
                   size="large"
                   style={{ padding: 6 }}
-                  prefix={
-                    <Icon
-                      icon={Lock}
-                      style={{ marginInline: 6 }}
-                    />
-                  }
+                  prefix={<Icon icon={Lock} style={{ marginInline: 6 }} />}
                   onKeyDown={handlePasswordKeyDown}
                 />
               </Form.Item>
@@ -261,7 +254,14 @@ export const SignInEmailStep = ({
           )}
           {/* UGS-MODIFY: unified auth buttons */}
           <Flexbox gap={8}>
-            <Button block disabled={codeLoading} htmlType="submit" loading={loading || userCheckLoading || codeLoading} size="large" type="primary">
+            <Button
+              block
+              disabled={codeLoading}
+              htmlType="submit"
+              loading={loading || userCheckLoading || codeLoading}
+              size="large"
+              type="primary"
+            >
               {userCheckStatus === 'unchecked'
                 ? t('ugs.signin.checkUser', { defaultValue: '下一步' })
                 : userCheckStatus === 'exists'
@@ -295,10 +295,20 @@ export const SignInEmailStep = ({
           {/* User status hint - different messages based on check result */}
           {(userCheckStatus === 'exists_no_password' || userCheckStatus === 'not_found') && (
             <Flexbox style={{ marginTop: 8 }}>
-              <div style={{ fontSize: 12, color: 'var(--ant-color-text-tertiary)', textAlign: 'center' }}>
+              <div
+                style={{
+                  fontSize: 12,
+                  color: 'var(--ant-color-text-tertiary)',
+                  textAlign: 'center',
+                }}
+              >
                 {userCheckStatus === 'not_found'
-                  ? t('ugs.emailCode.newUserHint', { defaultValue: '该邮箱未注册，点击验证码登录/注册将自动注册' })
-                  : t('ugs.emailCode.noPasswordHint', { defaultValue: '该邮箱尚未设置密码，请使用验证码登录后设置' })}
+                  ? t('ugs.emailCode.newUserHint', {
+                      defaultValue: '该邮箱未注册，点击验证码登录/注册将自动注册',
+                    })
+                  : t('ugs.emailCode.noPasswordHint', {
+                      defaultValue: '该邮箱尚未设置密码，请使用验证码登录后设置',
+                    })}
               </div>
             </Flexbox>
           )}

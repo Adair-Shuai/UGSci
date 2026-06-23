@@ -42,7 +42,7 @@ export const SignInEmailCodeStep = ({
 
   return (
     <AuthCard
-      desc={t('ugs.emailCode.desc', { defaultValue: '验证码已发送至 {{email}}', email })}
+      subtitle={t('ugs.emailCode.desc', { defaultValue: '验证码已发送至 {{email}}', email })}
       title={t('ugs.emailCode.title', { defaultValue: '邮箱验证码登录' })}
     >
       <Form form={form} layout="vertical" onFinish={(values) => onVerify(values.code)}>

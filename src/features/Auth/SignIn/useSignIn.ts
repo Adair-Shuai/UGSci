@@ -490,6 +490,58 @@ export const useSignIn = () => {
     setIsNewUserNoPassword(false);
   };
 
+  // UGS-MODIFY: password login from the unified email+password page
+  const handlePasswordLogin = async (password: string) => {
+    if (!email) return;
+    if (userCheckStatus !== 'exists') {
+      message.error(t('betterAuth.signin.error'));
+      return;
+    }
+    setLoading(true);
+    await trackLoginOrSignupClicked({ spm: 'signin.password_step.submit' });
+
+    try {
+      const callbackUrl = searchParams.get('callbackUrl') || '/';
+      message.loading({
+        content: t('betterAuth.signin.signingIn', { defaultValue: '正在登录...' }),
+        duration: 0,
+      });
+      const result = await signIn.email(
+        { callbackURL: callbackUrl, email, password },
+        {
+          onError: (ctx) => {
+            console.error('Sign in error:', ctx.error);
+            message.destroy();
+            if (ctx.error.status === 403) {
+              navigate(
+                `/verify-email?email=${encodeURIComponent(email)}&callbackUrl=${encodeURIComponent(callbackUrl)}`,
+              );
+            }
+          },
+          onSuccess: () => {
+            message.destroy();
+            window.location.href = sanitizeRedirectPath(callbackUrl);
+          },
+        },
+      );
+
+      if (result.error && result.error.status !== 403) {
+        message.error(result.error.message || t('betterAuth.signin.error'));
+      }
+    } catch (error) {
+      console.error('Sign in error:', error);
+      message.error(t('betterAuth.signin.error'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetUserExists = () => {
+    setUserCheckStatus('unchecked');
+    setEmail('');
+    setIsSocialOnly(false);
+  };
+
   const resolvedProviders = ENABLE_BUSINESS_FEATURES ? ssoProviders : oAuthSSOProviders;
   const sortedProviders = lastAuthProvider
     ? [...resolvedProviders].sort((a, b) => {
@@ -537,55 +589,4 @@ export const useSignIn = () => {
     handleVerifyEmailOtp,
     handleBackToEmailFromCode,
   };
-};
-// UGS-MODIFY: password login from the unified email+password page
-const handlePasswordLogin = async (password: string) => {
-  if (!email) return;
-  if (userCheckStatus !== 'exists') {
-    message.error(t('betterAuth.signin.error'));
-    return;
-  }
-  setLoading(true);
-  await trackLoginOrSignupClicked({ spm: 'signin.password_step.submit' });
-
-  try {
-    const callbackUrl = searchParams.get('callbackUrl') || '/';
-    message.loading({
-      content: t('betterAuth.signin.signingIn', { defaultValue: '正在登录...' }),
-      duration: 0,
-    });
-    const result = await signIn.email(
-      { callbackURL: callbackUrl, email, password },
-      {
-        onError: (ctx) => {
-          console.error('Sign in error:', ctx.error);
-          message.destroy();
-          if (ctx.error.status === 403) {
-            navigate(
-              `/verify-email?email=${encodeURIComponent(email)}&callbackUrl=${encodeURIComponent(callbackUrl)}`,
-            );
-          }
-        },
-        onSuccess: () => {
-          message.destroy();
-          window.location.href = sanitizeRedirectPath(callbackUrl);
-        },
-      },
-    );
-
-    if (result.error && result.error.status !== 403) {
-      message.error(result.error.message || t('betterAuth.signin.error'));
-    }
-  } catch (error) {
-    console.error('Sign in error:', error);
-    message.error(t('betterAuth.signin.error'));
-  } finally {
-    setLoading(false);
-  }
-};
-
-const handleResetUserExists = () => {
-  setUserCheckStatus('unchecked');
-  setEmail('');
-  setIsSocialOnly(false);
 };

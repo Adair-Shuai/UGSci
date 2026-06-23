@@ -30,7 +30,7 @@ const SetPasswordForm = () => {
   return (
     <AuthCard
       title={t('ugs.setPassword.title', { defaultValue: '设置登录密码' })}
-      desc={t('ugs.setPassword.desc', {
+      subtitle={t('ugs.setPassword.desc', {
         defaultValue: '为你的账户设置一个密码，以后可以使用密码或验证码登录',
       })}
     >
