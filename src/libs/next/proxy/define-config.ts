@@ -224,8 +224,15 @@ export function defineConfig() {
     '/verify-im',
   ]);
 
+  // UGS-MODIFY: skip auth check when DISABLE_AUTH=1
+  // Users access the app directly without sign-in.
+  const disableAuth = process.env.NEXT_PUBLIC_DISABLE_AUTH === '1';
   const betterAuthMiddleware = async (req: NextRequest) => {
     logBetterAuth('BetterAuth middleware processing request: %s %s', req.method, req.url);
+    // UGS-MODIFY: skip session check when auth is disabled
+    if (disableAuth) {
+      return defaultMiddleware(req);
+    }
 
     const response = defaultMiddleware(req);
 

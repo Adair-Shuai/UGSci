@@ -397,8 +397,27 @@ npx node-gyp rebuild --target=41.3.0 --arch=x64 --dist-url=https://electronjs.or
 2. 打包和开发不应在同一工作目录进行
 3. 遇到 Vite 频繁 reload 时，先检查是否有非源码目录被文件监听器捕获
 
----
+### INC-015: Electron 单实例锁残留导致灰屏（2026-06-23）
 
+**现象**：`electron-vite dev` 构建+启动日志正常，但窗口显示灰屏，Vite 端口 5173 无进程。
+
+**根因**：`app.requestSingleInstanceLock()` 锁残留。
+- 首次主进程被杀时，Helper 子进程未被连带杀死
+- Helper 持续持有 `SingletonLock` 符号链接
+- 新 Electron 检测到锁 → `app.exit(0)` 静默退出 → Vite 退出 → 灰屏
+
+**修复**：
+```bash
+# 杀进程 + 删锁文件
+ps aux | grep ugsci-desktop-dev | awk '{print $2}' | xargs kill -9
+rm -f ~/Library/Application\ Support/ugsci-desktop-dev/Singleton*
+```
+
+**通用规则**：
+1. `pkill` (SIGTERM) 不会连带杀死 Electron Helper 子进程，必须 `kill -9`
+2. 排查灰屏时先查残留进程和 SingletonLock
+
+---
 ## 六、复盘检查清单（解决问题前必读）
 
 每次遇到问题准备给方案前，过一遍这个清单：
@@ -436,6 +455,12 @@ npx node-gyp rebuild --target=41.3.0 --arch=x64 --dist-url=https://electronjs.or
 - [ ] DELETE/DROP 类建议是否标注了风险？
 - [ ] 是否提供了安全替代方案（UPDATE/备份）？
 - [ ] 是否说明了对已有数据的影响？
+
+### Electron 桌面端启动异常
+- [ ] `ELECTRON_RUN_AS_NODE=1` 是否泄漏？→ `echo $ELECTRON_RUN_AS_NODE`（INC-007）
+- [ ] 是否有残留的 Electron Helper 进程？→ `ps aux | grep ugsci-desktop-dev`（INC-015）
+- [ ] SingletonLock 文件是否残留？→ `ls ~/Library/Application Support/ugsci-desktop-dev/Singleton*`（INC-015）
+- [ ] 是否查过本文件 INC-007 和 INC-015？
 
 ---
 

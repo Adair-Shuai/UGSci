@@ -748,3 +748,167 @@ services/xxx.ts
 ---
 
 _本文档由架构分析生成，后续随项目演进持续更新。若发现文档与代码不符，以代码为准并同步修正本文档。_
+
+---
+
+## 12. UGS 定制层架构（UGSci Customization Layer）
+
+> UGSci 在 LobeHub 上游基础上叠加了一层定制。理解这层架构是避免上游同步冲突和定制代码与上游耦合失控的关键。
+
+### 12.1 定制层总览
+
+\`
+UGSci 定制层（无冲突区）：新增文件
+├── src/features/UgsCapabilities/   # 能力中心（MCP Connector 管理）
+├── src/features/UgsExperts/        # 储气库专家广场
+├── src/features/UgsSkills/         # 技能管理（UGS 专用 tab）
+├── src/features/UgsMarket/         # 市场弹窗增强（500 降级处理）
+├── src/features/UgsShared/         # 共享组件（PageHeader, AddSkillButton）
+├── packages/builtin-agents/src/agents/ugs-*/  # 13 个储气库领域 Agent
+├── src/components/Branding/UGSciLogo.tsx      # UGSci 品牌 Logo
+
+UGSci 定制层（冲突区）：修改上游文件
+├── branding/          # 品牌名/主题色/Logo 渲染（~15 处修改）
+├── auth/              # 手机号登录 + auth exchange API（5 处）
+├── desktop/           # Electron 构建/配置/路由（多处）
+├── sidebar/           # 菜单顺序/默认项
+├── database/          # schema 字段名映射（phoneNumber）
+├── i18n/              # 新增翻译键
+└── config/            # feature flags、环境变量
+\`
+
+### 12.2 UGS 新增 Feature 详解
+
+| Feature 模块             | 页面路由（src/routes）                     | 对应 Store        | 对应 Service       | 对应后端 API         | 关键依赖文件                 |
+| ------------------------ | ----------------------------------------- | ----------------- | ------------------ | -------------------- | -------------------------- |
+| **UgsCapabilities**      | \`(main)/ugs-capabilities/\`                | \`store/tool\`      | \`services/mcp\`     | tRPC MCP routers     | \`capabilityData.ts\` 分类映射 |
+| **UgsExperts**           | \`(main)/ugs-experts/\`                     | \`store/agent\`     | —                  | —（纯展示层）        | \`ugsExpertsData.ts\` 数据     |
+| **UgsSkills**            | \`(main)/ugs-skills/\`                      | \`store/tool\`      | \`services/skill\`   | tRPC skill routers   | \`ugsCommonSkills.ts\`       |
+| **UgsMarket**            | 弹窗入口（无独立路由）                      | —                 | \`services/discover\`| market API（外部）    | \`UgsMarketContent.tsx\`     |
+| **UgsShared**            | —                                         | —                 | —                  | —                    | 被前 4 个 feature 引用       |
+| **Builtin Agents (13)**  | —（自动注入到 agent store）                | \`store/agent\`     | —                  | —                    | \`packages/builtin-agents/\` |
+
+### 12.3 品牌定制体系（Branding）
+
+| 定制项               | 配置文件                                       | UI 组件                                      | 数据库/后端             |
+| -------------------- | --------------------------------------------- | ------------------------------------------- | ---------------------- |
+| 产品名称             | \`packages/business/const/src/branding.ts\`    | —                                           | \`packages/const/meta.ts\` |
+| 主题色               | \`package.json\` → \`_primaryColor\`             | \`src/layout/GlobalProvider/AppTheme.tsx\`    | —                      |
+| 文字 Logo            | —                                             | \`src/components/Branding/UGSciLogo.tsx\`     | —                      |
+| 产品 Logo 容器       | —                                             | \`src/components/Branding/ProductLogo/\`      | —                      |
+| 默认助手头像         | —                                             | —                                           | \`public/avatars/ugs-ai.png\` |
+| Favicon / Manifest   | \`index.html\` + \`src/app/manifest.ts\`         | —                                           | —                      |
+| 桌面图标             | \`apps/desktop/build/Icon.icns\` + \`icon-dev.png\` | —                                        | —                      |
+
+**Logo 渲染链路（易错点）**：
+\`
+<ProductLogo /> → isCustomBranding=true → CustomLogo
+  ├─ type='text' → CustomTextLogo ✅
+  └─ 其他 type → CustomImageLogo → src=BRANDING_LOGO_URL='' → 空图 ❌
+                  → UGS-MODIFY: 空 URL 时 fallback UGSciLogo ✅
+\`
+
+### 12.4 认证系统定制（Auth Customization）
+
+| 定制组件                        | 位置                                               | 说明                                      |
+| ----------------------------- | ------------------------------------------------ | --------------------------------------- |
+| 手机号验证码登录                  | \`src/features/Auth/SignIn/SignInPhoneStep.tsx\`    | UGS-005，新增组件                          |
+| 邮箱验证码登录（桌面端补齐）         | \`src/features/Auth/SignIn/useSignIn.ts\`            | 8d37d244 改进，共享邮箱 OTP 逻辑              |
+| Token 交换 API                  | \`src/app/(backend)/api/auth/exchange/route.ts\`    | 新增，桌面端 OAuth 登录后的 Token 交换端点       |
+| 远程服务认证配置                  | \`apps/desktop/src/main/controllers/RemoteServerConfigCtr.ts\` | 新增，桌面端远程服务配置控制器     |
+| 桌面端 Auth Required Modal      | \`src/features/Electron/AuthRequiredModal/index.tsx\` | 重构简化                              |
+| Desktop 登录改造（onboarding）     | \`src/routes/(desktop)/desktop-onboarding/features/LoginStep.tsx\` | 大幅简化         |
+| auth-client.desktop.ts          | \`src/libs/better-auth/auth-client.desktop.ts\`      | 补 emailOTP + phoneNumber client 插件      |
+
+### 12.5 桌面端构建架构（Desktop Build）
+
+\`
+electron-builder config: apps/desktop/electron-builder.mjs
+  ├─ electron-vite:    apps/desktop/electron.vite.config.ts
+  ├─ 主进程入口:        apps/desktop/src/main/index.ts → core/App.ts
+  ├─ preload:          apps/desktop/src/preload/index.ts
+  ├─ IPC Server:       packages/electron-server-ipc/
+  ├─ IPC Client:       packages/electron-client-ipc/
+  ├─ 构建脚本:          apps/desktop/scripts/build.mjs + build-desktop.mjs
+  ├─ 构建工作流:        scripts/electronWorkflow/buildElectron.ts
+  └─ 协议常量:          packages/desktop-bridge/
+\`
+
+**UGS 定制修改**：
+- \`apps/desktop/package.json#name\` → \`ugsci-desktop-dev\`（决定 IPC pipe 名、userData 路径）
+- \`electron.vite.config.ts\` — 构建配置
+- \`electron-builder.mjs\` — 打包配置
+- \`RemoteServerConfigCtr.ts\` — 远程服务器配置
+- \`Browser.ts\` — 浏览器标签管理
+- 桌面图标已替换为 UGSci 品牌图标
+
+**开发注意事项**：
+- \`ELECTRON_RUN_AS_NODE\` 环境变量泄漏会导致 Electron 以纯 Node 模式运行（见 INC-007）
+- \`SingletonLock\` 文件残留导致灰屏（见 INC-015）
+- 打包 \`package.json#name\` 变更需要同步检查 IPC pipe、userData 路径（见 INC-013）
+
+### 12.6 定制代码修改上游文件的标记规范
+
+修改上游文件必须：
+1. 在改动处加 \`// UGS-MODIFY: UGS-XXX <原因>\` 注释
+2. 在 \`UGS_CUSTOMIZATIONS.md\` 登记
+3. 查阅 \`CROSS_REFERENCE.md\` 确认波及范围
+
+### 12.7 UGS 内置 Agent 体系
+
+| Agent ID（slug）       | 领域            | 物理文件路径                                                         | 注册位置                      |
+| ---------------------- | -------------- | ---------------------------------------------------------------- | ------------------------- |
+| \`ugs-capacity\`         | 库容评估          | \`packages/builtin-agents/src/agents/ugs-capacity/\`              | \`builtin-agents/src/types.ts\` |
+| \`ugs-deliverability\`   | 产能评价          | \`packages/builtin-agents/src/agents/ugs-deliverability/\`        | 同上                        |
+| \`ugs-params\`           | 库容参数          | \`packages/builtin-agents/src/agents/ugs-params/\`                | 同上                        |
+| \`ugs-injection\`        | 注采运行          | \`packages/builtin-agents/src/agents/ugs-injection/\`             | 同上                        |
+| \`ugs-peaking\`          | 智能调峰          | \`packages/builtin-agents/src/agents/ugs-peaking/\`               | 同上                        |
+| \`ugs-allocation\`       | 配产配注          | \`packages/builtin-agents/src/agents/ugs-allocation/\`             | 同上                        |
+| \`ugs-bpinn\`            | BPINN 反演      | \`packages/builtin-agents/src/agents/ugs-bpinn/\`                  | 同上                        |
+| \`ugs-pvt\`              | PVT 分析         | \`packages/builtin-agents/src/agents/ugs-pvt/\`                    | 同上                        |
+| \`ugs-rate-transient\`   | 产量不稳定分析      | \`packages/builtin-agents/src/agents/ugs-rate-transient/\`        | 同上                        |
+| \`ugs-logging\`          | 测井解释          | \`packages/builtin-agents/src/agents/ugs-logging/\`                | 同上                        |
+| \`ugs-simulation\`       | 数值模拟          | \`packages/builtin-agents/src/agents/ugs-simulation/\`             | 同上                        |
+| \`ugs-integrity\`        | 完整性评价         | \`packages/builtin-agents/src/agents/ugs-integrity/\`              | 同上                        |
+| \`ugs-literature\`       | 文献写作          | \`packages/builtin-agents/src/agents/ugs-literature/\`             | 同上                        |
+
+所有 Agent 共享 \`persist: { model: DEFAULT_MODEL, provider: DEFAULT_PROVIDER }\` 配置，否则新建 agent 记录缺少 model/provider 会显示自定义助理（见 UGS_CUSTOMIZATIONS.md UGS-015b）。
+
+### 12.8 配套文档索引
+
+| 文档                          | 用途                                     | 查阅时机                     |
+| --------------------------- | -------------------------------------- | ------------------------ |
+| \`CROSS_REFERENCE.md\`        | 函数/代码/功能交叉引用，改代码前必读                | **每次修改前**              |
+| \`UGS_CUSTOMIZATIONS.md\`     | UGS 定制改动登记表，上游同步时识别冲突点             | 上游同步前 / 新定制登记时       |
+| \`UPSTREAM_SYNC.md\`          | 上游同步策略与冲突处理手册                      | 每次同步上游时                |
+| \`LESSONS_LEARNED.md\`        | 事故复盘与规避清单                           | 数据库操作/第三方导入/UI 顺序修改前 |
+| \`AGENTS.md\`                 | AI 开发指南（LobeHub 约定 + 路径别名 + 路由约定） | 日常开发参考                 |
+
+### 12.9 修改记录
+
+#### [2026-06-23] 新增 CROSS_REFERENCE.md + 更新架构文档
+
+**修改类型**：docs
+**影响范围**：ARCHITECTURE.md、CROSS_REFERENCE.md（新增）、AGENTS.md
+
+**变更内容**：
+- ARCHITECTURE.md：新增第 12 节「UGS 定制层架构」
+- 新建 CROSS_REFERENCE.md：函数/代码/功能交叉引用文档
+- AGENTS.md：新增 CROSS_REFERENCE.md 查阅规则
+
+**原因**：
+- 项目持续迭代，需系统化记录 UGS 定制层架构
+- 缺乏跨模块引用文档导致改代码时顾头不顾尾
+
+**关联文件**：
+- \`CROSS_REFERENCE.md\` — 新增交叉引用文档
+- \`AGENTS.md\` — 追加查阅指引
+- \`UGS_CUSTOMIZATIONS.md\` — 追加 UGS-022 登记
+
+**破坏性变更**：否
+**验证方式**：预览确认格式
+
+
+---
+
+_本文档由架构分析生成，后续随项目演进持续更新。若发现文档与代码不符，以代码为准并同步修正本文档。_

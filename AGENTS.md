@@ -2,7 +2,7 @@
 
 Guidelines for using AI coding agents in this LobeHub repository.
 
-> **⚠️ 必读**：在给出任何数据库操作建议、删除数据、导入第三方依赖、修改 UI 顺序之前，**必须先查阅 [LESSONS_LEARNED.md](./LESSONS_LEARNED.md)**，确认是否重蹈历史覆辙。该文件记录了历次事故复盘与规避清单。
+> **⚠️ 必读**：在给出任何数据库操作建议、删除数据、导入第三方依赖、修改 UI 顺序之前，**必须先查阅 [LESSONS_LEARNED.md](./LESSONS_LEARNED.md)**（事故复盘与规避清单）和 **[CROSS_REFERENCE.md](./CROSS_REFERENCE.md)**（函数/代码/功能交叉引用），确认是否重蹈历史覆辙，以及本次修改会波及哪些模块。
 
 ## Tech Stack
 
