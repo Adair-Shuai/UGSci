@@ -18,8 +18,8 @@ const appId = 'ugsci';
 describe('ElectronIPCServer', () => {
   // Mock data
   const mockTempDir = '/mock/temp/dir';
-  const mockSocketPath = '/mock/temp/dir/lobehub-electron-ipc.sock';
-  const mockSocketInfoPath = '/mock/temp/dir/lobehub-electron-ipc-info.json';
+  const mockSocketPath = '/mock/temp/dir/ugsci-electron-ipc.sock';
+  const mockSocketInfoPath = '/mock/temp/dir/ugsci-electron-ipc-info.json';
 
   // Mock server and socket
   const mockServer = {

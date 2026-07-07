@@ -16,7 +16,7 @@ import {
  */
 const DesktopAutoOidcOnFirstOpen = memo(() => {
   // UGS-MODIFY: skip OIDC flow when auth is disabled
-  if (process.env.NEXT_PUBLIC_DISABLE_AUTH === '1') return null;
+  const isAuthDisabled = process.env.NEXT_PUBLIC_DISABLE_AUTH === '1';
 
   const [isInitRemoteServerConfig, dataSyncConfig, useDataSyncConfig, connectRemoteServer] =
     useElectronStore((s) => [
@@ -30,6 +30,8 @@ const DesktopAutoOidcOnFirstOpen = memo(() => {
   useDataSyncConfig();
 
   useEffect(() => {
+    // UGS-MODIFY: skip OIDC flow when auth is disabled
+    if (isAuthDisabled) return;
     if (!isInitRemoteServerConfig) return;
 
     // Don't auto-trigger during onboarding flow
@@ -54,6 +56,7 @@ const DesktopAutoOidcOnFirstOpen = memo(() => {
     dataSyncConfig.remoteServerUrl,
     dataSyncConfig.storageMode,
     isInitRemoteServerConfig,
+    isAuthDisabled,
   ]);
 
   return null;

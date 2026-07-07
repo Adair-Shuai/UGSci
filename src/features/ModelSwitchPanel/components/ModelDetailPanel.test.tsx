@@ -25,7 +25,7 @@ vi.mock('@lobechat/business-const', async () => {
   const actual: any = await vi.importActual('@lobechat/business-const');
   return {
     ...actual,
-    BRANDING_PROVIDER: (id: string) => id === 'ugsci',
+    BRANDING_PROVIDER: 'ugsci',
     ENABLE_BUSINESS_FEATURES: true,
   };
 });
@@ -208,9 +208,9 @@ describe('ModelDetailPanel pricing', () => {
   it('renders the original branding price without repeating the unit suffix', () => {
     const { container } = render(
       <ModelDetailPanel
-        enabledList={createEnabledList('lobehub', discountedTextPricing)}
+        enabledList={createEnabledList('ugsci', discountedTextPricing)}
         model="test-model"
-        provider="lobehub"
+        provider="ugsci"
       />,
     );
 
@@ -268,9 +268,9 @@ describe('ModelDetailPanel pricing', () => {
   it('renders a placeholder for empty lookup pricing tables', () => {
     const { container } = render(
       <ModelDetailPanel
-        enabledList={createEnabledList('lobehub', emptyLookupPricing)}
+        enabledList={createEnabledList('ugsci', emptyLookupPricing)}
         model="test-model"
-        provider="lobehub"
+        provider="ugsci"
       />,
     );
 

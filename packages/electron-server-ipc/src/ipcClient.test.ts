@@ -27,7 +27,7 @@ describe('ElectronIpcClient', () => {
   });
   // Mock data
   const mockTempDir = '/mock/temp/dir';
-  const mockSocketInfoPath = '/mock/temp/dir/lobehub-electron-ipc-info.json';
+  const mockSocketInfoPath = '/mock/temp/dir/ugsci-electron-ipc-info.json';
   const mockSocketInfo = { socketPath: '/mock/socket/path' };
 
   // Mock socket

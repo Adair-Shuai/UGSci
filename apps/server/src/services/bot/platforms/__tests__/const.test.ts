@@ -46,8 +46,8 @@ describe('normalizeBotReplyLocale', () => {
     expect(normalizeBotReplyLocale('zh-CN')).toBe('zh-CN');
   });
 
-  it('falls back to en-US when the input is not a project locale', () => {
-    expect(normalizeBotReplyLocale('xx-yy')).toBe('en-US');
+  it('falls back to zh-CN (fork default) when the input is not a project locale', () => {
+    expect(normalizeBotReplyLocale('xx-yy')).toBe('zh-CN');
   });
 
   it('maps Chinese script subtags to the matching regional locale', () => {
@@ -75,9 +75,9 @@ describe('getBotReplyLocale', () => {
     expect(getBotReplyLocale('lark')).toBe('en-US');
   });
 
-  it('falls back to en-US for unknown or missing platforms', () => {
-    expect(getBotReplyLocale(undefined)).toBe('en-US');
-    expect(getBotReplyLocale('mystery-platform')).toBe('en-US');
+  it('falls back to zh-CN (fork default) for unknown or missing platforms', () => {
+    expect(getBotReplyLocale(undefined)).toBe('zh-CN');
+    expect(getBotReplyLocale('mystery-platform')).toBe('zh-CN');
   });
 });
 

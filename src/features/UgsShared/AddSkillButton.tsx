@@ -16,9 +16,9 @@ import { useTranslation } from 'react-i18next';
 
 import { CustomConnectorModal } from '@/features/Connectors';
 import { usePermission } from '@/hooks/usePermission';
-import ImportFromGithubModal from '@/features/SkillStore/SkillList/ImportFromGithubModal';
-import ImportFromUrlModal from '@/features/SkillStore/SkillList/ImportFromUrlModal';
-import UploadSkillModal from '@/features/SkillStore/SkillList/UploadSkillModal';
+import { openImportFromGithubModal } from '@/features/SkillStore/SkillList/ImportFromGithubModal';
+import { openImportFromUrlModal } from '@/features/SkillStore/SkillList/ImportFromUrlModal';
+import { openUploadSkillModal } from '@/features/SkillStore/SkillList/UploadSkillModal';
 
 const MenuLabel = ({ desc, title }: { desc: string; title: ReactNode }) => (
   <Flexbox gap={2}>
@@ -52,22 +52,16 @@ interface AddSkillButtonProps {
 const AddSkillButton = ({ customLabel, customTitle, onPostInstall }: AddSkillButtonProps) => {
   const { t } = useTranslation('setting');
   const [showMcpModal, setMcpModal] = useState(false);
-  const [showUrlModal, setUrlModal] = useState(false);
-  const [showGithubModal, setGithubModal] = useState(false);
-  const [showUploadModal, setUploadModal] = useState(false);
   const { allowed: canCreate } = usePermission('create_content');
   const { allowed: canEdit } = usePermission('edit_own_content');
 
-   // 弹窗关闭时统一触发 onPostInstall（用户可能在弹窗中完成安装）
-   const handleAnyClose = (open: boolean) => {
-     if (!open) {
-       setMcpModal(false);
-       setUrlModal(false);
-       setGithubModal(false);
-       setUploadModal(false);
-       onPostInstall?.();
-     }
-   };
+  // 弹窗关闭时统一触发 onPostInstall（用户可能在弹窗中完成安装）
+  const handleMcpClose = (open: boolean) => {
+    if (!open) {
+      setMcpModal(false);
+      onPostInstall?.();
+    }
+  };
 
   return (
     <div
@@ -75,10 +69,7 @@ const AddSkillButton = ({ customLabel, customTitle, onPostInstall }: AddSkillBut
         e.stopPropagation();
       }}
     >
-      <CustomConnectorModal open={showMcpModal} onClose={() => handleAnyClose(false)} />
-      <ImportFromUrlModal open={showUrlModal} onOpenChange={handleAnyClose} />
-      <ImportFromGithubModal open={showGithubModal} onOpenChange={handleAnyClose} />
-      <UploadSkillModal open={showUploadModal} onOpenChange={handleAnyClose} />
+      <CustomConnectorModal open={showMcpModal} onClose={() => handleMcpClose(false)} />
       <DropdownMenu
         nativeButton
         placement="bottomRight"
@@ -90,7 +81,8 @@ const AddSkillButton = ({ customLabel, customTitle, onPostInstall }: AddSkillBut
             label: <MenuLabel desc={t('tab.importFromUrl.desc')} title={t('tab.importFromUrl')} />,
             onClick: () => {
               if (!canCreate) return;
-              setUrlModal(true);
+              openImportFromUrlModal();
+              onPostInstall?.();
             },
           },
           {
@@ -102,7 +94,8 @@ const AddSkillButton = ({ customLabel, customTitle, onPostInstall }: AddSkillBut
             ),
             onClick: () => {
               if (!canCreate) return;
-              setGithubModal(true);
+              openImportFromGithubModal();
+              onPostInstall?.();
             },
           },
           {
@@ -112,7 +105,8 @@ const AddSkillButton = ({ customLabel, customTitle, onPostInstall }: AddSkillBut
             label: <MenuLabel desc={t('tab.uploadZip.desc')} title={t('tab.uploadZip')} />,
             onClick: () => {
               if (!canCreate) return;
-              setUploadModal(true);
+              openUploadSkillModal();
+              onPostInstall?.();
             },
           },
           { type: 'divider' as const },

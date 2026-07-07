@@ -1,8 +1,10 @@
 import {
   adminClient,
+  emailOTPClient,
   genericOAuthClient,
   inferAdditionalFields,
   magicLinkClient,
+  phoneNumberClient,
 } from 'better-auth/client/plugins';
 import { createAuthClient } from 'better-auth/react';
 
@@ -23,6 +25,9 @@ function getClient() {
         inferAdditionalFields<typeof auth>(),
         genericOAuthClient(),
         magicLinkClient(),
+        // UGS-MODIFY: email OTP & phone OTP client plugins
+        emailOTPClient(),
+        phoneNumberClient(),
       ],
     });
   }
@@ -48,6 +53,9 @@ export const linkSocial = lazyProp('linkSocial');
 export const oauth2 = lazyProp('oauth2');
 export const accountInfo = lazyProp('accountInfo');
 export const listAccounts = lazyProp('listAccounts');
+// UGS-MODIFY: email OTP & phone OTP client plugins
+export const emailOtp = lazyProp('emailOtp');
+export const phoneNumber = lazyProp('phoneNumber');
 export const requestPasswordReset = lazyProp('requestPasswordReset');
 export const resetPassword = lazyProp('resetPassword');
 export const sendVerificationEmail = lazyProp('sendVerificationEmail');

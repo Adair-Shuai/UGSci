@@ -560,12 +560,13 @@ describe('useSignIn', () => {
       });
 
       expect(mockMessageError).toHaveBeenCalled();
-      expect(result.current.step).toBe('password');
+      // UGS-MODIFY: step stays at 'email' on failure (no auto-advance to 'password')
+      expect(result.current.step).toBe('email');
     });
   });
 
   describe('magic link', () => {
-    it('should land on email-sent state when a passwordless user triggers magic link', async () => {
+    it('should detect passwordless user but not auto-send magic link (UGS custom flow)', async () => {
       mockEnableMagicLink = true;
       mockSignInMagicLink.mockResolvedValue({ error: null });
       mockFetch.mockResolvedValueOnce({
@@ -579,11 +580,10 @@ describe('useSignIn', () => {
         await result.current.handleCheckUser({ email: 'user@example.com' });
       });
 
-      expect(mockSignInMagicLink).toHaveBeenCalledTimes(1);
-      expect(result.current.step).toBe('emailSent');
-      expect(result.current.sentInfo).toEqual(
-        expect.objectContaining({ email: 'user@example.com', type: 'magicLink' }),
-      );
+      // UGS-MODIFY: handleCheckUser sets userCheckStatus but does NOT auto-trigger magic link
+      expect(mockSignInMagicLink).not.toHaveBeenCalled();
+      expect(result.current.userCheckStatus).toBe('exists_no_password');
+      expect(result.current.step).toBe('email');
     });
   });
 

@@ -7,7 +7,7 @@ import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { verifyPassword as defaultVerifyPassword } from 'better-auth/crypto';
 import { type BetterAuthOptions } from 'better-auth/minimal';
 import { betterAuth } from 'better-auth/minimal';
-import { admin, emailOTP, genericOAuth, magicLink } from 'better-auth/plugins';
+import { admin, emailOTP, genericOAuth, magicLink, phoneNumber } from 'better-auth/plugins';
 import { type BetterAuthPlugin } from 'better-auth/types';
 import { EnvHttpProxyAgent, setGlobalDispatcher } from 'undici';
 
@@ -300,6 +300,13 @@ export function defineConfig(customOptions: CustomBetterAuthOptions) {
             to: email,
             ...template,
           });
+        },
+      }),
+      // UGS-MODIFY: Phone number OTP plugin for phone sign-in
+      phoneNumber({
+        sendOTP: async ({ phoneNumber, otp }) => {
+          // TODO: integrate with SMS service; log for development
+          console.log(`[UGS Phone OTP] ${phoneNumber}: ${otp}`);
         },
       }),
       passkey({

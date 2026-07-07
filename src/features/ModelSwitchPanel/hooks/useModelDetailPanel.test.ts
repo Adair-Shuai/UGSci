@@ -129,9 +129,10 @@ const renderModelDetailPanelHook = (
 ) =>
   renderHook(() =>
     useModelDetailPanel({
-      enabledList: createEnabledList('lobehub', basePricing),
+      // UGS-MODIFY: BRANDING_PROVIDER is 'ugsci' in fork
+      enabledList: createEnabledList('ugsci', basePricing),
       modelId: 'test-model',
-      provider: 'lobehub',
+      provider: 'ugsci',
       t,
       ...params,
     }),
@@ -149,7 +150,7 @@ describe('useModelDetailPanel', () => {
   it('applies business pricing before formatting LobeHub credit prices', () => {
     useBusinessModelPricingMock.mockReturnValue(
       ({ pricing, model, provider }: { model?: string; pricing?: Pricing; provider?: string }) =>
-        provider === 'lobehub' && model === 'test-model' ? discountedPricing : pricing,
+        provider === 'ugsci' && model === 'test-model' ? discountedPricing : pricing,
     );
 
     const { result } = renderModelDetailPanelHook();
@@ -167,7 +168,7 @@ describe('useModelDetailPanel', () => {
 
   it('formats original unit prices for tiered and lookup units', () => {
     const { result } = renderModelDetailPanelHook({
-      enabledList: createEnabledList('lobehub', unitPricing),
+      enabledList: createEnabledList('ugsci', unitPricing),
     });
 
     expect(result.current.formatUnitPrice(unitPricing.units[0])).toEqual({

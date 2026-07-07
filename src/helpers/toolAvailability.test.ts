@@ -1,4 +1,10 @@
-import { vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+import {
+  filterToolIdsByCurrentEnv,
+  isInstalledPluginAvailableInCurrentEnv,
+  isToolAvailableInCurrentEnv,
+} from './toolAvailability';
 
 // Mock @lobechat/const so we can control isCustomBranding per test
 vi.mock('@lobechat/const', () => ({
@@ -7,14 +13,6 @@ vi.mock('@lobechat/const', () => ({
   },
   isDesktop: false,
 }));
-
-import { describe, expect, it } from 'vitest';
-
-import {
-  filterToolIdsByCurrentEnv,
-  isInstalledPluginAvailableInCurrentEnv,
-  isToolAvailableInCurrentEnv,
-} from './toolAvailability';
 
 describe('toolAvailability', () => {
   afterEach(() => {
