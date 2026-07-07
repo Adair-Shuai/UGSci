@@ -6,12 +6,13 @@ import {
 } from '@lobechat/const';
 import { fireEvent, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import type * as ReactRouterDom from 'react-router-dom';
+import type * as ReactRouterDom from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import AgentDocumentsGroup from './AgentDocumentsGroup';
 
 const useClientDataSWR = vi.fn();
+const useProjectSkillsMock = vi.hoisted(() => vi.fn());
 const modalConfirm = vi.hoisted(() => vi.fn());
 const messageError = vi.hoisted(() => vi.fn());
 const messageSuccess = vi.hoisted(() => vi.fn());
@@ -67,6 +68,14 @@ vi.mock('@/components/NeuralNetworkLoading', () => ({
   default: () => <div data-testid="neural-network-loading" />,
 }));
 
+vi.mock('@/components/AsyncError', () => ({
+  default: ({ onRetry }: { onRetry?: () => void }) => (
+    <button data-testid="async-error" onClick={onRetry}>
+      async-error
+    </button>
+  ),
+}));
+
 vi.mock('@/libs/swr', () => ({
   useClientDataSWR: (...args: unknown[]) => useClientDataSWR(...args),
 }));
@@ -84,6 +93,7 @@ vi.mock('react-i18next', () => ({
           'workingPanel.resources.updatedAt': `Updated ${options?.time}`,
           'workingPanel.skills.empty': 'No skills found',
           'workingPanel.skills.section.agent': 'Agent skills',
+          'workingPanel.skills.section.device': 'Device skills',
           'workingPanel.skills.section.project': 'Project skills',
           'workingPanel.skills.section.user': 'User skills',
         }) as Record<string, string>
@@ -168,13 +178,7 @@ vi.mock('@/features/SkillsList', () => {
       {isEmpty ? <div data-testid="skill-section-empty">{emptyText}</div> : children}
     </div>
   );
-  const useProjectSkills = () => ({
-    isLoading: false,
-    items: [],
-    onOpenFile: () => undefined,
-    onOpenSkill: () => undefined,
-    raw: undefined,
-  });
+  const useProjectSkills = (...args: unknown[]) => useProjectSkillsMock(...args);
   return { SkillSection, SkillsList, useProjectSkills };
 });
 
@@ -212,8 +216,8 @@ vi.mock('@/store/chat', () => ({
     selector({ openDocument: openDocumentMock }),
 }));
 
-vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual<typeof ReactRouterDom>('react-router-dom');
+vi.mock('react-router', async () => {
+  const actual = await vi.importActual<typeof ReactRouterDom>('react-router');
   return {
     ...actual,
     useParams: useParamsMock,
@@ -295,6 +299,19 @@ const webDocRow = {
 describe('AgentDocumentsGroup', () => {
   beforeEach(() => {
     useClientDataSWR.mockReset();
+    useProjectSkillsMock.mockReset();
+    useProjectSkillsMock.mockReturnValue({
+      deviceItems: [],
+      error: undefined,
+      getRowActions: () => [],
+      isLoading: false,
+      items: [],
+      mutate: vi.fn(),
+      onOpenFile: () => undefined,
+      onOpenSkill: () => undefined,
+      projectItems: [],
+      raw: undefined,
+    });
     modalConfirm.mockReset();
     messageError.mockReset();
     messageSuccess.mockReset();
@@ -323,6 +340,46 @@ describe('AgentDocumentsGroup', () => {
     // file / web docs should not leak into the skills tab
     expect(screen.queryByText('Brief')).not.toBeInTheDocument();
     expect(screen.queryByText('Example')).not.toBeInTheDocument();
+  });
+
+  it('renders project and device filesystem skills as separate sections', () => {
+    const projectItem = {
+      fileCount: 1,
+      id: 'project-skill',
+      name: 'project-writer',
+      scope: 'project' as const,
+    };
+    const deviceItem = {
+      fileCount: 1,
+      id: 'device-skill',
+      name: 'device-writer',
+      scope: 'device' as const,
+    };
+    useProjectSkillsMock.mockReturnValue({
+      deviceItems: [deviceItem],
+      error: undefined,
+      getRowActions: () => [],
+      isLoading: false,
+      items: [projectItem, deviceItem],
+      mutate: vi.fn(),
+      onOpenFile: () => undefined,
+      onOpenSkill: () => undefined,
+      projectItems: [projectItem],
+      raw: undefined,
+    });
+    useClientDataSWR.mockReturnValue({
+      data: [fileDocRow, webDocRow],
+      error: undefined,
+      isLoading: false,
+      mutate: vi.fn(),
+    });
+
+    render(<AgentDocumentsGroup showLocalProjectSkills workingDirectory="/repo" />);
+
+    expect(screen.getByTestId('skill-section-Project skills')).toBeInTheDocument();
+    expect(screen.getByTestId('skill-section-Device skills')).toBeInTheDocument();
+    expect(screen.getByText('project-writer')).toBeInTheDocument();
+    expect(screen.getByText('device-writer')).toBeInTheDocument();
   });
 
   it('opens the SKILL.md document in the portal when clicking a skill bundle row', () => {
@@ -559,7 +616,7 @@ describe('AgentDocumentsGroup', () => {
     render(<AgentDocumentsGroup />);
 
     // No agent bundles, no working dir (no Project section), no user-installed
-    // skills → renderSkills collapses to the global "No skills found"
+    // skills → renderSkills collapses to the shared "No skills found"
     // placeholder rather than rendering an empty section per source.
     expect(screen.getByText('No skills found')).toBeInTheDocument();
     expect(screen.queryByTestId('skills-list')).not.toBeInTheDocument();
@@ -580,16 +637,18 @@ describe('AgentDocumentsGroup', () => {
   });
 
   it('renders error state when SWR returns an error', () => {
+    const mutate = vi.fn();
     useClientDataSWR.mockReturnValue({
       data: [],
       error: new Error('oops'),
       isLoading: false,
-      mutate: vi.fn(),
+      mutate,
     });
 
     render(<AgentDocumentsGroup />);
 
-    expect(screen.getByText('Failed to load resources')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('async-error'));
+    expect(mutate).toHaveBeenCalled();
   });
 
   it('renders the loading spinner while data is being fetched', () => {

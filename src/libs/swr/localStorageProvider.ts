@@ -23,6 +23,8 @@
  * </SWRConfig>
  * ```
  */
+import { bootTiming } from '@/libs/bootTiming';
+
 import { buildLocalDataKey, localDataCache } from './localDataCache';
 
 interface CacheEntry<T = unknown> {
@@ -51,7 +53,11 @@ export interface CacheProviderOptions {
   onError?: (error: Error) => void;
   /** Called after a scope's IndexedDB tier finishes hydrating. */
   onScopeHydrated?: (scope: string) => void;
-  /** Cache TTL in milliseconds, defaults to 24 hours. Applies to both tiers. */
+  /**
+   * Cache TTL in milliseconds, defaults to 7 days. Governs the localStorage
+   * tier only (small, frequently-changing shells like recents) — the IndexedDB
+   * tier never expires (stale-while-revalidate).
+   */
   ttl?: number;
   /** App version; entries from another version are ignored on load. */
   version?: string;
@@ -62,11 +68,16 @@ export interface CacheProviderOptions {
  */
 export type ScopedSWRProvider = (() => Map<string, unknown>) & {
   /**
+   * Ensure the provider's Map exists and hydrate the current scope's IndexedDB
+   * tier. This is used by the SPA bootstrap while React mounts the root tree.
+   */
+  hydrateScope?: () => Promise<void>;
+  /**
    * Flush pending writes, then re-hydrate the in-memory cache from the *current*
    * scope's namespaces (localStorage synchronously, IndexedDB asynchronously).
    * No-op until SWR has created the provider's Map.
    */
-  reloadScope?: () => void;
+  reloadScope?: () => Promise<void>;
 };
 
 const isLocalStorageAvailable = (): boolean => {
@@ -105,7 +116,7 @@ export function createCacheProvider(options: CacheProviderOptions = {}): ScopedS
     getScope = () => 'default',
     idbPatterns = [],
     localPatterns = [],
-    ttl = 24 * 60 * 60 * 1000, // 24 hours
+    ttl = 7 * 24 * 60 * 60 * 1000, // 7 days
     maxLocalEntries = 50,
     version = '1.0.0',
     onError = (error) => console.error('[SWR Cache]', error),
@@ -113,12 +124,18 @@ export function createCacheProvider(options: CacheProviderOptions = {}): ScopedS
   } = options;
 
   // SSR / no storage → plain memory cache, no persistence. Still signal
-  // hydration so the boot gate never blocks.
+  // hydration so boot initialization never blocks.
   if (!isLocalStorageAvailable()) {
-    return () => {
+    const memoryProvider = (() => {
       onScopeHydrated?.(getScope());
       return new Map();
+    }) as ScopedSWRProvider;
+    memoryProvider.hydrateScope = async () => {
+      onScopeHydrated?.(getScope());
     };
+    memoryProvider.reloadScope = memoryProvider.hydrateScope;
+
+    return memoryProvider;
   }
 
   /** Route a key to its persistence tier (idb wins over local). */
@@ -129,6 +146,10 @@ export function createCacheProvider(options: CacheProviderOptions = {}): ScopedS
   };
 
   let cacheMapInstance: TieredCacheMap | null = null;
+  let hydratedScope: string | null = null;
+  let hydrationEpoch = 0;
+  let pendingHydration: { promise: Promise<void>; scope: string } | null = null;
+  let cacheHydrationSpanRecorded = false;
 
   // --- localStorage tier (synchronous snapshot) ----------------------------
   let localTimer: ReturnType<typeof setTimeout> | null = null;
@@ -212,22 +233,40 @@ export function createCacheProvider(options: CacheProviderOptions = {}): ScopedS
     idbTimer = setTimeout(flushIdb, debounceMs);
   };
 
-  const loadIdb = async () => {
-    const scope = getScope();
+  const loadIdb = async (scope: string, epoch: number, hydrationStart?: number) => {
+    let succeeded = false;
     try {
       const entries = await localDataCache.entriesByScope(scope);
-      const now = Date.now();
-      const valid = entries.filter(
-        (e) => (e.version === undefined || e.version === version) && now - e.updatedAt <= ttl,
-      );
+      // The IndexedDB tier holds read-heavy / write-light business entities
+      // (messages, topics, …): once written, a row rarely changes. We never drop
+      // these by age — a stale row hydrates for an instant first paint and SWR's
+      // revalidate-on-mount refreshes it in the background (stale-while-revalidate).
+      // Version is the only invalidator: a row must carry the *current* version,
+      // so legacy/unversioned rows (which the age check used to bound) are dropped
+      // and a version bump still evicts everyone. TTL governs the localStorage
+      // tier only (see `loadLocal`).
+      const valid = entries.filter((e) => e.version === version);
       // Map may have changed scope while we awaited; only apply if still current.
-      if (cacheMapInstance && getScope() === scope) {
+      if (cacheMapInstance && getScope() === scope && hydrationEpoch === epoch) {
         cacheMapInstance.hydrate(valid.map((e) => [e.key, e.data]));
+        hydratedScope = scope;
       }
+      succeeded = true;
     } catch (error) {
       onError(error as Error);
     } finally {
+      if (hydrationStart !== undefined && succeeded && !cacheHydrationSpanRecorded) {
+        cacheHydrationSpanRecorded = true;
+        bootTiming.recordSpan(
+          'cache-hydration',
+          hydrationStart,
+          performance.now() - hydrationStart,
+        );
+      }
       onScopeHydrated?.(scope);
+      if (pendingHydration?.scope === scope && hydrationEpoch === epoch) {
+        pendingHydration = null;
+      }
     }
   };
 
@@ -325,16 +364,46 @@ export function createCacheProvider(options: CacheProviderOptions = {}): ScopedS
     }
   });
 
-  const provider: ScopedSWRProvider = () => {
+  const ensureMap = (): TieredCacheMap => {
+    if (cacheMapInstance) return cacheMapInstance;
+
     const map = new TieredCacheMap();
     cacheMapInstance = map;
     map.hydrate([...loadLocal().entries()]); // synchronous first paint
-    void loadIdb(); // asynchronous local-first hydration
     return map;
   };
 
-  provider.reloadScope = () => {
-    if (!cacheMapInstance) return;
+  const hydrateScope = async (): Promise<void> => {
+    const scope = getScope();
+    ensureMap();
+    if (hydratedScope === scope) return;
+    if (pendingHydration?.scope === scope) return pendingHydration.promise;
+
+    const epoch = ++hydrationEpoch;
+    const start = !cacheHydrationSpanRecorded ? performance.now() : undefined;
+    const promise = loadIdb(scope, epoch, start);
+    pendingHydration = { promise, scope };
+    return promise;
+  };
+
+  const provider: ScopedSWRProvider = () => {
+    const map = ensureMap();
+    void hydrateScope();
+    return map;
+  };
+
+  provider.hydrateScope = hydrateScope;
+
+  provider.reloadScope = async () => {
+    if (!cacheMapInstance) {
+      await hydrateScope();
+      return;
+    }
+
+    hydrationEpoch += 1;
+    hydratedScope = null;
+    pendingHydration = null;
+
     // Drop pending writes scheduled for the previous scope.
     if (localTimer) {
       clearTimeout(localTimer);
@@ -349,7 +418,7 @@ export function createCacheProvider(options: CacheProviderOptions = {}): ScopedS
 
     cacheMapInstance.dropPersisted();
     cacheMapInstance.hydrate([...loadLocal().entries()]);
-    void loadIdb();
+    await hydrateScope();
   };
 
   return provider;
@@ -394,6 +463,8 @@ export const CACHE_TIERS = {
     'fetchRecentResources',
     'fetchRecentPages',
     'group:list',
+    'taskTemplate:', // home task-template recommendations
+    'modelConfig:', // small remote model config shells used by home starter chips
   ],
 } as const;
 
@@ -403,8 +474,7 @@ export const CACHE_TIERS = {
  * @param getScope resolver for the current identity scope. Evaluated lazily so
  *   persistence follows the active user/workspace; call `provider.reloadScope()`
  *   after the scope changes to re-hydrate in place.
- * @param onScopeHydrated notified after a scope's IndexedDB tier finishes
- *   loading (used by the boot hydration gate).
+ * @param onScopeHydrated notified after a scope's IndexedDB tier finishes loading.
  */
 export const swrCacheProvider = (
   getScope: () => string,
@@ -415,6 +485,8 @@ export const swrCacheProvider = (
     idbPatterns: [...CACHE_TIERS.idb],
     localPatterns: [...CACHE_TIERS.local],
     onScopeHydrated,
-    ttl: 12 * 60 * 60 * 1000, // 12 hours
+    // Governs the localStorage tier only (recents-style shells); the IndexedDB
+    // tier (messages, topics, …) never expires. 7 days is plenty for recents.
+    ttl: 7 * 24 * 60 * 60 * 1000, // 7 days
   });
 };

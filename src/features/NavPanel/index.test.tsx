@@ -21,7 +21,7 @@ const workspaceState: WorkspaceMock = {
   workspaces: [{ id: 'workspace-1', slug: 'lobe-team' }],
 };
 
-vi.mock('react-router-dom', () => ({
+vi.mock('react-router', () => ({
   useLocation: () => ({ pathname }),
 }));
 
@@ -53,6 +53,30 @@ vi.mock('@/routes/(main)/group/_layout/Sidebar/Content', () => ({
 
 vi.mock('@/routes/(main)/community/_layout/Sidebar/Content', () => ({
   default: () => <div>Community sidebar</div>,
+}));
+
+vi.mock('@/routes/(main)/resource/(home)/_layout/SidebarContent', () => ({
+  default: () => <div>Resource sidebar</div>,
+}));
+
+vi.mock('@/routes/(main)/memory/_layout/Sidebar/Content', () => ({
+  default: () => <div>Memory sidebar</div>,
+}));
+
+vi.mock('@/routes/(main)/eval/_layout/Sidebar/Content', () => ({
+  default: () => <div>Eval sidebar</div>,
+}));
+
+vi.mock('@/features/Pages/PageLayout/SidebarContent', () => ({
+  default: () => <div>Page sidebar</div>,
+}));
+
+vi.mock('@/routes/(main)/(create)/image/_layout/Sidebar/Content', () => ({
+  default: () => <div>Image sidebar</div>,
+}));
+
+vi.mock('@/routes/(main)/(create)/video/_layout/Sidebar/Content', () => ({
+  default: () => <div>Video sidebar</div>,
 }));
 
 vi.mock('./components/NavPanelDraggable', () => ({

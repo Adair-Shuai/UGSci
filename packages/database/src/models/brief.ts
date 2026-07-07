@@ -1,10 +1,11 @@
-import { and, desc, eq, isNull, notInArray, sql } from 'drizzle-orm';
+import { and, desc, eq, isNull, notInArray, type SQL, sql } from 'drizzle-orm';
 
 import { agents } from '../schemas/agent';
 import type { BriefItem, NewBrief } from '../schemas/task';
 import { briefs, tasks } from '../schemas/task';
 import type { LobeChatDatabase } from '../type';
-import { buildWorkspacePayload, buildWorkspaceWhere } from '../utils/workspace';
+import { normalizeInboxAgentAvatar, normalizeInboxAgentTitle } from '../utils/inboxAgent';
+import { buildWorkspacePayload } from '../utils/workspace';
 
 export interface UnresolvedBriefRow {
   agentAvatar: string | null;
@@ -26,8 +27,16 @@ export class BriefModel {
     this.workspaceId = workspaceId;
   }
 
-  private ownership = () =>
-    buildWorkspaceWhere({ userId: this.userId, workspaceId: this.workspaceId }, briefs);
+  // Briefs are per-user notifications (owner-only `readAt` / `resolvedAction` /
+  // `resolvedAt`), not workspace-shared content. The standard `buildWorkspaceWhere`
+  // helper drops the `user_id` constraint in workspace mode by design (members
+  // share content rows), which would leak each member's briefs to everyone else
+  // in the workspace. Brief ownership therefore always requires `user_id` to
+  // match, in both personal and workspace mode.
+  private ownership = (): SQL =>
+    this.workspaceId
+      ? (and(eq(briefs.userId, this.userId), eq(briefs.workspaceId, this.workspaceId)) as SQL)
+      : (and(eq(briefs.userId, this.userId), isNull(briefs.workspaceId)) as SQL);
 
   async create(data: Omit<NewBrief, 'id' | 'userId'>): Promise<BriefItem> {
     const result = await this.db
@@ -86,11 +95,12 @@ export class BriefModel {
    */
   async listUnresolvedEnriched(options?: { limit?: number }): Promise<UnresolvedBriefRow[]> {
     const { limit = 20 } = options ?? {};
-    return this.db
+    const rows = await this.db
       .select({
         agentAvatar: agents.avatar,
         agentBackgroundColor: agents.backgroundColor,
         agentRowId: agents.id,
+        agentSlug: agents.slug,
         agentTitle: agents.title,
         brief: briefs,
         taskStatus: tasks.status,
@@ -108,6 +118,16 @@ export class BriefModel {
         desc(briefs.createdAt),
       )
       .limit(limit);
+
+    return rows.map(({ agentSlug, ...row }) => ({
+      ...row,
+      agentAvatar: normalizeInboxAgentAvatar(row.agentAvatar, {
+        slug: agentSlug,
+      }),
+      agentTitle: normalizeInboxAgentTitle(row.agentTitle, {
+        slug: agentSlug,
+      }),
+    }));
   }
 
   /**

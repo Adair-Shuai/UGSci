@@ -164,9 +164,19 @@ export default {
 
   'fork.forksCount_other': '{{count}} forks',
 
+  'fork.orgSetupRequired.memberContent':
+    "This workspace has not yet set up a Community profile, so forks from the marketplace can't be saved here. Please ask the workspace owner to set it up under Community → Workspace.",
+  'fork.orgSetupRequired.ownerContent':
+    'This workspace has not yet set up a Community profile. Set one up to fork agents from the marketplace into your workspace.',
+  'fork.orgSetupRequired.ownerOk': 'Go to setup',
+  'fork.orgSetupRequired.title': 'Community profile setup required',
+
   'fork.success': 'Forked successfully!',
 
   'fork.viewAllForks': 'View all forks',
+
+  'fork.visibilityPrivate': 'Private',
+  'fork.visibilityPublic': 'Workspace',
 
   'groupAgents.tag': 'Group',
 
@@ -1139,7 +1149,7 @@ export default {
 
   'user.login': 'Become a Creator',
 
-  'user.logout': 'Logout',
+  'user.logout': 'Sign out',
 
   'user.openWorkspacePublicProfile': 'Open Public Link',
 
@@ -1262,11 +1272,11 @@ export default {
 
   'user.noForkedAgents': 'No forked Agents yet',
 
-  'user.noPlugins': "This user hasn't published any Plugins yet",
+  'user.noPlugins': "This user hasn't published any Skills yet",
 
   'user.noSkills': "This user hasn't published any Skills yet",
 
-  'user.plugins': 'Plugins',
+  'user.plugins': 'Skills',
 
   'user.publishedAgents': 'Created Agents',
 

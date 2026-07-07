@@ -7,7 +7,7 @@ import { type PartialDeep } from 'type-fest';
 
 import { DEFAULT_PREFERENCE } from '@/const/user';
 import { mutate, useOnlyFetchOnceSWR } from '@/libs/swr';
-import { userKeys } from '@/libs/swr/keys';
+import { taskTemplateKeys, userKeys } from '@/libs/swr/keys';
 import { userService } from '@/services/user';
 import { type StoreSetter } from '@/store/types';
 import { type UserStore } from '@/store/user';
@@ -28,6 +28,9 @@ const n = setNamespace('common');
 type Setter = StoreSetter<UserStore>;
 export const createCommonSlice = (set: Setter, get: () => UserStore, _api?: unknown) =>
   new CommonActionImpl(set, get, _api);
+
+export const isTaskTemplateRecommendationKey = (key: unknown): boolean =>
+  Array.isArray(key) && key[0] === taskTemplateKeys.listDailyRecommend.root;
 
 export class CommonActionImpl {
   readonly #get: () => UserStore;
@@ -59,6 +62,9 @@ export class CommonActionImpl {
       this.#set({ user: { ...previousUser, interests } }, false, n('updateInterests/optimistic'));
     }
     await userService.updateInterests(interests);
+    void mutate(isTaskTemplateRecommendationKey).catch((error) => {
+      console.error('[taskTemplate:recommendationCache:invalidate]', error);
+    });
     await this.#get().refreshUserState();
   };
 
@@ -101,6 +107,9 @@ export class CommonActionImpl {
       () => userService.getUserState(),
       {
         onError: (error) => {
+          // Record the init failure so gated tabs (Advanced / ServiceModel) can
+          // render error + Retry instead of a permanent skeleton.
+          this.#set({ isUserStateInitError: error }, false, n('initUserState/error'));
           options?.onError?.(error);
         },
         onSuccess: (data) => {
@@ -144,6 +153,7 @@ export class CommonActionImpl {
                 isUserCanEnableTrace: data.canEnableTrace,
                 isUserHasConversation: data.hasConversation,
                 isUserStateInit: true,
+                isUserStateInitError: undefined,
                 agentOnboarding: data.agentOnboarding,
                 onboarding: data.onboarding,
                 preference,

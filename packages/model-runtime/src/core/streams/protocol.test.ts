@@ -761,6 +761,53 @@ describe('createCallbacksTransformer', () => {
     });
   });
 
+  // Regression: google/openai image streams serialize the `base64_image` event's
+  // `data` as a raw data-URI string (which itself contains `data:`). The
+  // transformer must strip only the leading field marker (not split on the
+  // embedded one) and wrap the string into an image item, so a real server-side
+  // onBase64Image consumer can upload it instead of crashing on `image.data`.
+  it('should wrap raw data-URI base64_image payloads and call onBase64Image', async () => {
+    const receivedCalls: Array<{
+      image: { data: string; id: string };
+      images: Array<{ data: string; id: string }>;
+    }> = [];
+    const onBase64Image = vi.fn((data) => {
+      receivedCalls.push({
+        image: { ...data.image },
+        images: data.images.map((img: { data: string; id: string }) => ({ ...img })),
+      });
+    });
+    const transformer = createCallbacksTransformer({ onBase64Image });
+
+    const uri1 = 'data:image/png;base64,base64data1';
+    const uri2 = 'data:image/png;base64,base64data2';
+
+    const chunks = [
+      'event: base64_image\n',
+      `data: ${JSON.stringify(uri1)}\n\n`,
+      'event: base64_image\n',
+      `data: ${JSON.stringify(uri2)}\n\n`,
+    ];
+
+    await processChunks(transformer, chunks);
+
+    expect(onBase64Image).toHaveBeenCalledTimes(2);
+    // The raw data-URI is preserved (not corrupted by the embedded `data:`) and
+    // wrapped with a generated id.
+    expect(receivedCalls[0].image).toEqual({
+      data: uri1,
+      id: expect.stringMatching(/^tmp_img_/),
+    });
+    expect(receivedCalls[0].images).toEqual([
+      { data: uri1, id: expect.stringMatching(/^tmp_img_/) },
+    ]);
+    expect(receivedCalls[1].image).toEqual({
+      data: uri2,
+      id: expect.stringMatching(/^tmp_img_/),
+    });
+    expect(receivedCalls[1].images.map((img) => img.data)).toEqual([uri1, uri2]);
+  });
+
   it('should handle content_part chunks and call onContentPart callback', async () => {
     const onContentPart = vi.fn();
     const transformer = createCallbacksTransformer({ onContentPart });
@@ -970,6 +1017,58 @@ describe('createCallbacksTransformer', () => {
     await processChunks(transformer, chunks);
 
     expect(onFinal).toHaveBeenCalledWith(expect.objectContaining({ finishReason: undefined }));
+  });
+
+  it('should include usageMissingDiagnostics on final data when no usage is received', async () => {
+    const onFinal = vi.fn();
+    const streamStack = {
+      id: 'chat_1',
+      usageMissingDiagnostics: {
+        finishReason: 'stop',
+        hasUsageMetadata: false,
+        includeUsageRequested: true,
+        model: 'gpt-5.4-mini',
+        provider: 'openai',
+        source: 'openai_chat_completions' as const,
+        terminalEventType: 'chat.completion.chunk',
+      },
+    };
+    const transformer = createCallbacksTransformer({ onFinal }, { streamStack });
+
+    const chunks = ['event: stop\n', `data: ${JSON.stringify('stop')}\n\n`];
+
+    await processChunks(transformer, chunks);
+
+    expect(onFinal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        usage: undefined,
+        usageMissingDiagnostics: streamStack.usageMissingDiagnostics,
+      }),
+    );
+  });
+
+  it('should omit usageMissingDiagnostics when usage is received', async () => {
+    const onFinal = vi.fn();
+    const streamStack = {
+      id: 'chat_1',
+      usageMissingDiagnostics: {
+        finishReason: 'stop',
+        hasUsageMetadata: false,
+        source: 'openai_chat_completions' as const,
+        terminalEventType: 'chat.completion.chunk',
+      },
+    };
+    const transformer = createCallbacksTransformer({ onFinal }, { streamStack });
+
+    const chunks = ['event: usage\n', `data: ${JSON.stringify({ totalTokens: 10 })}\n\n`];
+
+    await processChunks(transformer, chunks);
+
+    expect(onFinal).toHaveBeenCalledWith(
+      expect.not.objectContaining({
+        usageMissingDiagnostics: expect.anything(),
+      }),
+    );
   });
 
   it('should handle speed chunks and include in final data', async () => {

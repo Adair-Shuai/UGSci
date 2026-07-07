@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { matchRoutes } from 'react-router-dom';
+import { matchRoutes } from 'react-router';
 import { describe, expect, it } from 'vitest';
 
 import { desktopRoutes } from './desktopRouter.config';
@@ -117,6 +117,7 @@ describe('desktopRouter config sync', () => {
       '@/routes/(main)/[workspaceSlug]/settings/credits',
       '@/routes/(main)/[workspaceSlug]/settings/usage',
       '@/routes/(main)/[workspaceSlug]/settings/skill',
+      '@/routes/(main)/[workspaceSlug]/settings/audit-log',
     ];
 
     for (const target of requiredImportTargets) {

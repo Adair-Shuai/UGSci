@@ -13,7 +13,7 @@ import AuthCard from '@/features/AuthCard';
 import { AuthAgreement } from '@/features/AuthShell';
 
 const styles = createStaticStyles(({ css, cssVar }) => ({
-  setPasswordLink: css`
+  inlineLink: css`
     cursor: pointer;
     color: ${cssVar.colorPrimary};
     text-decoration: underline;
@@ -40,7 +40,9 @@ export interface SignInEmailStepProps {
   loading: boolean;
   oAuthSSOProviders: string[];
   onCheckUser: (values: { email: string }) => Promise<void>;
+  onGoToSignup: () => void;
   onPasswordLogin: (password: string) => Promise<void>;
+  onResetEmail: () => void;
   onResetUser: () => void;
   onSendCode: (email: string) => Promise<void>;
   onSetPassword: () => void;
@@ -64,7 +66,9 @@ export const SignInEmailStep = ({
   socialLoading,
   codeLoading,
   onCheckUser,
+  onGoToSignup,
   onPasswordLogin,
+  onResetEmail,
   onResetUser,
   onSendCode,
   onSetPassword,
@@ -129,15 +133,12 @@ export const SignInEmailStep = ({
     return t(key, { defaultValue: `Continue with ${normalized}` });
   };
 
+  // Config is injected synchronously via window.__SERVER_CONFIG__, so the email
+  // form is the primary path unless the account is social-only.
+  const showEmailForm = !disableEmailPassword && !isSocialOnly;
+
   return (
     <AuthCard title={t('signin.subtitle', { appName: BRANDING_NAME })}>
-      {!serverConfigInit && (
-        <Flexbox gap={12}>
-          <Skeleton.Button active block size="large" />
-          <Skeleton.Button active block size="large" />
-          {divider}
-        </Flexbox>
-      )}
       {serverConfigInit && oAuthSSOProviders.length > 0 && (
         <Flexbox gap={12}>
           {oAuthSSOProviders.map((provider) => {
@@ -171,13 +172,13 @@ export const SignInEmailStep = ({
               button
             );
           })}
-          {!disableEmailPassword && divider}
+          {showEmailForm && divider}
         </Flexbox>
       )}
       {serverConfigInit && disableEmailPassword && oAuthSSOProviders.length === 0 && (
         <Alert showIcon description={t('betterAuth.signin.ssoOnlyNoProviders')} type="warning" />
       )}
-      {!disableEmailPassword && (
+      {showEmailForm && (
         <Form
           form={form}
           layout="vertical"
@@ -212,9 +213,9 @@ export const SignInEmailStep = ({
             ]}
           >
             <Input
+              autoComplete="username"
+              inputMode="email"
               placeholder={t('betterAuth.signin.emailPlaceholder')}
-              ref={emailInputRef}
-              size="large"
               prefix={
                 <Icon
                   icon={Mail}
@@ -223,6 +224,8 @@ export const SignInEmailStep = ({
                   }}
                 />
               }
+              ref={emailInputRef}
+              size="large"
               style={{
                 padding: 6,
               }}
@@ -322,14 +325,62 @@ export const SignInEmailStep = ({
           description={
             <>
               {t('betterAuth.signin.socialOnlyHint')}{' '}
-              <a className={styles.setPasswordLink} onClick={onSetPassword}>
+              <a
+                className={styles.inlineLink}
+                role="button"
+                tabIndex={0}
+                onClick={onSetPassword}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onSetPassword();
+                  }
+                }}
+              >
                 {t('betterAuth.signin.setPassword')}
               </a>
             </>
           }
         />
       )}
+      {isSocialOnly && (
+        <Text align={'center'} fontSize={13} style={{ marginTop: 12 }} type={'secondary'}>
+          <a
+            className={styles.inlineLink}
+            role="button"
+            tabIndex={0}
+            onClick={onResetEmail}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onResetEmail();
+              }
+            }}
+          >
+            {t('betterAuth.signin.emailSent.changeEmail')}
+          </a>
+        </Text>
+      )}
       <AuthAgreement />
+      {showEmailForm && (
+        <Text align={'center'} fontSize={13} style={{ marginTop: 16 }} type={'secondary'}>
+          {t('betterAuth.signin.noAccount')}{' '}
+          <a
+            className={styles.inlineLink}
+            role="button"
+            tabIndex={0}
+            onClick={onGoToSignup}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onGoToSignup();
+              }
+            }}
+          >
+            {t('betterAuth.signin.signupLink')}
+          </a>
+        </Text>
+      )}
     </AuthCard>
   );
 };

@@ -1,3 +1,4 @@
+import { TRPCError } from '@trpc/server';
 import { type AiProviderModelListItem } from 'model-bank';
 import {
   AiModelTypeSchema,
@@ -18,6 +19,30 @@ import { getServerGlobalConfig } from '@/server/globalConfig';
 import { KeyVaultsGateKeeper } from '@/server/modules/KeyVaultsEncrypt';
 import { type ProviderConfig } from '@/types/user/settings';
 
+const AI_MODEL_UNIQUE_CONSTRAINT = 'ai_models_id_provider_id_user_id_pk';
+
+const getPostgresErrorField = (error: unknown, field: 'code' | 'constraint') => {
+  let current = error;
+
+  while (current && typeof current === 'object') {
+    const value = (current as Record<string, unknown>)[field];
+    if (typeof value === 'string') return value;
+
+    current = (current as { cause?: unknown }).cause;
+  }
+};
+
+const isDuplicateAiModelError = (error: unknown) =>
+  getPostgresErrorField(error, 'code') === '23505' &&
+  getPostgresErrorField(error, 'constraint') === AI_MODEL_UNIQUE_CONSTRAINT;
+
+const throwDuplicateAiModelError = (id: string): never => {
+  throw new TRPCError({
+    code: 'CONFLICT',
+    message: `Model "${id}" already exists`,
+  });
+};
+
 const aiModelProcedure = wsCompatProcedure.use(serverDatabase).use(async (opts) => {
   const { ctx } = opts;
   const wsId = ctx.workspaceId ?? undefined;
@@ -31,8 +56,9 @@ const aiModelProcedure = wsCompatProcedure.use(serverDatabase).use(async (opts) 
         ctx.serverDB,
         ctx.userId,
         aiProvider as Record<string, ProviderConfig>,
+        wsId,
       ),
-      aiModelModel: new AiModelModel(ctx.serverDB, ctx.userId),
+      aiModelModel: new AiModelModel(ctx.serverDB, ctx.userId, wsId),
       gateKeeper,
       userModel: new UserModel(ctx.serverDB, ctx.userId),
     },
@@ -82,9 +108,18 @@ export const aiModelRouter = router({
     .use(withScopedPermission('ai_model:create'))
     .input(CreateAiModelSchema)
     .mutation(async ({ input, ctx }) => {
-      const data = await ctx.aiModelModel.create(input);
+      const existingModel = await ctx.aiModelModel.findByIdAndProvider(input.id, input.providerId);
+      if (existingModel) throwDuplicateAiModelError(input.id);
 
-      return data?.id;
+      try {
+        const data = await ctx.aiModelModel.create(input);
+
+        return data?.id;
+      } catch (error) {
+        if (isDuplicateAiModelError(error)) throwDuplicateAiModelError(input.id);
+
+        throw error;
+      }
     }),
 
   getAiModelById: aiModelProcedure

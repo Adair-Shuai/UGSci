@@ -1,11 +1,10 @@
 'use client';
 
-import { memo, useEffect } from 'react';
+import { memo } from 'react';
 
 import { useAiInfraStore } from '@/store/aiInfra';
 import { useElectronStore } from '@/store/electron';
 import { electronSyncSelectors } from '@/store/electron/selectors';
-import { useToolStore } from '@/store/tool';
 import { useUserMemoryStore } from '@/store/userMemory';
 
 interface DeferredStoreInitializationProps {

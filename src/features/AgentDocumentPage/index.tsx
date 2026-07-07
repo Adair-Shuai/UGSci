@@ -1,12 +1,19 @@
 'use client';
 
-import { memo, useCallback, useMemo } from 'react';
-import { useParams } from 'react-router-dom';
+import { Flexbox } from '@lobehub/ui';
+import { memo, useCallback, useEffect, useMemo } from 'react';
+import { useParams } from 'react-router';
 
+import FloatingChatPanel from '@/features/FloatingChatPanel';
+import { useDocumentChatTopic } from '@/features/FloatingChatPanel/useDocumentChatTopic';
 import { PageEditor } from '@/features/PageEditor';
+import WideScreenContainer from '@/features/WideScreenContainer';
 import { useWorkspaceAwareNavigate } from '@/features/Workspace/useWorkspaceAwareNavigate';
+import { useUserStore } from '@/store/user';
+import { labPreferSelectors } from '@/store/user/selectors';
 
 import Header from './Header';
+import { buildAgentDocumentsPath } from './navigation';
 import { useAgentDocumentItem } from './useAgentDocumentItem';
 
 interface AgentDocumentPageProps {
@@ -25,14 +32,53 @@ const AgentDocumentPage = memo<AgentDocumentPageProps>(({ documentId }) => {
   const { aid } = useParams<{ aid: string }>();
   const agentId = aid ?? '';
   const navigate = useWorkspaceAwareNavigate();
-  const { item, mutate } = useAgentDocumentItem(agentId, documentId);
+  const {
+    error: itemError,
+    isNotFound,
+    item,
+    mutate,
+    skillBundle,
+  } = useAgentDocumentItem(agentId, documentId);
+
+  const enableFloatingChatPanel = useUserStore(
+    labPreferSelectors.enableAgentDocumentFloatingChatPanel,
+  );
+  // The route owns the agent — `useChatStore.activeAgentId` can be a different
+  // agent (the user's main chat context). Pulling that one would 404 the
+  // doc-anchored topic lookup whenever the active agent doesn't own this doc.
+  const chatAgentId = agentId;
+  const { topicId: docChatTopicId } = useDocumentChatTopic({
+    agentId: enableFloatingChatPanel ? chatAgentId : undefined,
+    documentId: enableFloatingChatPanel ? documentId : undefined,
+  });
 
   const backToChat = useCallback(
     () => navigate(agentId ? `/agent/${agentId}` : '/agent'),
     [agentId, navigate],
   );
 
-  const title = item?.title || item?.filename;
+  // Deleting the open document lands on the docs index (empty-state guidance +
+  // the persistent document tree) rather than the deleted doc's now-404 route.
+  const backToDocs = useCallback(
+    () => navigate(agentId ? buildAgentDocumentsPath(agentId) : '/agent'),
+    [agentId, navigate],
+  );
+
+  // The doc backing this route can vanish while the page is open — most often
+  // deleted from the working-sidebar tree (which optimistically drops the row
+  // from the same list this reads). Redirect to the docs index rather than
+  // stranding the user on a 404 for a doc they just removed. `isNotFound` is
+  // precise (list resolved, doc genuinely absent — not a load error), so a bad
+  // deep link also lands on the index instead of a dead end.
+  useEffect(() => {
+    if (isNotFound && agentId) navigate(buildAgentDocumentsPath(agentId), { replace: true });
+  }, [isNotFound, agentId, navigate]);
+
+  // A skill index doc is stored as `SKILL.md`; show the skill name (bundle title) instead.
+  const isSkillIndex = !!skillBundle;
+  const title = skillBundle
+    ? skillBundle.title || skillBundle.filename || item?.title || item?.filename
+    : item?.title || item?.filename;
 
   const header = useMemo(
     () => (
@@ -40,28 +86,54 @@ const AgentDocumentPage = memo<AgentDocumentPageProps>(({ documentId }) => {
         agentDocumentId={item?.id}
         agentId={agentId}
         documentId={documentId}
+        itemError={itemError}
         title={title}
         updatedAt={item?.updatedAt}
         onBack={backToChat}
-        onDeleted={backToChat}
+        onDeleted={backToDocs}
       />
     ),
-    [agentId, backToChat, documentId, item?.id, item?.updatedAt, title],
+    [agentId, backToChat, backToDocs, documentId, item?.id, item?.updatedAt, itemError, title],
   );
 
+  // Genuinely-absent doc (deleted or bad deep link): render nothing while the
+  // redirect effect above sends the user to the docs index, instead of flashing
+  // a 404 for a doc that simply moved to the empty-state landing.
+  if (isNotFound) return null;
+
   return (
-    <PageEditor
-      fullWidthHeader
-      header={header}
-      key={documentId}
-      pageId={documentId}
-      rightPanel={false}
-      syncPageAgentActiveState={false}
-      title={title}
-      // Persisted via the shared document save; refresh the list so the
-      // breadcrumb and working-sidebar entry pick up the new title.
-      onTitleChange={() => mutate()}
-    />
+    <Flexbox flex={1} height={'100%'} style={{ minHeight: 0, overflow: 'hidden' }} width={'100%'}>
+      <Flexbox flex={1} style={{ minHeight: 0 }} width={'100%'}>
+        <PageEditor
+          fullWidthHeader
+          header={header}
+          key={documentId}
+          // A skill index's visible name is the bundle title; renaming must go
+          // through the skill APIs, so lock the page title/emoji here. A plain
+          // title save would overwrite the `SKILL.md` filename and desync the
+          // bundle (and the bundle rename API rejects managed skill docs anyway).
+          metaReadOnly={isSkillIndex}
+          pageId={documentId}
+          rightPanel={false}
+          syncPageAgentActiveState={false}
+          title={title}
+          // Refresh the list so the breadcrumb and working-sidebar entry pick up
+          // the new title after the shared page save persists it.
+          onTitleChange={() => mutate()}
+        />
+      </Flexbox>
+      {enableFloatingChatPanel && chatAgentId && docChatTopicId && (
+        <WideScreenContainer>
+          <FloatingChatPanel
+            agentDocumentId={item?.id}
+            agentId={chatAgentId}
+            documentId={documentId}
+            key={`${chatAgentId}:${docChatTopicId}:${documentId}`}
+            topicId={docChatTopicId}
+          />
+        </WideScreenContainer>
+      )}
+    </Flexbox>
   );
 });
 

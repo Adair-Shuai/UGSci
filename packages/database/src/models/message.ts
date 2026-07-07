@@ -1,6 +1,7 @@
 import { INBOX_SESSION_ID } from '@lobechat/const';
 import { parse } from '@lobechat/conversation-flow';
 import type {
+  ChatAudioItem,
   ChatFileItem,
   ChatImageItem,
   ChatToolPayload,
@@ -68,6 +69,7 @@ import {
   messageTranslates,
   messageTTS,
   threads,
+  users,
 } from '../schemas';
 import type { LobeChatDatabase, Transaction } from '../type';
 import { sanitizeBm25Query } from '../utils/bm25';
@@ -190,6 +192,111 @@ interface SplitCreateMessageParams {
   insert: CreateMessageInsertParams;
   relations: CreateMessageRelationParams;
 }
+
+/**
+ * Shared, ownership-scoped filters for the analytics queries
+ * (count / countGroupByTopic / topicMessageStats). All of these are
+ * applied on top of the workspace ownership predicate, so the resulting
+ * query never leaks across `userId × workspace`.
+ */
+export interface MessageAnalyticsFilters {
+  agentId?: string;
+  endDate?: string;
+  range?: [string, string];
+  role?: string;
+  startDate?: string;
+  topicId?: string;
+}
+
+/** A single `{ topicId, count }` row from a per-topic count aggregation. */
+export interface TopicMessageCountItem {
+  count: number;
+  topicId: string;
+}
+
+/**
+ * Distribution of message counts per topic, computed server-side.
+ * Mirrors what a `SELECT count(*) ... GROUP BY topic_id` + percentile
+ * aggregation would produce, so the CLI receives only the summary instead
+ * of paginating raw rows.
+ */
+export interface TopicMessageStats {
+  /** Per distinct message-count value, how many topics have it. Ascending. */
+  histogram: { topics: number; userCount: number }[];
+  max: number;
+  mean: number;
+  median: number;
+  min: number;
+  /** Number of topics with exactly one matching message ("one-shot"). */
+  oneshot: number;
+  /** oneshot / topics, in [0, 1]. 0 when there are no topics. */
+  oneshotRatio: number;
+  p90: number;
+  p99: number;
+  /** Number of topics that have at least one matching message. */
+  topics: number;
+  /** Total matching messages across all topics. */
+  totalMessages: number;
+}
+
+/**
+ * Linear-interpolation percentile over an ascending-sorted array, matching
+ * PostgreSQL's `percentile_cont`. Returns 0 for an empty input.
+ */
+const percentileCont = (sorted: number[], q: number): number => {
+  const n = sorted.length;
+  if (n === 0) return 0;
+  if (n === 1) return sorted[0];
+  const rank = q * (n - 1);
+  const lo = Math.floor(rank);
+  const hi = Math.ceil(rank);
+  if (lo === hi) return sorted[lo];
+  return sorted[lo] + (sorted[hi] - sorted[lo]) * (rank - lo);
+};
+
+/** Reduce a list of per-topic message counts into a {@link TopicMessageStats}. */
+const computeTopicMessageStats = (counts: number[]): TopicMessageStats => {
+  const topics = counts.length;
+  if (topics === 0) {
+    return {
+      histogram: [],
+      max: 0,
+      mean: 0,
+      median: 0,
+      min: 0,
+      oneshot: 0,
+      oneshotRatio: 0,
+      p90: 0,
+      p99: 0,
+      topics: 0,
+      totalMessages: 0,
+    };
+  }
+
+  const sorted = [...counts].sort((a, b) => a - b);
+  const totalMessages = sorted.reduce((acc, c) => acc + c, 0);
+  const oneshot = sorted.filter((c) => c === 1).length;
+
+  const bucket = new Map<number, number>();
+  for (const c of sorted) bucket.set(c, (bucket.get(c) ?? 0) + 1);
+  const histogram = [...bucket.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([userCount, topicCount]) => ({ topics: topicCount, userCount }));
+
+  return {
+    histogram,
+    max: sorted[topics - 1],
+    mean: totalMessages / topics,
+    median: percentileCont(sorted, 0.5),
+    min: sorted[0],
+    oneshot,
+    oneshotRatio: oneshot / topics,
+    p90: percentileCont(sorted, 0.9),
+    p99: percentileCont(sorted, 0.99),
+    topics,
+    totalMessages,
+  };
+};
 
 export class MessageModel {
   private userId: string;
@@ -340,6 +447,34 @@ export class MessageModel {
   };
 
   /**
+   * Lightweight parent/group links for the FULL message tree of a topic,
+   * INCLUDING messages hidden inside MessageGroups (compression / parallel).
+   *
+   * `query` replaces grouped messages with synthetic group nodes that expose
+   * neither their members' `parentId` nor (for compaction) the group's
+   * `parentMessageId`, so branch-ancestry can't be reconstructed from `query`
+   * output alone. This returns the raw `id → parentId` / `messageGroupId` links
+   * so callers (e.g. server-runtime regenerate pruning) can walk ancestry across
+   * a compacted range.
+   */
+  queryTopicMessageTree = async ({
+    threadId,
+    topicId,
+  }: {
+    threadId?: string | null;
+    topicId: string;
+  }): Promise<{ id: string; messageGroupId: string | null; parentId: string | null }[]> => {
+    return this.db
+      .select({
+        id: messages.id,
+        messageGroupId: messages.messageGroupId,
+        parentId: messages.parentId,
+      })
+      .from(messages)
+      .where(and(this.ownership(), this.matchTopic(topicId), this.matchThread(threadId)));
+  };
+
+  /**
    * Query messages with full relations (files, plugins, translations, etc.)
    *
    * This is the low-level query method that accepts a custom where condition.
@@ -392,6 +527,13 @@ export class MessageModel {
             agentId: messages.agentId,
             targetId: messages.targetId,
 
+            sender: {
+              avatar: users.avatar,
+              fullName: users.fullName,
+              id: users.id,
+              username: users.username,
+            },
+
             tools: messages.tools,
             tool_call_id: messagePlugins.toolCallId,
 
@@ -428,6 +570,7 @@ export class MessageModel {
           .leftJoin(messagePlugins, eq(messagePlugins.id, messages.id))
           .leftJoin(messageTranslates, eq(messageTranslates.id, messages.id))
           .leftJoin(messageTTS, eq(messageTTS.id, messages.id))
+          .leftJoin(users, eq(users.id, messages.userId))
           .orderBy(asc(messages.createdAt))
           .limit(pageSize)
           .offset(offset),
@@ -476,8 +619,12 @@ export class MessageModel {
 
     const imageList = relatedFileList.filter((i) => (i.fileType || '').startsWith('image'));
     const videoList = relatedFileList.filter((i) => (i.fileType || '').startsWith('video'));
+    const audioList = relatedFileList.filter((i) => (i.fileType || '').startsWith('audio'));
     const fileList = relatedFileList.filter(
-      (i) => !(i.fileType || '').startsWith('image') && !(i.fileType || '').startsWith('video'),
+      (i) =>
+        !(i.fileType || '').startsWith('image') &&
+        !(i.fileType || '').startsWith('video') &&
+        !(i.fileType || '').startsWith('audio'),
     );
 
     const threadMap = this.createThreadMap(threadData);
@@ -488,12 +635,27 @@ export class MessageModel {
       'db.message.queryWithWhere.transform',
       () =>
         result.map(
-          ({ model, provider, translate, ttsId, ttsFile, ttsContentMd5, ttsVoice, ...item }) => {
+          ({
+            model,
+            provider,
+            translate,
+            ttsId,
+            ttsFile,
+            ttsContentMd5,
+            ttsVoice,
+            sender,
+            ...item
+          }) => {
             const messageQuery = messageQueriesList.find(
               (relation) => relation.messageId === item.id,
             );
             return {
               ...item,
+              // LEFT JOIN → users row is null only when the sender account was
+              // deleted (rare, since `messages.user_id` cascades on user delete).
+              // Collapse a null-id sender to `null` so the client can rely on
+              // `sender?.id` as the presence check.
+              sender: sender?.id ? sender : null,
               chunksList: chunksList
                 .filter((relation) => relation.messageId === item.id)
                 .map((c) => ({
@@ -544,6 +706,10 @@ export class MessageModel {
                 .filter((relation) => relation.messageId === item.id)
 
                 .map<ChatVideoItem>(({ id, url, name }) => ({ alt: name!, id, url })),
+              audioList: audioList
+                .filter((relation) => relation.messageId === item.id)
+
+                .map<ChatAudioItem>(({ id, url, name }) => ({ alt: name!, id, url })),
             } as unknown as UIChatMessage;
           },
         ),
@@ -1013,8 +1179,12 @@ export class MessageModel {
 
     const imageList = relatedFileList.filter((i) => (i.fileType || '').startsWith('image'));
     const videoList = relatedFileList.filter((i) => (i.fileType || '').startsWith('video'));
+    const audioList = relatedFileList.filter((i) => (i.fileType || '').startsWith('audio'));
     const fileList = relatedFileList.filter(
-      (i) => !(i.fileType || '').startsWith('image') && !(i.fileType || '').startsWith('video'),
+      (i) =>
+        !(i.fileType || '').startsWith('image') &&
+        !(i.fileType || '').startsWith('video') &&
+        !(i.fileType || '').startsWith('audio'),
     );
 
     // 4. Build thread map
@@ -1091,6 +1261,9 @@ export class MessageModel {
           videoList: videoList
             .filter((relation) => relation.messageId === item.id)
             .map<ChatVideoItem>(({ id, url, name }) => ({ alt: name!, id, url })),
+          audioList: audioList
+            .filter((relation) => relation.messageId === item.id)
+            .map<ChatAudioItem>(({ id, url, name }) => ({ alt: name!, id, url })),
         } as unknown as UIChatMessage;
       },
     );
@@ -1444,32 +1617,75 @@ export class MessageModel {
     return result as DBMessageItem[];
   };
 
-  count = async (params?: {
-    endDate?: string;
-    range?: [string, string];
-    startDate?: string;
-  }): Promise<number> => {
+  /**
+   * Ownership-scoped analytics filter conditions, shared by count /
+   * countGroupByTopic / topicMessageStats. The first entry is always the
+   * `userId × workspace` ownership predicate; later entries are optional.
+   */
+  private analyticsConditions = (params?: MessageAnalyticsFilters) => [
+    this.ownership(),
+    params?.agentId ? eq(messages.agentId, params.agentId) : undefined,
+    params?.topicId ? eq(messages.topicId, params.topicId) : undefined,
+    params?.role ? eq(messages.role, params.role) : undefined,
+    params?.range
+      ? genRangeWhere(params.range, messages.createdAt, (date) => date.toDate())
+      : undefined,
+    params?.endDate
+      ? genEndDateWhere(params.endDate, messages.createdAt, (date) => date.toDate())
+      : undefined,
+    params?.startDate
+      ? genStartDateWhere(params.startDate, messages.createdAt, (date) => date.toDate())
+      : undefined,
+  ];
+
+  count = async (params?: MessageAnalyticsFilters): Promise<number> => {
     const result = await this.db
       .select({
         count: count(messages.id),
       })
       .from(messages)
-      .where(
-        genWhere([
-          this.ownership(),
-          params?.range
-            ? genRangeWhere(params.range, messages.createdAt, (date) => date.toDate())
-            : undefined,
-          params?.endDate
-            ? genEndDateWhere(params.endDate, messages.createdAt, (date) => date.toDate())
-            : undefined,
-          params?.startDate
-            ? genStartDateWhere(params.startDate, messages.createdAt, (date) => date.toDate())
-            : undefined,
-        ]),
-      );
+      .where(genWhere(this.analyticsConditions(params)));
 
     return result[0].count;
+  };
+
+  /**
+   * Count matching messages grouped by topic, sorted by count desc.
+   * Topics without a `topicId` are excluded. Pushes the GROUP BY to the DB
+   * so callers don't have to paginate raw rows and count client-side.
+   */
+  countGroupByTopic = async (
+    params?: MessageAnalyticsFilters,
+  ): Promise<TopicMessageCountItem[]> => {
+    const rows = await this.db
+      .select({
+        count: count(messages.id),
+        topicId: messages.topicId,
+      })
+      .from(messages)
+      .where(genWhere([...this.analyticsConditions(params), isNotNull(messages.topicId)]))
+      .groupBy(messages.topicId)
+      .orderBy(desc(sql`count`), asc(messages.topicId));
+
+    return rows.map((r) => ({ count: r.count, topicId: r.topicId! }));
+  };
+
+  /**
+   * Distribution of message counts per topic (topics / mean / median /
+   * p90 / p99 / min / max / one-shot ratio + histogram). The per-topic
+   * counts are aggregated in the DB; only the final summary is returned.
+   */
+  topicMessageStats = async (params?: MessageAnalyticsFilters): Promise<TopicMessageStats> => {
+    const rows = await this.db
+      .select({
+        count: count(messages.id),
+        topicId: messages.topicId,
+      })
+      .from(messages)
+      .where(genWhere([...this.analyticsConditions(params), isNotNull(messages.topicId)]))
+      .groupBy(messages.topicId);
+
+    return computeTopicMessageStats(rows.map((r) => r.count));
   };
 
   hasTopicMessages = async (topicId: string): Promise<boolean> => {
@@ -2344,69 +2560,82 @@ export class MessageModel {
   };
 
   /**
-   * Id of the most recently-created main-agent `role:'tool'` message under an
-   * assistant message, or `undefined` when the assistant produced no tools.
+   * Id of the latest main-thread (`threadId IS NULL`) "spine" message in a
+   * topic: the most recent message that is NOT a tool and NOT a signal-tagged
+   * reactive turn (Monitor stdout callbacks etc.). This is the chain anchor for
+   * the heterogeneous-agent write side: the next normal
+   * turn parents off it, producing a `user → asst → asst …` spine with tools as
+   * inline children.
    *
-   * Heterogeneous step boundaries chain the next assistant off the previous
-   * step's final tool message (the wire is `asst → tool → … → asst → tool`).
-   * The persistence handler normally derives that anchor from its in-memory
-   * tool state, but on a warm replica that did NOT drain the prior step's
-   * `tools_calling` (or before the assistant's `tools[]` JSONB has its
-   * `result_msg_id` backfilled) that state is empty — so it falls back here.
+   * Read straight from the DB and ordered by `createdAt`, it is independent of
+   * the in-memory current-assistant pointer — which can regress to the run's
+   * seed placeholder on a cold / non-sticky serverless replica. Anchoring here
+   * instead keeps consecutive cold-replica steps chained linearly rather than
+   * forking onto a stale node (the remote "断链" bug). No `createdAt` floor is
+   * needed: a topic runs at most one operation at a time, so the latest spine
+   * message IS this run's continuation point.
    *
-   * The `role:'tool'` rows are the authoritative anchor: they are created
-   * (Phase 2) with `parentId` = their step's assistant, earlier than and
-   * independent of the JSONB mirror's `result_msg_id` backfill (Phase 3).
-   * `threadId IS NULL` excludes subagent tool rows, which live on their own
-   * thread and must not anchor the main-agent wire.
+   * Excludes `role:'tool'` (inline children) and TOOLLESS signal-tagged
+   * assistants (`metadata->'signal'` with no tools), which are tool-child
+   * callbacks — anchoring a normal turn onto a callback would orphan it under
+   * the read side's tool-only signal collection. A signal turn that DID emit
+   * tools is back on the main chain and stays a spine candidate.
    */
-  getLastChildToolMessageId = async (assistantMessageId: string): Promise<string | undefined> => {
-    const [row] = await this.db
-      .select({ id: messages.id })
-      .from(messages)
-      .where(
-        and(
-          eq(messages.parentId, assistantMessageId),
-          eq(messages.role, 'tool'),
-          isNull(messages.threadId),
-          this.ownership(),
-        ),
-      )
-      .orderBy(desc(messages.createdAt))
-      .limit(1);
-
-    return row?.id;
-  };
+  getLastMainThreadSpineMessageId = async (topicId: string): Promise<string | undefined> =>
+    this.getLatestSpineMessageId({ topicId, threadId: null });
 
   /**
-   * Latest main-thread (`threadId IS NULL`) tool message in a topic created on
-   * or after `sinceMessageId`. The hetero persistence handler passes the running
-   * operation's seed assistant as `sinceMessageId`, so the `createdAt` floor
-   * scopes the lookup to that run (a topic runs at most one operation at a time)
-   * and the chain anchor stays correct even when the in-memory current-assistant
-   * pointer has regressed on a cold replica.
+   * Thread-aware variant of {@link getLastMainThreadSpineMessageId}: the id of
+   * the latest "spine" message (the most recent message that is NOT a tool and
+   * NOT a signal-tagged reactive turn) in a topic, scoped to the main thread
+   * (`threadId IS NULL`) or to a specific thread.
+   *
+   * Like the main-thread query it EXCLUDES `role:'tool'` and TOOLLESS
+   * signal-tagged assistants: tools are inline children of their assistant turn,
+   * so the conversation head a new turn parents off is the assistant, never the
+   * tool result that landed under it. A tools-bearing signal turn is main-chain
+   * and remains a spine candidate.
+   *
+   * Used by `sendMessageInServer` to make `parentId` server-authoritative and
+   * close the concurrent-append race: the client computes `parentId` from a
+   * local snapshot whose spine tail may already have advanced (e.g. another
+   * assistant turn was written while the user was composing), so trusting it
+   * would fork the new turn off a stale node. Ordering by `createdAt` is safe
+   * because a topic runs at most one operation at a time.
    */
-  getLastMainThreadToolMessageIdSince = async (
-    topicId: string,
-    sinceMessageId: string,
-  ): Promise<string | undefined> => {
-    const [seed] = await this.db
-      .select({ createdAt: messages.createdAt })
-      .from(messages)
-      .where(and(eq(messages.id, sinceMessageId), this.ownership()))
-      .limit(1);
-
-    if (!seed?.createdAt) return undefined;
-
+  getLatestSpineMessageId = async ({
+    topicId,
+    threadId,
+  }: {
+    threadId?: string | null;
+    topicId: string;
+  }): Promise<string | undefined> => {
     const [row] = await this.db
       .select({ id: messages.id })
       .from(messages)
       .where(
         and(
           eq(messages.topicId, topicId),
-          eq(messages.role, 'tool'),
-          isNull(messages.threadId),
-          gte(messages.createdAt, seed.createdAt),
+          not(eq(messages.role, 'tool')),
+          threadId ? eq(messages.threadId, threadId) : isNull(messages.threadId),
+          // Exclude signal-tagged assistants — BUT only the toolless ones. The
+          // writer tags a turn `signal` at stream_start before it knows the turn
+          // will call tools; a signal turn that DOES emit a tool_use is really
+          // back on the main chain (see `reduceToolsChunk`'s spine promotion),
+          // so it must stay a spine candidate or a cold replica re-forks the
+          // wire off the pre-signal turn. Match the read side, which likewise
+          // treats a tools-bearing message as non-signal (`getMessageSignal`).
+          //
+          // Key existence (`jsonb_exists`) is used instead of `metadata -> 'signal'
+          // IS NULL`, which crashes the serverless Postgres engine as a WHERE
+          // predicate (rt_fetch out-of-bounds, SQLSTATE XX000 — the `->` operator
+          // only survives in SELECT/ORDER BY). Toolless is expressed with plain
+          // jsonb equality (`= '[]'` / IS NULL) rather than `jsonb_array_length`,
+          // which is unproven on this engine as a qual.
+          sql`NOT (
+            COALESCE(jsonb_exists(${messages.metadata}, 'signal'), false)
+            AND (${messages.tools} IS NULL OR ${messages.tools} = '[]'::jsonb)
+          )`,
           this.ownership(),
         ),
       )

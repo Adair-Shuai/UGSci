@@ -1,5 +1,10 @@
 import debug from 'debug';
 
+import {
+  assertBotFeatureAccess,
+  getBotFeatureBlockedMessage,
+  isBotFeatureAccessAllowed,
+} from '@/business/server/bot/featureAccess';
 import type { MessengerPlatform } from '@/config/messenger';
 import { getServerDB } from '@/database/core/db-adaptor';
 import { AgentBotProviderModel } from '@/database/models/agentBotProvider';
@@ -109,10 +114,6 @@ export class GatewayService {
    * Called on startup to recover connections after LobeHub restarts.
    */
   private async syncGatewayConnections(): Promise<void> {
-    const { getServerDB } = await import('@/database/core/db-adaptor');
-    const { AgentBotProviderModel } = await import('@/database/models/agentBotProvider');
-    const { KeyVaultsGateKeeper } = await import('@/server/modules/KeyVaultsEncrypt');
-
     const client = getMessageGatewayClient();
     const serverDB = await getServerDB();
     const gateKeeper = await KeyVaultsGateKeeper.initWithEnvKey();
@@ -146,6 +147,32 @@ export class GatewayService {
             // (via startClientViaGateway). No action needed during periodic sync.
             if (connectionMode === 'webhook') {
               skippedWebhook++;
+              continue;
+            }
+
+            const accessParams = {
+              applicationId: provider.applicationId,
+              platform,
+              userId: provider.userId,
+              workspaceId: provider.workspaceId ?? undefined,
+            };
+            if (!(await isBotFeatureAccessAllowed(accessParams))) {
+              skippedConnected++;
+              try {
+                await client.disconnect(provider.id);
+              } catch (err) {
+                log('Gateway sync: paid-gated disconnect failed %s: %O', provider.id, err);
+              }
+              await updateBotRuntimeStatus({
+                applicationId: provider.applicationId,
+                errorMessage: getBotFeatureBlockedMessage(
+                  platform,
+                  provider.workspaceId ? 'workspace' : 'personal',
+                ),
+                platform,
+                status: BOT_RUNTIME_STATUSES.failed,
+              });
+              log('Gateway sync: paid-gated %s:%s, disconnected', platform, provider.applicationId);
               continue;
             }
 
@@ -267,6 +294,16 @@ export class GatewayService {
       );
 
       const connectionMode = resolveConnectionMode(definition, provider?.settings);
+
+      if (provider) {
+        await assertBotFeatureAccess({
+          action: 'manage',
+          applicationId,
+          platform,
+          userId: provider.userId,
+          workspaceId: provider.workspaceId ?? undefined,
+        });
+      }
 
       if (connectionMode !== 'webhook') {
         // Persistent platforms (e.g. Discord gateway or WeChat long-polling) cannot run in a
@@ -550,10 +587,6 @@ export class GatewayService {
   ): Promise<'started'> {
     const client = getMessageGatewayClient();
 
-    const { getServerDB } = await import('@/database/core/db-adaptor');
-    const { AgentBotProviderModel } = await import('@/database/models/agentBotProvider');
-    const { KeyVaultsGateKeeper } = await import('@/server/modules/KeyVaultsEncrypt');
-
     const serverDB = await getServerDB();
     const gateKeeper = await KeyVaultsGateKeeper.initWithEnvKey();
     const provider = await AgentBotProviderModel.findEnabledByPlatformAndAppId(
@@ -567,6 +600,14 @@ export class GatewayService {
       log('No enabled provider found for %s:%s', platform, applicationId);
       throw new Error(`No enabled provider found for ${platform}:${applicationId}`);
     }
+
+    await assertBotFeatureAccess({
+      action: 'manage',
+      applicationId,
+      platform,
+      userId: provider.userId,
+      workspaceId: provider.workspaceId ?? undefined,
+    });
 
     const definition = platformRegistry.getPlatform(platform);
     const connectionMode = resolveConnectionMode(definition, provider.settings);
@@ -611,9 +652,6 @@ export class GatewayService {
     }
 
     const client = getMessageGatewayClient();
-
-    const { getServerDB } = await import('@/database/core/db-adaptor');
-    const { AgentBotProviderModel } = await import('@/database/models/agentBotProvider');
 
     const serverDB = await getServerDB();
     const provider = await AgentBotProviderModel.findByPlatformAndAppId(

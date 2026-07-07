@@ -3,7 +3,10 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { localDataCache } from './localDataCache';
+import { bootTiming } from '@/libs/bootTiming';
+
+import { taskTemplateKeys } from './keys';
+import { buildLocalDataKey, localDataCache } from './localDataCache';
 import {
   CACHE_TIERS,
   clearSWRCache,
@@ -73,6 +76,42 @@ describe('createCacheProvider — tiering', () => {
     expect(keys).toContain('recents');
     expect(keys).not.toContain('MSGS:t1');
     expect(keys).not.toContain('random');
+  });
+
+  it('persists task-template recommendation keys in the local tier', async () => {
+    const scope = { value: 's1' };
+    const { provider } = buildProvider(scope, {
+      idbPatterns: [...CACHE_TIERS.idb],
+      localPatterns: [...CACHE_TIERS.local],
+    });
+    const map = provider();
+    const key = JSON.stringify(taskTemplateKeys.listDailyRecommend('', 3, 'zh-CN'));
+
+    map.set(key, { data: [{ id: 1, title: 'Daily brief' }] });
+
+    await until(() => localStorage.getItem(getScopedCacheKey('s1')) !== null);
+
+    const stored = JSON.parse(localStorage.getItem(getScopedCacheKey('s1'))!);
+    expect(stored.map(([k]: [string]) => k)).toContain(key);
+    expect(await localDataCache.entriesByScope('s1')).toEqual([]);
+  });
+
+  it('persists model config keys in the local tier', async () => {
+    const scope = { value: 's1' };
+    const { provider } = buildProvider(scope, {
+      idbPatterns: [...CACHE_TIERS.idb],
+      localPatterns: [...CACHE_TIERS.local],
+    });
+    const map = provider();
+    const key = 'modelConfig:lobehub';
+
+    map.set(key, { data: { homeNewModels: [{ model: 'gpt-image-2', type: 'image' }] } });
+
+    await until(() => localStorage.getItem(getScopedCacheKey('s1')) !== null);
+
+    const stored = JSON.parse(localStorage.getItem(getScopedCacheKey('s1'))!);
+    expect(stored.map(([k]: [string]) => k)).toContain(key);
+    expect(await localDataCache.entriesByScope('s1')).toEqual([]);
   });
 
   it('routes idb-tier keys to IndexedDB and reloads them on a fresh provider', async () => {
@@ -176,6 +215,51 @@ describe('createCacheProvider — tiering', () => {
     expect(map.has('recents-v')).toBe(false);
   });
 
+  it('hydrates idb-tier entries regardless of age (never expires)', async () => {
+    // seed an idb entry via a throwaway provider
+    const seedScope = { value: 's1' };
+    const { provider: seed } = buildProvider(seedScope);
+    seed().set('MSGS:old', { ok: true });
+    await until(async () => (await localDataCache.entriesByScope('s1')).length > 0);
+
+    // a fresh provider with an absurdly small TTL — the row is well past it
+    const scope = { value: 's1' };
+    const { provider } = buildProvider(scope, { ttl: 1 });
+    const map = provider();
+
+    // idb tier ignores TTL: the stale row still hydrates (stale-while-revalidate)
+    await until(() => map.get('MSGS:old') !== undefined);
+    expect(map.get('MSGS:old')).toEqual({ ok: true });
+  });
+
+  it('drops idb-tier entries on version mismatch', async () => {
+    // seed an idb entry under a different app version
+    const seedScope = { value: 's1' };
+    const { provider: seed } = buildProvider(seedScope, { version: '9.9.9' });
+    seed().set('MSGS:stale', { ok: false });
+    await until(async () => (await localDataCache.entriesByScope('s1')).length > 0);
+
+    const scope = { value: 's1' };
+    const { provider } = buildProvider(scope, { version: '1.0.0' });
+    const map = provider();
+
+    // give async hydration a chance, then assert it never lands
+    await new Promise((r) => setTimeout(r, 40));
+    expect(map.has('MSGS:stale')).toBe(false);
+  });
+
+  it('drops legacy idb rows that carry no cache version', async () => {
+    // seed a row directly with no version (pre-versioning / non-conforming writer)
+    await localDataCache.set(buildLocalDataKey('s1', 'MSGS:legacy'), { ok: false });
+
+    const scope = { value: 's1' };
+    const { provider } = buildProvider(scope, { version: '1.0.0' });
+    const map = provider();
+
+    await new Promise((r) => setTimeout(r, 40));
+    expect(map.has('MSGS:legacy')).toBe(false);
+  });
+
   it('handles localStorage QuotaExceededError without throwing', async () => {
     const scope = { value: 's1' };
     const { provider } = buildProvider(scope);
@@ -193,6 +277,63 @@ describe('createCacheProvider — tiering', () => {
     expect(CACHE_TIERS.idb).toContain('message:');
     expect(CACHE_TIERS.idb).toContain('topic:');
     expect(CACHE_TIERS.local).toContain('recent:list');
+    expect(CACHE_TIERS.local).toContain('taskTemplate:');
+    expect(CACHE_TIERS.local).toContain('modelConfig:');
+  });
+});
+
+describe('cache-hydration span', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    (bootTiming as unknown as { _reset: () => void })._reset();
+  });
+
+  afterEach(async () => {
+    vi.restoreAllMocks();
+    await localDataCache.clearScope('span-s1');
+    await localDataCache.clearScope('span-s2');
+  });
+
+  it('records exactly one cache-hydration span after initial hydration', async () => {
+    vi.spyOn(performance, 'now').mockReturnValueOnce(100).mockReturnValue(200);
+
+    const scope = { value: 'span-s1' };
+    const { hydrated, provider } = buildProvider(scope);
+    provider();
+    await hydrated;
+
+    const { spans } = bootTiming.snapshot();
+    const hydrationSpans = spans.filter((s) => s.name === 'cache-hydration');
+    expect(hydrationSpans).toHaveLength(1);
+    expect(hydrationSpans[0].startMs).toBe(100);
+    expect(hydrationSpans[0].durMs).toBe(100);
+  });
+
+  it('does not record a second cache-hydration span on scope reload', async () => {
+    vi.spyOn(performance, 'now').mockReturnValue(50);
+
+    const scope = { value: 'span-s1' };
+    const { hydrated, provider } = buildProvider(scope);
+    provider();
+    await hydrated;
+
+    scope.value = 'span-s2';
+    await provider.reloadScope!();
+
+    const { spans } = bootTiming.snapshot();
+    expect(spans.filter((s) => s.name === 'cache-hydration')).toHaveLength(1);
+  });
+
+  it('does not record a span when hydration fails', async () => {
+    vi.spyOn(localDataCache, 'entriesByScope').mockRejectedValueOnce(new Error('idb error'));
+
+    const scope = { value: 'span-s1' };
+    const { hydrated, provider } = buildProvider(scope);
+    provider();
+    await hydrated;
+
+    const { spans } = bootTiming.snapshot();
+    expect(spans.filter((s) => s.name === 'cache-hydration')).toHaveLength(0);
   });
 });
 

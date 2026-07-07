@@ -11,8 +11,18 @@ import * as electronIs from 'electron-is';
 // a sibling directory so prod sessions stay clean.
 if (electronIs.dev() && app?.setName && app?.getPath && app?.setPath) {
   try {
+    // App name stays constant so safeStorage / Chromium cookie encryption keys
+    // (OS-keychain entries derived from the app name) keep decrypting a copied
+    // login state across instances. Only userData varies per instance, which is
+    // enough: Electron's single-instance lock is keyed by the userData dir, so
+    // distinct dirs let multiple dev instances run concurrently. Override with an
+    // absolute path via LOBE_DESKTOP_USER_DATA_DIR for multi-instance testing.
     app.setName('ugsci-desktop-dev');
-    app.setPath('userData', path.join(app.getPath('appData'), 'ugsci-desktop-dev'));
+    const userDataOverride = process.env.LOBE_DESKTOP_USER_DATA_DIR;
+    app.setPath(
+      'userData',
+      userDataOverride || path.join(app.getPath('appData'), 'ugsci-desktop-dev'),
+    );
   } catch {
     // Ignore if app isn't fully initialized yet
   }

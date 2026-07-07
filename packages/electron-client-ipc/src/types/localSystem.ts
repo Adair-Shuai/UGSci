@@ -22,6 +22,12 @@ export type ListLocalFileSortOrder = 'asc' | 'desc';
 
 export interface ListLocalFileParams {
   /**
+   * Working directory a relative `path` resolves against (the device-bound
+   * directory, injected by the server runtime — not model-supplied). Absolute
+   * paths ignore it; absent → the daemon's process cwd.
+   */
+  cwd?: string;
+  /**
    * Maximum number of files to return
    * @default 100
    */
@@ -59,6 +65,8 @@ export interface MoveLocalFileParams {
 }
 
 export interface MoveLocalFilesParams {
+  /** Working directory each item's relative paths resolve against. See {@link ListLocalFileParams.cwd}. */
+  cwd?: string;
   items: MoveLocalFileParams[];
 }
 
@@ -81,12 +89,16 @@ export interface RenameLocalFileResult {
 }
 
 export interface LocalReadFileParams {
+  /** Working directory a relative `path` resolves against. See {@link ListLocalFileParams.cwd}. */
+  cwd?: string;
   fullContent?: boolean;
   loc?: [number, number];
   path: string;
 }
 
 export interface LocalReadFilesParams {
+  /** Working directory each relative path resolves against. See {@link ListLocalFileParams.cwd}. */
+  cwd?: string;
   paths: string[];
 }
 
@@ -95,6 +107,8 @@ export interface WriteLocalFileParams {
    * Content to write
    */
   content: string;
+  /** Working directory a relative `path` resolves against. See {@link ListLocalFileParams.cwd}. */
+  cwd?: string;
 
   /**
    * File path to write to
@@ -148,9 +162,7 @@ export interface LocalFilePreviewUnsupported {
 }
 
 export type LocalFilePreview =
-  | LocalFilePreviewImage
-  | LocalFilePreviewText
-  | LocalFilePreviewUnsupported;
+  LocalFilePreviewImage | LocalFilePreviewText | LocalFilePreviewUnsupported;
 
 export interface LocalFilePreviewResult {
   error?: string;
@@ -234,7 +246,18 @@ export interface ProjectFileIndexResult {
   indexedAt: string;
   root: string;
   source: 'git' | 'glob';
-  totalCount: number;
+}
+
+export interface ProjectFileSearchParams extends ProjectFileIndexParams {
+  limit?: number;
+  query: string;
+}
+
+export interface ProjectFileSearchResult {
+  entries: ProjectFileIndexEntry[];
+  root: string;
+  searchedAt: string;
+  source: 'git' | 'glob';
 }
 
 export interface OpenLocalFileParams {
@@ -258,9 +281,14 @@ export interface RunCommandParams {
 }
 
 export interface RunCommandResult {
+  duration_ms?: number;
   error?: string;
   exit_code?: number;
   output?: string;
+  output_files?: {
+    stderr: { path: string; size: number; truncated: boolean };
+    stdout: { path: string; size: number; truncated: boolean };
+  };
   shell_id?: string;
   stderr?: string;
   stdout?: string;
@@ -278,6 +306,7 @@ export interface GetCommandOutputParams {
 }
 
 export interface GetCommandOutputResult {
+  duration_ms?: number;
   error?: string;
   /**
    * Present only after the command has exited.
@@ -286,6 +315,10 @@ export interface GetCommandOutputResult {
    */
   exit_code?: number;
   output: string;
+  output_files?: {
+    stderr: { path: string; size: number; truncated: boolean };
+    stdout: { path: string; size: number; truncated: boolean };
+  };
   stderr: string;
   stdout: string;
   success: boolean;
@@ -335,6 +368,8 @@ export interface GrepContentResult {
 
 // Glob types — same rationale as Grep above.
 export interface GlobFilesParams {
+  /** Maximum number of results to collect. When omitted, callers may apply their own default. */
+  limit?: number;
   pattern: string;
   /** Working directory scope. When `pattern` is relative, it is joined with this scope. Defaults to the current working directory. */
   scope?: string;
@@ -351,6 +386,8 @@ export interface GlobFilesResult {
 
 // Edit types
 export interface EditLocalFileParams {
+  /** Working directory a relative `file_path` resolves against. See {@link ListLocalFileParams.cwd}. */
+  cwd?: string;
   file_path: string;
   new_string: string;
   old_string: string;
@@ -460,6 +497,9 @@ export interface ResolveSkillResourcePathResult {
   success: boolean;
 }
 
+export type ProjectSkillScope = 'device' | 'project';
+export type ProjectSkillSource = '.agents/skills' | '.claude/skills';
+
 export interface ProjectSkillItem {
   description?: string;
   /** Total number of regular files under `skillDir` (recursive, including `SKILL.md`). */
@@ -472,10 +512,14 @@ export interface ProjectSkillItem {
   name: string;
   /** Absolute path to the SKILL.md file. */
   path: string;
+  /** Approved root used by the host preview protocol for this skill. */
+  previewRoot: string;
+  /** Skill filesystem scope: project cwd or execution-device home. */
+  scope: ProjectSkillScope;
   /** Directory containing the SKILL.md (e.g. `<root>/.agents/skills/spa-routes`). */
   skillDir: string;
   /** Source directory the skill was discovered in. */
-  source: '.agents/skills' | '.claude/skills';
+  source: ProjectSkillSource;
 }
 
 export interface ListProjectSkillsParams {
@@ -486,8 +530,8 @@ export interface ListProjectSkillsParams {
 export interface ListProjectSkillsResult {
   root: string;
   skills: ProjectSkillItem[];
-  /** Source directory actually scanned (after fallback resolution). */
-  source: ProjectSkillItem['source'] | null;
+  /** Legacy source hint. Per-skill `scope` / `source` fields are authoritative. */
+  source: ProjectSkillSource | null;
 }
 
 export interface InitWorkspaceParams {

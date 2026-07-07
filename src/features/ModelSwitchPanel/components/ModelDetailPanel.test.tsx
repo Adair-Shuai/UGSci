@@ -13,6 +13,7 @@ vi.mock('antd-style', () => ({
   createStaticStyles: () => ({
     actionText: 'actionText',
     container: 'container',
+    description: 'description',
     originalPriceText: 'originalPriceText',
     priceValue: 'priceValue',
     row: 'row',
@@ -49,6 +50,11 @@ vi.mock('@lobehub/ui', () => ({
   Flexbox: ({ children, ...props }: { children?: ReactNode }) => <div {...props}>{children}</div>,
   Icon: () => <span />,
   Tag: ({ children }: { children: ReactNode }) => <span>{children}</span>,
+  Text: ({ children, ...props }: { children: ReactNode }) => {
+    const { type: _type, ...rest } = props as Record<string, unknown>;
+
+    return <p {...rest}>{children}</p>;
+  },
   Tooltip: ({ children, title }: { children: ReactNode; title?: ReactNode }) => (
     <span>
       {title}
@@ -97,6 +103,7 @@ const translations: Record<string, string> = {
   'ModelSwitchPanel.detail.pricing.unit.imageGeneration': 'Image Generation',
   'ModelSwitchPanel.detail.pricing.unit.textInput': 'Input',
   'ModelSwitchPanel.detail.pricing.unit.textOutput': 'Output',
+  'test-model.description': 'Localized model description.',
 };
 
 vi.mock('react-i18next', () => ({
@@ -124,9 +131,29 @@ const imagePricing = {
   units: [{ name: 'imageGeneration', rate: 0.04, strategy: 'fixed', unit: 'image' }],
 };
 
+const emptyLookupPricing = {
+  currency: 'USD',
+  units: [
+    {
+      lookup: { prices: {} },
+      name: 'imageGeneration',
+      strategy: 'lookup',
+      unit: 'image',
+    },
+  ],
+};
+
+const discountedTextPricing = {
+  currency: 'USD',
+  units: [
+    { name: 'textInput', originalRate: 5, rate: 2.5, strategy: 'fixed', unit: 'millionTokens' },
+  ],
+};
+
 const createEnabledList = (
   provider: string,
   pricing: Record<string, unknown>,
+  overrides: Record<string, unknown> = {},
 ): EnabledProviderWithModels[] => [
   {
     children: [
@@ -137,6 +164,7 @@ const createEnabledList = (
         id: 'test-model',
         pricing,
         type: 'chat',
+        ...overrides,
       } as any,
     ],
     id: provider,
@@ -146,6 +174,22 @@ const createEnabledList = (
 ];
 
 describe('ModelDetailPanel pricing', () => {
+  it('renders the localized model description when provided', () => {
+    const { container } = render(
+      <ModelDetailPanel
+        model="test-model"
+        provider="lobehub"
+        enabledList={createEnabledList('lobehub', textPricing, {
+          description: 'Fallback model description.',
+        })}
+      />,
+    );
+
+    expect(container.querySelector('.description')).toHaveTextContent(
+      'Localized model description.',
+    );
+  });
+
   it('renders branding provider token pricing in credits', () => {
     const { container } = render(
       <ModelDetailPanel
@@ -159,6 +203,22 @@ describe('ModelDetailPanel pricing', () => {
     expect(container).toHaveTextContent('25M credits/M tokens');
     expect(container).not.toHaveTextContent('$5.00');
     // Debug: print actual rendered content
+  });
+
+  it('renders the original branding price without repeating the unit suffix', () => {
+    const { container } = render(
+      <ModelDetailPanel
+        enabledList={createEnabledList('lobehub', discountedTextPricing)}
+        model="test-model"
+        provider="lobehub"
+      />,
+    );
+
+    const originalPrice = container.querySelector('.originalPriceText');
+
+    expect(originalPrice).toHaveTextContent('5M');
+    expect(originalPrice).not.toHaveTextContent('credits/M tokens');
+    expect(container).toHaveTextContent('2.5M credits/M tokens');
   });
 
   it('keeps dollar pricing for non-branding providers', () => {
@@ -203,5 +263,18 @@ describe('ModelDetailPanel pricing', () => {
     expect(videoResult.container).toHaveTextContent('~ 800.0K credits / video');
     expect(videoResult.container).not.toHaveTextContent('$0.80');
     // Debug: print actual rendered content
+  });
+
+  it('renders a placeholder for empty lookup pricing tables', () => {
+    const { container } = render(
+      <ModelDetailPanel
+        enabledList={createEnabledList('lobehub', emptyLookupPricing)}
+        model="test-model"
+        provider="lobehub"
+      />,
+    );
+
+    expect(container).toHaveTextContent('Image Generation');
+    expect(container).toHaveTextContent('- credits/img');
   });
 });

@@ -4,7 +4,7 @@
 
 'use client';
 
-import { Navigate, useSearchParams } from 'react-router-dom';
+import { Navigate, useSearchParams } from 'react-router';
 
 import { useAuthServerConfigStore } from '@/features/AuthShell';
 

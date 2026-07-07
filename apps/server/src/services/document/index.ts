@@ -57,15 +57,22 @@ export class DocumentService {
   private fileServiceInstance?: FileService;
   private editLockService: EditLockService;
   private db: LobeChatDatabase;
+  private callerAgentVisibility?: 'private' | 'public' | null;
 
   private workspaceId?: string;
 
-  constructor(db: LobeChatDatabase, userId: string, workspaceId?: string) {
+  constructor(
+    db: LobeChatDatabase,
+    userId: string,
+    workspaceId?: string,
+    callerAgentVisibility?: 'private' | 'public' | null,
+  ) {
     this.userId = userId;
     this.db = db;
     this.workspaceId = workspaceId;
+    this.callerAgentVisibility = callerAgentVisibility;
     this.fileModel = new FileModel(db, userId, workspaceId);
-    this.documentModel = new DocumentModel(db, userId, workspaceId);
+    this.documentModel = new DocumentModel(db, userId, workspaceId, callerAgentVisibility);
     this.editLockService = new EditLockService(userId);
   }
 
@@ -105,6 +112,7 @@ export class DocumentService {
     rawData?: string;
     slug?: string;
     title: string;
+    visibility?: 'private' | 'public';
   }): Promise<DocumentItem> {
     const {
       content,
@@ -115,11 +123,27 @@ export class DocumentService {
       knowledgeBaseId,
       parentId,
       slug,
+      visibility,
     } = params;
 
     // Calculate character and line counts
     const totalCharCount = content?.length || 0;
     const totalLineCount = content?.split('\n').length || 0;
+
+    // Resolve visibility upfront so the KB mirror file inherits the same
+    // visibility as the document. Mirrors DocumentModel.create semantics:
+    // explicit → parent inheritance → top-level sourceType:'api' default
+    // ('private'). Personal mode (no workspaceId) leaves it undefined —
+    // the ownership filter ignores the column there.
+    let resolvedVisibility: 'private' | 'public' | undefined = visibility;
+    if (!resolvedVisibility && this.workspaceId) {
+      if (parentId) {
+        const parent = await this.documentModel.findById(parentId);
+        resolvedVisibility = parent?.visibility ?? 'private';
+      } else {
+        resolvedVisibility = 'private';
+      }
+    }
 
     let fileId: string | null = null;
 
@@ -135,6 +159,7 @@ export class DocumentService {
           parentId,
           size: totalCharCount,
           url: `internal://document/placeholder`, // Placeholder URL
+          ...(resolvedVisibility ? { visibility: resolvedVisibility } : {}),
         },
         false, // Do not insert to global files
       );
@@ -163,9 +188,43 @@ export class DocumentService {
       title,
       totalCharCount,
       totalLineCount,
+      ...(resolvedVisibility ? { visibility: resolvedVisibility } : {}),
     });
 
     return document;
+  }
+
+  /**
+   * Publish a private document subtree to the workspace. Thin wrapper around
+   * `DocumentModel.publishToWorkspace`, with a side-effect notification so any
+   * other workspace member with the page open (referencing chip, etc.) sees
+   * the new visibility on the next refresh.
+   */
+  async publishToWorkspace(documentId: string): Promise<{ documentIds: string[] }> {
+    return this.setVisibility(documentId, 'public');
+  }
+
+  /**
+   * Flip a document subtree's `visibility`. Thin wrapper around
+   * `DocumentModel.setVisibility`, plus a side-effect notification so any
+   * other workspace member with the page open (referencing chip, editor
+   * placeholder, etc.) sees the new visibility on the next refresh — same
+   * pattern as `publishToWorkspace`.
+   */
+  async setVisibility(
+    documentId: string,
+    visibility: 'private' | 'public',
+  ): Promise<{ documentIds: string[] }> {
+    const result = await this.documentModel.setVisibility(documentId, visibility);
+
+    if (this.workspaceId) {
+      void publishResourceEvent(
+        { id: documentId, type: 'document' },
+        { actorId: this.userId, type: 'doc.updated' },
+      );
+    }
+
+    return result;
   }
 
   /**
@@ -182,6 +241,7 @@ export class DocumentService {
       parentId?: string;
       slug?: string;
       title: string;
+      visibility?: 'private' | 'public';
     }>,
   ): Promise<DocumentItem[]> {
     // Create all documents in parallel for better performance
@@ -309,10 +369,10 @@ export class DocumentService {
    * Redis is down the underlying lock degrades to "unlocked" (fail-open), so
    * this never blocks a write.
    */
-  async runWithDocumentLock<T>(id: string, fn: () => Promise<T>): Promise<T> {
+  async runWithDocumentLock<T>(id: string, fn: (lockOwnerId?: string) => Promise<T>): Promise<T> {
     if (!this.workspaceId) {
-      // TEMP DIAGNOSTIC (LOBE-10470): distinguishes "no-op because workspaceId is
-      // missing at runtime" from "lock actually evaluated". Remove once verified.
+      // Diagnostic: distinguishes "no-op because workspaceId is
+      // missing at runtime" from "lock actually evaluated".
       log('runWithDocumentLock skip: no workspaceId (id=%s userId=%s)', id, this.userId);
       return fn();
     }
@@ -330,7 +390,7 @@ export class DocumentService {
       heldBeforeByUser && holderBefore?.ownerId ? holderBefore.ownerId : `server:${randomUUID()}`;
 
     const lock = await this.acquireDocumentLockWithOwner(id, ownerId);
-    // TEMP DIAGNOSTIC (LOBE-10470): one reproduction reveals workspaceId/holder/acquire.
+    // Diagnostic: surfaces workspaceId/holder/acquire for debugging lock issues.
     log(
       'runWithDocumentLock: id=%s userId=%s ws=%s holderBefore=%s acquired=%o',
       id,
@@ -348,7 +408,7 @@ export class DocumentService {
     }
 
     try {
-      return await fn();
+      return await fn(ownerId);
     } finally {
       // Only release a lease we freshly claimed. When the same user already
       // held it, leave their session alive — releasing would briefly flip
@@ -412,14 +472,14 @@ export class DocumentService {
 
     const normalizedEditorData = normalizeEditorDataDiffNodes(editorData);
     const savedAt = new Date();
-    await this.documentHistoryService.createHistory({
+    const history = await this.documentHistoryService.createHistory({
       documentId,
       editorData: normalizedEditorData,
       saveSource,
       savedAt,
     });
 
-    return { savedAt };
+    return { historyId: history.id, savedAt };
   }
 
   /**
@@ -436,14 +496,14 @@ export class DocumentService {
 
       const normalizedEditorData = normalizeEditorDataDiffNodes(editorData);
       const savedAt = new Date();
-      await this.documentHistoryService.createHistory({
+      const history = await this.documentHistoryService.createHistory({
         documentId,
         editorData: normalizedEditorData,
         saveSource,
         savedAt,
       });
 
-      return { savedAt };
+      return { historyId: history.id, savedAt };
     } catch (error) {
       console.error('[DocumentService] Failed to save current document history:', error);
       return undefined;
@@ -508,7 +568,12 @@ export class DocumentService {
     let changed = false;
     const result = await this.db.transaction(async (tx) => {
       const transactionDb = tx as unknown as LobeChatDatabase;
-      const documentModel = new DocumentModel(transactionDb, this.userId, this.workspaceId);
+      const documentModel = new DocumentModel(
+        transactionDb,
+        this.userId,
+        this.workspaceId,
+        this.callerAgentVisibility,
+      );
       const fileModel = new FileModel(transactionDb, this.userId, this.workspaceId);
       const documentHistoryService = new DocumentHistoryService(
         transactionDb,

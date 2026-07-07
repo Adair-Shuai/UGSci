@@ -14,6 +14,7 @@ export type OperationType =
   | 'createTopic' // Auto create topic
   | 'regenerate' // Regenerate message
   | 'continue' // Continue generation
+  | 'autoRetryPending' // Heterogeneous "overloaded" auto-retry waiting period (counting down to the next attempt). Keeps the turn in a loading/in-progress state between attempts; cancelled by Stop or the guide's cancel action.
 
   // === AI generation ===
   | 'execAgentRuntime' // Execute agent runtime (client-side, entire agent runtime execution)
@@ -148,12 +149,18 @@ export interface OperationMetadata {
     total: number;
     percentage?: number;
   };
-
   // Runtime hooks (collected during execution, executed after completion)
   runtimeHooks?: RuntimeHooks;
 
   // Performance information
   startTime: number;
+
+  /**
+   * The model text stream has finished and there is no visible follow-up phase
+   * to wait for, but the runtime operation still needs its terminal lifecycle
+   * (`agent_runtime_end`) for cache, queue, unread, and notification effects.
+   */
+  visibleLoadingDone?: boolean;
 }
 
 /**
@@ -343,11 +350,16 @@ export const mergeQueuedMessages = (messages: QueuedMessage[]): MergedQueuedMess
       ...(acc?.pageSelections ?? []),
       ...(message.metadata.pageSelections ?? []),
     ];
+    const contextSelections = [
+      ...(acc?.contextSelections ?? []),
+      ...(message.metadata.contextSelections ?? []),
+    ];
 
     return {
       ...acc,
       ...message.metadata,
       ...(localSystemToolSnapshots.length ? { localSystemToolSnapshots } : undefined),
+      ...(contextSelections.length ? { contextSelections } : undefined),
       ...(pageSelections.length ? { pageSelections } : undefined),
     };
   }, undefined);
@@ -404,4 +416,7 @@ export const AI_RUNTIME_OPERATION_TYPES: OperationType[] = [
 export const INPUT_LOADING_OPERATION_TYPES: OperationType[] = [
   ...AI_RUNTIME_OPERATION_TYPES,
   'sendMessage',
+  // The auto-retry waiting period is part of the same in-progress turn — keep
+  // the input in loading state (and let Stop target it) across the countdown.
+  'autoRetryPending',
 ];

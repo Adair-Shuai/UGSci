@@ -8,7 +8,10 @@ import { Trans, useTranslation } from 'react-i18next';
 
 import { useAgentId } from '@/features/ChatInput/hooks/useAgentId';
 import { useUpdateAgentConfig } from '@/features/ChatInput/hooks/useUpdateAgentConfig';
-import { resolveDefaultThinkingLevelForModel } from '@/services/chat/mecha/modelParamsResolver';
+import {
+  resolveDefaultEnableAdaptiveThinkingForModel,
+  resolveDefaultThinkingLevelForModel,
+} from '@/services/chat/mecha/modelParamsResolver';
 import { useAgentStore } from '@/store/agent';
 import { agentByIdSelectors, chatConfigByIdSelectors } from '@/store/agent/selectors';
 import { aiModelSelectors, useAiInfraStore } from '@/store/aiInfra';
@@ -17,6 +20,7 @@ import CodexMaxReasoningEffortSlider from './CodexMaxReasoningEffortSlider';
 import ContextCachingSwitch from './ContextCachingSwitch';
 import DeepSeekReasoningEffortSlider from './DeepSeekReasoningEffortSlider';
 import EffortSlider from './EffortSlider';
+import GLM52ReasoningEffortSlider from './GLM52ReasoningEffortSlider';
 import GPT5ReasoningEffortSlider from './GPT5ReasoningEffortSlider';
 import GPT51ReasoningEffortSlider from './GPT51ReasoningEffortSlider';
 import GPT52ProReasoningEffortSlider from './GPT52ProReasoningEffortSlider';
@@ -64,6 +68,12 @@ const resolveEnableReasoningInitialValue = (config: LobeAgentChatConfig) => {
   return undefined;
 };
 
+const resolveEnableAdaptiveThinkingInitialValue = (config: LobeAgentChatConfig, model?: string) => {
+  if (Object.hasOwn(config, 'enableAdaptiveThinking')) return config.enableAdaptiveThinking;
+
+  return resolveDefaultEnableAdaptiveThinkingForModel(model);
+};
+
 const ControlsForm = memo<ControlsFormProps>(
   ({ disabled, model: modelProp, onUpdatingChange, provider: providerProp }) => {
     const { t } = useTranslation('chat');
@@ -85,12 +95,17 @@ const ControlsForm = memo<ControlsFormProps>(
     const modelExtendParams = useAiInfraStore(aiModelSelectors.modelExtendParams(model, provider));
     const initialValues = useMemo(() => {
       const enableReasoningInitialValue = resolveEnableReasoningInitialValue(config);
+      const enableAdaptiveThinkingInitialValue = resolveEnableAdaptiveThinkingInitialValue(
+        config,
+        model,
+      );
 
       return {
         ...config,
+        enableAdaptiveThinking: enableAdaptiveThinkingInitialValue,
         enableReasoning: enableReasoningInitialValue,
       };
-    }, [config]);
+    }, [config, model]);
 
     useEffect(() => {
       form.setFieldsValue(initialValues);
@@ -293,6 +308,17 @@ const ControlsForm = memo<ControlsFormProps>(
         layout: 'vertical',
         minWidth: undefined,
         name: 'gpt5_2ProReasoningEffort',
+        style: {
+          paddingBottom: 0,
+        },
+      },
+      {
+        children: <GLM52ReasoningEffortSlider />,
+        desc: 'reasoning_effort',
+        label: t('extendParams.reasoningEffort.title'),
+        layout: 'vertical',
+        minWidth: undefined,
+        name: 'glm5_2ReasoningEffort',
         style: {
           paddingBottom: 0,
         },

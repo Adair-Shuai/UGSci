@@ -1,7 +1,7 @@
 export default {
   'navigation.chat': 'Chat',
   'navigation.discover': 'Discover',
-  'navigation.discoverAssistants': 'Discover Assistants',
+  'navigation.discoverAssistants': 'Discover Agents',
   'navigation.discoverMcp': 'Discover MCP',
   'navigation.discoverModels': 'Discover Models',
   'navigation.discoverProviders': 'Discover Providers',
@@ -33,7 +33,9 @@ export default {
   'navigation.ugsExperts': 'UGS Experts',
   'navigation.ugsCapabilities': 'UGS Capabilities',
   'navigation.ugsSkills': 'UGS Skills',
+  'navigation.topics': 'Topics',
   'navigation.unpin': 'Unpin',
+  'navigation.verifyReports': 'Verification Reports',
   'fleet.addColumn': 'Add column',
   'fleet.createTask': 'Create task',
   'fleet.reply': 'Reply',

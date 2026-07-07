@@ -2,7 +2,9 @@
 
 // UGS-MODIFY: email OTP verification code step
 import { SignInEmailCodeStep } from './SignInEmailCodeStep';
+import { SignInEmailSentStep } from './SignInEmailSentStep';
 import { SignInEmailStep } from './SignInEmailStep';
+import { SignInPasswordStep } from './SignInPasswordStep';
 // UGS-MODIFY: UGS-005 phone sign-in step (code retained, default mode is now 'email')
 import { SignInPhoneStep } from './SignInPhoneStep';
 import { useSignIn } from './useSignIn';
@@ -12,9 +14,12 @@ const SignIn = () => {
     disableEmailPassword,
     email,
     form,
+    handleBackFromSent,
     handleBackToEmail,
     handleCheckUser,
     handleForgotPassword,
+    handleGoToSignup,
+    handleResendEmail,
     handleSignIn,
     handlePasswordLogin,
     handleSocialSignIn,
@@ -25,6 +30,8 @@ const SignIn = () => {
     lastAuthProvider,
     loading,
     oAuthSSOProviders,
+    sending,
+    sentInfo,
     serverConfigInit,
     socialLoading,
     step,
@@ -74,6 +81,30 @@ const SignIn = () => {
     );
   }
 
+  if (step === 'emailSent' && sentInfo)
+    return (
+      <SignInEmailSentStep
+        email={sentInfo.email}
+        sending={sending}
+        type={sentInfo.type}
+        onBack={handleBackFromSent}
+        onResend={handleResendEmail}
+      />
+    );
+
+  if (step === 'password')
+    return (
+      <SignInPasswordStep
+        email={email}
+        forgotLoading={sending}
+        form={form as any}
+        loading={loading}
+        onBackToEmail={handleBackToEmail}
+        onForgotPassword={handleForgotPassword}
+        onSubmit={handleSignIn}
+      />
+    );
+
   // UGS-MODIFY: unified email+password step (user existence check inline)
   return (
     <SignInEmailStep
@@ -89,7 +120,9 @@ const SignIn = () => {
       userCheckLoading={userCheckLoading}
       userCheckStatus={userCheckStatus}
       onCheckUser={handleCheckUser}
+      onGoToSignup={handleGoToSignup}
       onPasswordLogin={handlePasswordLogin}
+      onResetEmail={handleBackToEmail}
       onResetUser={handleResetUserExists}
       onSendCode={handleSendEmailOtp}
       onSetPassword={handleForgotPassword}

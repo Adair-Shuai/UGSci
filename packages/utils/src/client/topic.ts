@@ -1,4 +1,11 @@
-import type { ChatTopic, ChatTopicStatus, GroupedTopic, TimeGroupId } from '@lobechat/types';
+import type {
+  ChatTopic,
+  ChatTopicMetadata,
+  ChatTopicStatus,
+  GroupedTopic,
+  TimeGroupId,
+} from '@lobechat/types';
+import { getWorkingDirEffectivePath, getWorkingDirSourcePath } from '@lobechat/types';
 import dayjs from 'dayjs';
 import isToday from 'dayjs/plugin/isToday';
 import isYesterday from 'dayjs/plugin/isYesterday';
@@ -106,7 +113,33 @@ const getProjectName = (dir: string): string => {
   return segments.at(-1) || dir;
 };
 
-const normalizeWorkingDirectory = (dir: string): string => dir.replace(/[/\\]+$/, '').trim();
+const normalizeWorkingDirectory = (dir: string): string => dir.trim().replace(/[/\\]+$/, '');
+
+const normalizeOptionalWorkingDirectory = (dir: string | undefined): string | undefined => {
+  if (!dir) return undefined;
+  const normalized = normalizeWorkingDirectory(dir);
+  return normalized || undefined;
+};
+
+export const getTopicMetadataWorkingDirectorySourcePath = (
+  metadata?: ChatTopicMetadata,
+): string | undefined =>
+  normalizeOptionalWorkingDirectory(
+    getWorkingDirSourcePath(metadata?.workingDirectoryConfig) ?? metadata?.workingDirectory,
+  );
+
+export const getTopicMetadataWorkingDirectoryEffectivePath = (
+  metadata?: ChatTopicMetadata,
+): string | undefined =>
+  normalizeOptionalWorkingDirectory(
+    getWorkingDirEffectivePath(metadata?.workingDirectoryConfig) ?? metadata?.workingDirectory,
+  );
+
+export const getTopicWorkingDirectorySourcePath = (topic: ChatTopic): string | undefined =>
+  getTopicMetadataWorkingDirectorySourcePath(topic.metadata);
+
+export const getTopicWorkingDirectoryEffectivePath = (topic: ChatTopic): string | undefined =>
+  getTopicMetadataWorkingDirectoryEffectivePath(topic.metadata);
 
 export const groupTopicsByProject = (
   topics: ChatTopic[],
@@ -117,8 +150,7 @@ export const groupTopicsByProject = (
   const groupsMap = new Map<string, { children: ChatTopic[]; path: string }>();
 
   for (const topic of topics) {
-    const raw = topic.metadata?.workingDirectory;
-    const normalized = raw ? normalizeWorkingDirectory(raw) : '';
+    const normalized = getTopicWorkingDirectorySourcePath(topic) ?? '';
     const id = normalized ? `${PROJECT_GROUP_PREFIX}${normalized}` : NO_PROJECT_GROUP_ID;
     const existing = groupsMap.get(id);
     if (existing) {
@@ -157,12 +189,7 @@ export const groupTopicsByProject = (
 // the sidebar surfaces "needs attention" in one place. The remaining buckets map
 // 1:1 to a status. The group `id` resolves its title via `groupTitle.byStatus.<id>`.
 export type TopicStatusBucket =
-  | 'pending'
-  | 'running'
-  | 'active'
-  | 'paused'
-  | 'completed'
-  | 'archived';
+  'pending' | 'running' | 'active' | 'paused' | 'completed' | 'archived';
 
 // Fixed priority order: `pending` (needs attention) comes first, then running,
 // then active; the remaining states fall below. Topics without a status are
@@ -170,10 +197,10 @@ export type TopicStatusBucket =
 //
 // The server orders the query by the underlying status priority (see
 // `STATUS_SORT_RANK` in `@lobechat/database` topic model) so the right page is
-// fetched; this only re-buckets that already-ordered page for display. The
-// client-only nuances are `loadingTopicIds` (a topic streaming right now) and
-// `unreadTopicIds` (a completion not yet read), which the server can't know
-// about — see `resolveStatusBucket`.
+// fetched; this only re-buckets that already-ordered page for display. The one
+// client-only nuance is `loadingTopicIds` (a topic streaming right now), which
+// the server can't know about — see `resolveStatusBucket`. The unread state is
+// now a persisted `topics.status === 'unread'`, so it needs no client overlay.
 export const STATUS_GROUP_ORDER: TopicStatusBucket[] = [
   'pending',
   'running',
@@ -186,18 +213,17 @@ export const STATUS_GROUP_ORDER: TopicStatusBucket[] = [
 /**
  * Resolve the bucket a topic belongs to. Mirrors the icon precedence in the
  * sidebar `TopicItem`: anything needing attention (`waitingForHuman`, `failed`,
- * or an unread completion in `unreadTopicIds`) lands in `pending`; then a topic
- * actively streaming on this client (`loadingTopicIds`, a transient client-only
- * state the server can't see) or persisted as `running` lands in `running`; then
- * the persisted status, defaulting to `active`.
+ * or an unread completion `unread`) lands in `pending`; then a topic actively
+ * streaming on this client (`loadingTopicIds`, a transient client-only state the
+ * server can't see) or persisted as `running` lands in `running`; then the
+ * persisted status, defaulting to `active`.
  */
 const resolveStatusBucket = (
   topic: ChatTopic,
   loadingTopicIds?: ReadonlySet<string>,
-  unreadTopicIds?: ReadonlySet<string>,
 ): TopicStatusBucket => {
-  if (topic.status === 'waitingForHuman' || topic.status === 'failed') return 'pending';
-  if (unreadTopicIds?.has(topic.id)) return 'pending';
+  if (topic.status === 'waitingForHuman' || topic.status === 'failed' || topic.status === 'unread')
+    return 'pending';
   if (loadingTopicIds?.has(topic.id) || topic.status === 'running') return 'running';
   const status: ChatTopicStatus = topic.status ?? 'active';
   if (status === 'paused' || status === 'completed' || status === 'archived') return status;
@@ -208,14 +234,13 @@ export const groupTopicsByStatus = (
   topics: ChatTopic[],
   field: 'createdAt' | 'updatedAt',
   loadingTopicIds?: ReadonlySet<string>,
-  unreadTopicIds?: ReadonlySet<string>,
 ): GroupedTopic[] => {
   if (!topics.length) return [];
 
   const groupsMap = new Map<TopicStatusBucket, ChatTopic[]>();
 
   for (const topic of topics) {
-    const id = resolveStatusBucket(topic, loadingTopicIds, unreadTopicIds);
+    const id = resolveStatusBucket(topic, loadingTopicIds);
     const existing = groupsMap.get(id);
     if (existing) {
       existing.push(topic);

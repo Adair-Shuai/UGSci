@@ -40,9 +40,9 @@ export default {
   'brief.title': 'Brief',
   'brief.viewAllTasks': 'View all tasks',
   'brief.viewRun': 'View run',
-  'freeCreditBadge.cta': 'Start free trial',
-  'freeCreditBadge.dismiss': 'Dismiss',
-  'freeCreditBadge.label': 'Exclusive free credits for {{model}}',
+  'homePromoBanner.cta': 'Try now',
+  'homePromoBanner.dismiss': 'Dismiss',
+  'homePromoBanner.label': '{{model}} is now available',
   'project.create': 'New project',
   'project.deleteConfirm':
     "This project will be deleted and can't be recovered. Confirm to continue.",

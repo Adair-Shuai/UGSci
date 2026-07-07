@@ -341,6 +341,7 @@ const reduceToolsChunk = (
     content: run.accContent || undefined,
     kind: 'persistToolBatch',
     reasoning: run.accReasoning || undefined,
+    subagentMessageId: run.currentSubagentMessageId || undefined,
     threadId: run.threadId,
     tools: run.toolState.payloads.map((p) => ({
       isNew: newToolMsgIds.includes(run.toolState.toolMsgIdByCallId.get(p.id)!),
@@ -349,9 +350,11 @@ const reduceToolsChunk = (
     })),
   });
 
-  // Chain the next turn's assistant off the LAST tool message of this batch.
-  const lastToolMsgId = newToolMsgIds.at(-1);
-  if (lastToolMsgId) run.lastChainParentId = lastToolMsgId;
+  // Chain rule: the next turn's assistant parents off the
+  // prior assistant (the spine), NOT this batch's last tool — so
+  // `lastChainParentId` stays at `currentAssistantId` here, tools become inline
+  // children, and the read side reconstructs the zigzag. (Subagent threads have
+  // no signal/reactive turns, so there is no tool-anchor exception.)
 
   return { intents, state: withRun(ensured.state, subCtx.parentToolCallId, run) };
 };
@@ -436,6 +439,7 @@ export const reduce = (
           messageId: run.currentAssistantId,
           model: data.model,
           provider: data.provider,
+          subagentMessageId: run.currentSubagentMessageId || undefined,
           threadId: run.threadId,
           usage: data.usage,
         },

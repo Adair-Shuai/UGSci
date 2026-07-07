@@ -42,6 +42,7 @@ export type ProviderModelListItem = {
   description?: string;
   displayName: string;
   id: string;
+  knowledgeCutoff?: string;
   parameters?: ModelParamsSchema;
   pricePerImage?: number;
   pricePerVideo?: number;
@@ -80,8 +81,9 @@ const createProviderModelCollector = (
 };
 
 export const normalizeChatModel = async (model: EnabledAiModel): Promise<ProviderModelListItem> => {
-  const [description, pricing] = await Promise.all([
+  const [description, knowledgeCutoff, pricing] = await Promise.all([
     getModelProperty<string>(model, 'description'),
+    getModelProperty<string>(model, 'knowledgeCutoff'),
     getModelProperty<Pricing>(model, 'pricing'),
   ]);
 
@@ -92,6 +94,7 @@ export const normalizeChatModel = async (model: EnabledAiModel): Promise<Provide
     id: model.id,
     releasedAt: model.releasedAt,
     ...(description && { description }),
+    ...(knowledgeCutoff && { knowledgeCutoff }),
     ...(pricing && { pricing }),
   };
 };
@@ -304,6 +307,29 @@ export class AiProviderActionImpl {
     ]);
   };
 
+  /**
+   * Resolve once the aiProvider runtime-state (the enabled-model list + model
+   * abilities) has loaded, so callers can decide function-calling / tool
+   * capability from *real* data instead of guessing while it's still hydrating.
+   *
+   * No-op when already loaded. Otherwise it triggers/awaits the (usually already
+   * in-flight) fetch, bounded by `timeoutMs` so a slow or blocked request — e.g.
+   * one still gated behind an unresolved auth session — never holds up the
+   * caller indefinitely; it then proceeds on whatever state is available.
+   */
+  ensureAiProviderRuntimeStateReady = async (timeoutMs = 3000): Promise<void> => {
+    if (this.#get().isInitAiProviderRuntimeState) return;
+
+    await Promise.race([
+      this.#get()
+        .refreshAiProviderRuntimeState()
+        .catch(() => undefined),
+      new Promise<void>((resolve) => {
+        setTimeout(resolve, timeoutMs);
+      }),
+    ]);
+  };
+
   removeAiProvider = async (id: string): Promise<void> => {
     await aiProviderService.deleteAiProvider(id);
     await this.#get().refreshAiProviderList();
@@ -436,7 +462,6 @@ export class AiProviderActionImpl {
       opts?.enabled === false ? null : AiProviderSwrKey.fetchAiProviderList,
       () => aiProviderService.getAiProviderList(),
       {
-        fallbackData: [],
         onSuccess: (data) => {
           if (!this.#get().initAiProviderList) {
             this.#set(

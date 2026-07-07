@@ -3,18 +3,19 @@ import type {
   LoadI18nNamespaceModuleWithFallbackParams,
 } from './loadI18nNamespaceModule';
 
+type NamespaceModule = { default: Record<string, unknown> };
+type NamespaceLoaderMap = Record<string, () => Promise<NamespaceModule>>;
+
 // Use import.meta.glob so Vite can statically analyze and avoid CJS/dynamic import issues
-const defaultLoaders = import.meta.glob<{ default: Record<string, unknown> }>(
-  '/packages/locales/src/default/*.ts',
-);
-const localeLoaders = import.meta.glob<{ default: Record<string, unknown> }>('/locales/*/*.json');
+const defaultLoaders = import.meta.glob('/packages/locales/src/default/*.ts') as NamespaceLoaderMap;
+const localeLoaders = import.meta.glob('/locales/*/*.json') as NamespaceLoaderMap;
 
 const getDefaultKey = (ns: string) => `/packages/locales/src/default/${ns}.ts`;
 const getLocaleKey = (lng: string, ns: string) => `/locales/${lng}/${ns}.json`;
 
 export const loadI18nNamespaceModule = async (
   params: LoadI18nNamespaceModuleParams,
-): Promise<{ default: Record<string, unknown> }> => {
+): Promise<NamespaceModule> => {
   const { defaultLang, normalizeLocale, lng, ns } = params;
 
   // Always try JSON locale files first, even for the default language.
@@ -26,13 +27,13 @@ export const loadI18nNamespaceModule = async (
   const localeKey = getLocaleKey(normalizedLng, ns);
   const loadLocale = localeLoaders[localeKey];
   if (loadLocale) {
-    return loadLocale() as Promise<{ default: Record<string, unknown> }>;
+    return loadLocale();
   }
 
   // Fallback to default TS files when no JSON locale exists for this language
   const loadDefault = defaultLoaders[getDefaultKey(ns)];
   if (!loadDefault) throw new Error(`Missing default namespace: ${ns}`);
-  return loadDefault() as Promise<{ default: Record<string, unknown> }>;
+  return loadDefault();
 };
 
 export type {
@@ -42,7 +43,7 @@ export type {
 
 export const loadI18nNamespaceModuleWithFallback = async (
   params: LoadI18nNamespaceModuleWithFallbackParams,
-): Promise<{ default: Record<string, unknown> }> => {
+): Promise<NamespaceModule> => {
   const { onFallback, ...rest } = params;
   try {
     return await loadI18nNamespaceModule(rest);
@@ -50,6 +51,6 @@ export const loadI18nNamespaceModuleWithFallback = async (
     onFallback?.({ error, lng: rest.lng, ns: rest.ns });
     const loadDefault = defaultLoaders[getDefaultKey(rest.ns)];
     if (!loadDefault) throw error;
-    return loadDefault() as Promise<{ default: Record<string, unknown> }>;
+    return loadDefault();
   }
 };

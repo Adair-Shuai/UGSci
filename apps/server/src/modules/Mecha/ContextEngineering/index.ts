@@ -51,6 +51,8 @@ const createServerVariableGenerators = (params: {
 export const serverMessagesEngine = async ({
   messages = [],
   model,
+  modelDisplayName,
+  modelKnowledgeCutoff,
   provider,
   systemRole,
   inputTemplate,
@@ -83,6 +85,7 @@ export const serverMessagesEngine = async ({
   const engine = new MessagesEngine({
     // Capability injection
     capabilities: {
+      isCanUseAudio: capabilities?.isCanUseAudio,
       isCanUseFC: capabilities?.isCanUseFC,
       isCanUseVideo: capabilities?.isCanUseVideo,
       isCanUseVision: capabilities?.isCanUseVision,
@@ -120,6 +123,8 @@ export const serverMessagesEngine = async ({
 
     // Model info
     model,
+    modelDisplayName,
+    modelKnowledgeCutoff,
 
     provider,
     systemRole,
