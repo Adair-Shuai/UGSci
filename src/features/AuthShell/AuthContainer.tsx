@@ -1,11 +1,11 @@
 'use client';
 
+import { BRANDING_NAME } from '@lobechat/business-const';
 import { Center, Flexbox } from '@lobehub/ui';
 import { Divider } from 'antd';
 import { cx } from 'antd-style';
 import { type FC, type PropsWithChildren } from 'react';
 
-import { BRANDING_NAME } from '@lobechat/business-const';
 import { ProductLogo } from '@/components/Branding';
 import { useIsDark } from '@/hooks/useIsDark';
 

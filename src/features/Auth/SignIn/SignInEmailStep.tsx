@@ -1,5 +1,5 @@
 import { BRANDING_NAME } from '@lobechat/business-const';
-import { Alert, Button, Flexbox, Icon, Input, InputPassword, Skeleton, Text } from '@lobehub/ui';
+import { Alert, Button, Flexbox, Icon, Input, InputPassword, Text } from '@lobehub/ui';
 import { type FormInstance, type InputRef } from 'antd';
 import { Badge, Divider, Form } from 'antd';
 import { createStaticStyles } from 'antd-style';
@@ -216,6 +216,8 @@ export const SignInEmailStep = ({
               autoComplete="username"
               inputMode="email"
               placeholder={t('betterAuth.signin.emailPlaceholder')}
+              ref={emailInputRef}
+              size="large"
               prefix={
                 <Icon
                   icon={Mail}
@@ -224,8 +226,6 @@ export const SignInEmailStep = ({
                   }}
                 />
               }
-              ref={emailInputRef}
-              size="large"
               style={{
                 padding: 6,
               }}
@@ -236,15 +236,15 @@ export const SignInEmailStep = ({
             <>
               <Form.Item
                 name="password"
-                style={{ marginBottom: 12 }}
                 rules={[{ message: t('betterAuth.errors.passwordRequired'), required: true }]}
+                style={{ marginBottom: 12 }}
               >
                 <InputPassword
                   placeholder={t('betterAuth.signin.passwordPlaceholder')}
+                  prefix={<Icon icon={Lock} style={{ marginInline: 6 }} />}
                   ref={passwordInputRef}
                   size="large"
                   style={{ padding: 6 }}
-                  prefix={<Icon icon={Lock} style={{ marginInline: 6 }} />}
                   onKeyDown={handlePasswordKeyDown}
                 />
               </Form.Item>

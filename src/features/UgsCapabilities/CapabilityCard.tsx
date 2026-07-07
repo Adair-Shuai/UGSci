@@ -1,5 +1,5 @@
 // UGS-MODIFY: UGS-016 能力中心 — 能力卡片
-import { Badge, Card, Tag } from 'antd';
+import { Card, Tag } from 'antd';
 import { memo } from 'react';
 
 import type { CapabilityCardData } from './types';
@@ -27,8 +27,8 @@ const CapabilityCard = memo<CapabilityCardProps>(({ capability, onClick }) => {
     <Card
       hoverable={!!onClick && capability.installed}
       loading={false}
-      onClick={capability.installed ? onClick : undefined}
       size="small"
+      styles={{ body: { padding: 14 } }}
       style={{
         borderColor: capability.installed ? '#e8e8e8' : '#f0f0f0',
         cursor: capability.installed && onClick ? 'pointer' : 'default',
@@ -36,7 +36,7 @@ const CapabilityCard = memo<CapabilityCardProps>(({ capability, onClick }) => {
         opacity: capability.installed ? 1 : 0.75,
         transition: 'all 0.2s ease',
       }}
-      styles={{ body: { padding: 14 } }}
+      onClick={capability.installed ? onClick : undefined}
     >
       <div style={{ alignItems: 'center', display: 'flex', gap: 10, marginBottom: 8 }}>
         <span style={{ fontSize: 24 }}>{capability.icon}</span>

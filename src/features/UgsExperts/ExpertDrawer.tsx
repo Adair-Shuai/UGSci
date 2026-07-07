@@ -236,11 +236,11 @@ const ExpertDrawer: FC<ExpertDrawerProps> = ({ expert, loading, onClose, onChat,
       <Text className={styles.sectionLabel}>关联能力 / 工具（来自能力中心）</Text>
       {matchedTools.length === 0 ? (
         <Empty
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+          style={{ marginTop: 24 }}
           description={
             <span className={styles.emptyHint}>该专家为知识型专家，暂无关联外部工具</span>
           }
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-          style={{ marginTop: 24 }}
         />
       ) : (
         <List

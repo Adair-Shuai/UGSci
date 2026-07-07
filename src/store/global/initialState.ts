@@ -18,9 +18,9 @@ export enum SidebarTabKey {
   Resource = 'resource',
   Setting = 'settings',
   Tasks = 'tasks',
+  UgsCapabilities = 'ugs-capabilities',
   // UGS-MODIFY: UGS-015 储气库专家市场 + 能力中心 + 技能中心
   UgsExperts = 'ugs-experts',
-  UgsCapabilities = 'ugs-capabilities',
   UgsSkills = 'ugs-skills',
   Video = 'video',
 }

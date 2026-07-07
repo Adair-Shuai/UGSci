@@ -306,7 +306,7 @@ export function defineConfig(customOptions: CustomBetterAuthOptions) {
       phoneNumber({
         sendOTP: async ({ phoneNumber, otp }) => {
           // TODO: integrate with SMS service; log for development
-          console.log(`[UGS Phone OTP] ${phoneNumber}: ${otp}`);
+          console.warn(`[UGS Phone OTP] ${phoneNumber}: ${otp}`);
         },
       }),
       passkey({

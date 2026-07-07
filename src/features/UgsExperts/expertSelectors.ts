@@ -7,11 +7,11 @@
 import { type AvailableAgentItem } from '@/services/agent';
 
 import {
+  EXPERT_CATEGORY_ORDER,
   type ExpertCategory,
   type ExpertMeta,
-  EXPERT_CATEGORY_ORDER,
-  UGS_EXPERTS,
   UGS_EXPERT_TEAMS,
+  UGS_EXPERTS,
 } from './ugsExpertsData';
 
 /**
@@ -20,18 +20,18 @@ import {
 export interface ExpertCardMeta {
   /** 专家广场分类 */
   category: ExpertCategory;
-  /** 关联工作流步骤数 */
-  workflowCount: number;
   /** 是否规划中占位 */
   planned: boolean;
-  /** 关联能力/工具数 */
-  toolCount: number;
   /** 能力点数 */
   skillCount: number;
   /** 技能标签（卡片展示用，截断到 3 个） */
   tags: string[];
   /** 职称 */
   title: string;
+  /** 关联能力/工具数 */
+  toolCount: number;
+  /** 关联工作流步骤数 */
+  workflowCount: number;
 }
 
 /**

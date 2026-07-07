@@ -269,7 +269,7 @@ const CustomConnectorModal = memo<CustomConnectorModalProps>(
         // submitted before `connector` resolves, but this keeps it safe.
         const headers = cleanRecord(mcp.headers);
         if (connector) {
-          const nextMetadata: Record<string, unknown> = { ...(connector.metadata ?? {}) };
+          const nextMetadata: Record<string, unknown> = { ...connector.metadata };
           if (headers) nextMetadata.customHeaders = headers;
           else delete nextMetadata.customHeaders;
           patch.metadata = nextMetadata;

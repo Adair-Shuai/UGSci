@@ -1,5 +1,6 @@
 // UGS-MODIFY: email OTP verification code sign-in step
-import { Button, Flexbox, Input, Text } from '@lobehub/ui';
+import { Flexbox, Input, Text } from '@lobehub/ui';
+import { Button } from '@lobehub/ui/base-ui';
 import { Form } from 'antd';
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';

@@ -9,8 +9,8 @@
  * - CORS 头部正确
  */
 
-import { describe, it, expect, beforeAll } from 'vitest';
-import type { Hono } from 'hono';
+import { beforeAll,describe, expect, it } from 'vitest';
+
 import { createTestApp } from './test-app';
 
 describe('REST API HTTP — Health Endpoint', () => {

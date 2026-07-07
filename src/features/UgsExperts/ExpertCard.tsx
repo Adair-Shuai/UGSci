@@ -1,13 +1,13 @@
 // UGS-MODIFY: UGS-015 专家广场 — 专家卡片（增强版）
 // 卡片信息：avatar / name / title / description / skill tags / counts(skills,tools,workflows) / action buttons
 // 视觉与能力中心 ConnectorCard 统一：createStaticStyles + cssVar（主题感知，深浅色自动适配）
-import { MessageSquarePlus, Sparkles, Wrench, Workflow } from 'lucide-react';
-import { createStaticStyles } from 'antd-style';
 import { Button, Tag } from 'antd';
-import { type ReactNode, memo } from 'react';
+import { createStaticStyles } from 'antd-style';
+import { MessageSquarePlus, Sparkles, Workflow,Wrench } from 'lucide-react';
+import { memo,type ReactNode } from 'react';
 
-import { type ExpertMeta, EXPERT_CATEGORIES } from './ugsExpertsData';
 import type { ExpertCardMeta } from './expertSelectors';
+import { EXPERT_CATEGORIES,type ExpertMeta } from './ugsExpertsData';
 
 const styles = createStaticStyles(({ css, cssVar }) => ({
   card: css`
@@ -162,7 +162,7 @@ const ExpertCard = memo<ExpertCardProps>(({ cardMeta, expert, loading, onChat, o
         {/* 技能标签 */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
           {cardMeta.tags.map((tag) => (
-            <Tag key={tag} className={styles.tag}>
+            <Tag className={styles.tag} key={tag}>
               {tag}
             </Tag>
           ))}
@@ -203,11 +203,11 @@ const ExpertCard = memo<ExpertCardProps>(({ cardMeta, expert, loading, onChat, o
           <Button
             block
             disabled={isPlanned}
+            size="small"
             onClick={(e) => {
               e.stopPropagation();
               onOpenDetail?.();
             }}
-            size="small"
           >
             查看详情
           </Button>
@@ -216,12 +216,12 @@ const ExpertCard = memo<ExpertCardProps>(({ cardMeta, expert, loading, onChat, o
             disabled={isPlanned}
             icon={<MessageSquarePlus size={14} />}
             loading={loading}
+            size="small"
+            type="primary"
             onClick={(e) => {
               e.stopPropagation();
               onChat?.();
             }}
-            size="small"
-            type="primary"
           >
             进入对话
           </Button>

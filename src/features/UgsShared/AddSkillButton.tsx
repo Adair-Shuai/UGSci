@@ -8,17 +8,18 @@
 // - CustomConnectorModal  自定义 OAuth MCP connector
 //
 // 不重新实现 —— 这些弹窗已经包含完整的校验、安装、错误处理逻辑。
-import { Button, DropdownMenu, Flexbox, Icon, Text } from '@lobehub/ui';
+import { DropdownMenu, Flexbox, Icon, Text } from '@lobehub/ui';
+import { Button } from '@lobehub/ui/base-ui';
 import { GithubIcon } from '@lobehub/ui/icons';
 import { ChevronDown, FileArchive, Grid2x2Plus, Link, PenLine } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { CustomConnectorModal } from '@/features/Connectors';
-import { usePermission } from '@/hooks/usePermission';
 import { openImportFromGithubModal } from '@/features/SkillStore/SkillList/ImportFromGithubModal';
 import { openImportFromUrlModal } from '@/features/SkillStore/SkillList/ImportFromUrlModal';
 import { openUploadSkillModal } from '@/features/SkillStore/SkillList/UploadSkillModal';
+import { usePermission } from '@/hooks/usePermission';
 
 const MenuLabel = ({ desc, title }: { desc: string; title: ReactNode }) => (
   <Flexbox gap={2}>

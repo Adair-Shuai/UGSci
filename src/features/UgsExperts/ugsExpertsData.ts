@@ -3,7 +3,7 @@
 // 业务模型：Expert = Persona + Skills + Tools + Workflows + Team Relations
 // 本文件为「展示层」元数据，不新增后端表结构。
 // ExpertCardMeta 通过 expertSelectors 从 ExpertMeta 推导（skillCount/toolCount/workflowCount）。
-import { BUILTIN_AGENTS, BUILTIN_AGENT_SLUGS } from '@lobechat/builtin-agents';
+import { BUILTIN_AGENT_SLUGS,BUILTIN_AGENTS } from '@lobechat/builtin-agents';
 
 /**
  * 专家分类（专家广场一级筛选用）
@@ -63,21 +63,21 @@ export interface ExpertMeta {
   avatar: string;
   category: ExpertCategory;
   description: string;
+  /** 是否为用户自建助理（来自 availableAgents，非 BUILTIN_AGENTS） */
+  isCustom?: boolean;
   name: string;
+  /** 是否为规划中占位（无对应 builtin agent） */
+  planned?: boolean;
   /** 关联能力标识（MCP / Tool Provider identifier） */
   recommendedTools: string[];
   /** 能力点列表 */
   skills: string[];
   slug: string;
+  tags: string[];
   /** 职称 */
   title: string;
-  tags: string[];
   /** 工作流步骤（顺序执行） */
   workflowSteps: string[];
-  /** 是否为规划中占位（无对应 builtin agent） */
-  planned?: boolean;
-  /** 是否为用户自建助理（来自 availableAgents，非 BUILTIN_AGENTS） */
-  isCustom?: boolean;
 }
 
 export interface ExpertTeamMeta {

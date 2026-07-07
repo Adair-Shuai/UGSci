@@ -1,6 +1,6 @@
 // UGS-MODIFY: UGS-016 能力中心 — 详情 Drawer（Functions / Config / Logs 三 Tab）
 import { type LobeChatPluginApi } from '@lobechat/types';
-import { Collapse, Descriptions, Empty, Input, Tag, Timeline, Typography } from 'antd';
+import { Collapse, Descriptions, Empty, Input, Tag, Typography } from 'antd';
 import { type FC, memo, useMemo, useState } from 'react';
 
 import type { CapabilityCardData } from './types';
@@ -60,7 +60,7 @@ const FunctionsTab: FC<{ functions: LobeChatPluginApi[] }> = ({ functions }) => 
             ))}
           </Descriptions>
         ) : (
-          <Text type="secondary" style={{ fontSize: 11 }}>
+          <Text style={{ fontSize: 11 }} type="secondary">
             无参数
           </Text>
         )}
@@ -82,10 +82,10 @@ const FunctionsTab: FC<{ functions: LobeChatPluginApi[] }> = ({ functions }) => 
   return (
     <div>
       <Input.Search
-        onChange={(e) => setSearch(e.target.value)}
+        allowClear
         placeholder="搜索 function 名称或描述..."
         style={{ marginBottom: 12 }}
-        allowClear
+        onChange={(e) => setSearch(e.target.value)}
       />
       <Text style={{ color: '#888', display: 'block', fontSize: 11, marginBottom: 8 }}>
         共 {functions.length} 个 function{search && `，筛选后 ${filtered.length} 个`}
@@ -225,16 +225,16 @@ const LogsTab: FC<{ capability: CapabilityCardData }> = ({ capability }) => {
       </div>
 
       <Empty
+        image={Empty.PRESENTED_IMAGE_SIMPLE}
         description={
           <span style={{ fontSize: 12 }}>
             暂无调用记录
             <br />
-            <Text type="secondary" style={{ fontSize: 11 }}>
+            <Text style={{ fontSize: 11 }} type="secondary">
               使用此 MCP 的 tool function 后，调用记录将显示在此处
             </Text>
           </span>
         }
-        image={Empty.PRESENTED_IMAGE_SIMPLE}
       />
     </div>
   );

@@ -1,13 +1,12 @@
 // UGS-MODIFY: UGS-015 储气库专家市场页 - 专家团卡片
 // 视觉与专家卡片 / 能力中心 ConnectorCard 统一：createStaticStyles + cssVar
+import { BUILTIN_AGENTS } from '@lobechat/builtin-agents';
 import { Avatar, Button, Tag, Tooltip } from 'antd';
 import { createStaticStyles } from 'antd-style';
 import { memo } from 'react';
 
-import { BUILTIN_AGENTS } from '@lobechat/builtin-agents';
-
-import { UGS_EXPERTS } from './ugsExpertsData';
 import type { ExpertTeamMeta } from './ugsExpertsData';
+import { UGS_EXPERTS } from './ugsExpertsData';
 
 const styles = createStaticStyles(({ css, cssVar }) => ({
   card: css`
@@ -117,13 +116,13 @@ const TeamCard = memo<TeamCardProps>(({ loading, onSummon, team }) => {
         <div style={{ marginBottom: 12 }}>
           <div className={styles.taskLabel}>典型任务：</div>
           {team.tasks.slice(0, 2).map((task, i) => (
-            <Tag key={i} className={styles.taskTag}>
+            <Tag className={styles.taskTag} key={i}>
               {task.length > 30 ? task.slice(0, 30) + '…' : task}
             </Tag>
           ))}
         </div>
 
-        <Button block loading={loading} onClick={onSummon} type="primary">
+        <Button block loading={loading} type="primary" onClick={onSummon}>
           召唤团队
         </Button>
       </div>

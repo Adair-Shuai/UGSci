@@ -2,8 +2,8 @@
 // 展示所有已安装的 MCP connector。
 // 卡片复用 ConnectorCard，每个 card 点击弹出详情弹窗。
 // 带本地搜索框筛选。
-import { createStaticStyles } from 'antd-style';
 import { Empty, Input, Skeleton } from 'antd';
+import { createStaticStyles } from 'antd-style';
 import { Search } from 'lucide-react';
 import { type FC, useMemo, useState } from 'react';
 
@@ -85,11 +85,11 @@ const InstalledTab: FC<InstalledTabProps> = ({ keyword, loading }) => {
         <Input
           allowClear
           className={styles.searchInput}
-          onChange={(e) => setLocalKeyword(e.target.value)}
           placeholder="在已安装中搜索"
           prefix={<Search size={14} />}
           size="small"
           value={localKeyword}
+          onChange={(e) => setLocalKeyword(e.target.value)}
         />
       </div>
 

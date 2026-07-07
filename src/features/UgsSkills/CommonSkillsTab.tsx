@@ -5,8 +5,8 @@
 // 常用技能列表来自 `ugsCommonSkills.ts` 动态配置，不硬编码。
 // 卡片模板复用 Lobe `BuiltinItem`，详情复用 Lobe `createBuiltinAgentSkillDetailModal`。
 // 移除了「为你推荐」横向滚动模块。
-import { createStaticStyles } from 'antd-style';
 import { Empty } from 'antd';
+import { createStaticStyles } from 'antd-style';
 import { type FC, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -145,10 +145,10 @@ const CommonSkillsTab: FC<CommonSkillsTabProps> = ({ keyword }) => {
                     description={description}
                     identifier={entry.identifier}
                     key={entry.identifier}
+                    title={title}
                     onOpenDetail={() =>
                       createBuiltinAgentSkillDetailModal({ identifier: entry.identifier })
                     }
-                    title={title}
                   />
                 );
               })}

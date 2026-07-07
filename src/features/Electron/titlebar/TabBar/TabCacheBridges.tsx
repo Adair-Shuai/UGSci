@@ -30,8 +30,8 @@ const TabCacheBridge = memo<TabCacheBridgeProps>(({ tab }) => {
 
   return (
     <DynamicMetaRunner
-      key={tab.url}
       DynamicMeta={DynamicMeta}
+      key={tab.url}
       params={matched.params}
       onResolve={handleResolve}
     />

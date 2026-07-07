@@ -2,8 +2,8 @@
 //
 // 只展示已安装的 Lobe builtin skills（Agent Skills），不包含 builtinTools 或 MCP。
 // 卡片模板复用 Lobe `BuiltinItem`，详情复用 Lobe `createBuiltinAgentSkillDetailModal`。
-import { createStaticStyles } from 'antd-style';
 import { Empty, Input, Skeleton } from 'antd';
+import { createStaticStyles } from 'antd-style';
 import { Search } from 'lucide-react';
 import { type FC, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -100,11 +100,11 @@ const InstalledTab: FC<InstalledTabProps> = ({ keyword, loading }) => {
         <Input
           allowClear
           className={styles.searchInput}
-          onChange={(e) => setLocalKeyword(e.target.value)}
           placeholder="在已安装中搜索"
           prefix={<Search size={14} />}
           size="small"
           value={localKeyword}
+          onChange={(e) => setLocalKeyword(e.target.value)}
         />
       </div>
 
@@ -126,10 +126,10 @@ const InstalledTab: FC<InstalledTabProps> = ({ keyword, loading }) => {
               description={entry.description}
               identifier={entry.identifier}
               key={entry.identifier}
+              title={entry.title}
               onOpenDetail={() =>
                 createBuiltinAgentSkillDetailModal({ identifier: entry.identifier })
               }
-              title={entry.title}
             />
           ))}
         </div>

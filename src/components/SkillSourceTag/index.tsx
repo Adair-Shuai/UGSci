@@ -1,10 +1,9 @@
+import { BRANDING_NAME } from '@lobechat/business-const';
 import { type SkillSource } from '@lobechat/types';
 import { Icon, Tag } from '@lobehub/ui';
 import { BadgeCheck, CircleUser, Package } from 'lucide-react';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
-
-import { BRANDING_NAME } from '@lobechat/business-const';
 
 interface SkillSourceTagProps {
   source: SkillSource;

@@ -1,10 +1,10 @@
+import { BRANDING_NAME } from '@lobechat/business-const';
 import {
   COMPOSIO_APP_TYPES,
   LOBEHUB_SKILL_PROVIDERS,
   RECOMMENDED_SKILLS,
   RecommendedSkillType,
 } from '@lobechat/const';
-import { BRANDING_NAME } from '@lobechat/business-const';
 import type { ItemType } from '@lobehub/ui';
 import { Avatar, Icon, Popover, SearchBar, stopPropagation, Tag, Tooltip } from '@lobehub/ui';
 import { confirmModal } from '@lobehub/ui/base-ui';

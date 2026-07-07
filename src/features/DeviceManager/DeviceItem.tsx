@@ -207,15 +207,15 @@ const DeviceItem = memo<DeviceItemProps>(
         horizontal
         align={'center'}
         aria-pressed={selected}
+        gap={12}
+        role={'button'}
+        tabIndex={0}
         className={cx(
           styles.row,
           selected && styles.rowActive,
           onCheckChange && styles.selectable,
           pinSelect && styles.selectOn,
         )}
-        gap={12}
-        role={'button'}
-        tabIndex={0}
         onClick={onSelect}
         onKeyDown={(e) => {
           // Mirror native button keyboard semantics for the div-as-button row.

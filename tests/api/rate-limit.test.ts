@@ -9,7 +9,8 @@
  * - 不同用户/IP 独立计算
  */
 
-import { describe, it, expect, beforeAll } from 'vitest';
+import { beforeAll,describe, expect, it } from 'vitest';
+
 import { createTestApp, TEST_USER_ID, testToken } from './test-app';
 
 describe('REST API HTTP — Rate Limiting', () => {
@@ -60,7 +61,7 @@ describe('REST API HTTP — Rate Limiting', () => {
       // 用非常小的窗口测试 — 使用 strict 档位（30 req/min）
       // 并发发送超过 30 个请求
       const totalRequests = 35;
-      const requests = Array(totalRequests)
+      const requests = Array.from({length: totalRequests})
         .fill(null)
         .map(() =>
           app.request('/api/v1/agents', {
@@ -137,7 +138,7 @@ describe('REST API HTTP — Rate Limiting', () => {
   describe('Per-User Rate Limiting', () => {
     it('should track different users independently', async () => {
       // 用户 A 打满限额
-      const userARequests = Array(32)
+      const userARequests = Array.from({length: 32})
         .fill(null)
         .map(() =>
           app.request('/api/v1/agents', {

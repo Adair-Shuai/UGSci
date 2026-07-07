@@ -9,7 +9,8 @@
  * - 注入攻击防御 — SQL/NoSQL/XSS payload
  */
 
-import { describe, it, expect, beforeAll } from 'vitest';
+import { beforeAll,describe, expect, it } from 'vitest';
+
 import { createTestApp, TEST_USER_ID, testToken } from './test-app';
 
 describe('REST API HTTP — Security', () => {

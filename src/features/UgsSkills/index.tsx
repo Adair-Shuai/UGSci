@@ -17,8 +17,8 @@
 // - 详情弹窗：Lobe `createBuiltinAgentSkillDetailModal`（builtinSkills 统一用此 API）
 // - 技能市场弹窗：`createUgsMarketModal('skill', '技能市场')`（与能力市场 `createUgsMarketModal('mcp', '能力市场')` 同构）
 // - 添加技能：Lobe `AddSkillButton`（4 个子弹窗）
-import { createStaticStyles } from 'antd-style';
 import { Badge, Button, Input, Tabs } from 'antd';
+import { createStaticStyles } from 'antd-style';
 import { Search, Store } from 'lucide-react';
 import { type FC, useState } from 'react';
 import { mutate } from 'swr';
@@ -92,17 +92,17 @@ const UgsSkillsPage: FC = () => {
       <Input
         allowClear
         className={styles.searchInput}
-        onChange={(e) => setKeyword(e.target.value)}
         placeholder="搜索技能"
         prefix={<Search size={14} />}
         size="middle"
         value={keyword}
+        onChange={(e) => setKeyword(e.target.value)}
       />
       {/* 技能市场入口按钮：与能力市场同构，复用 UgsMarket 弹窗（type='skill'，连接 LobeHub 技能网络库） */}
       <Button
         icon={<Store size={16} />}
-        onClick={() => createUgsMarketModal('skill', '技能市场')}
         type="primary"
+        onClick={() => createUgsMarketModal('skill', '技能市场')}
       >
         技能市场
       </Button>

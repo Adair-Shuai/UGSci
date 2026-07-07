@@ -1,7 +1,8 @@
 // UGS-MODIFY: Set password form after email OTP sign-in
 'use client';
 
-import { Button, Flexbox, Icon, InputPassword } from '@lobehub/ui';
+import { Flexbox, Icon, InputPassword } from '@lobehub/ui';
+import { Button } from '@lobehub/ui/base-ui';
 import type { InputRef } from 'antd';
 import { Form } from 'antd';
 import { Lock } from 'lucide-react';

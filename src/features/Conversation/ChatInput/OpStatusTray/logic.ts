@@ -15,7 +15,7 @@ export const parseStatusPhrases = (raw: unknown): string[] => {
 };
 
 const hashString = (input: string): number => {
-  let hash = 0x81_1c_9d_c5;
+  let hash = 0x81_1C_9D_C5;
   for (let i = 0; i < input.length; i += 1) {
     hash ^= input.charCodeAt(i);
     hash = (hash + ((hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24))) >>> 0;

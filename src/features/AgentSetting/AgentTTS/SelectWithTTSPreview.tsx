@@ -1,14 +1,14 @@
+import { BRANDING_NAME } from '@lobechat/business-const';
 import { getMessageError } from '@lobechat/fetch-sse';
 import { type ChatMessageError } from '@lobechat/types';
 import { AudioPlayer } from '@lobehub/tts/react';
 import { type SelectProps } from '@lobehub/ui';
-import { Alert, Button, Flexbox, Highlighter, Select } from '@lobehub/ui';
+import { Alert, Flexbox, Highlighter } from '@lobehub/ui';
+import { Button, Select } from '@lobehub/ui/base-ui';
 import { type RefSelectProps } from 'antd';
 import { cssVar } from 'antd-style';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-
-import { BRANDING_NAME } from '@lobechat/business-const';
 
 import { useTTS } from '@/hooks/useTTS';
 import { type TTSServer } from '@/types/agent';

@@ -13,10 +13,10 @@
 // - 从市场添加助理或自定义创建后，availableAgents 变化 → mergeExpertsAndUserAgents
 //   合并到专家列表 → 自动新增卡片
 import { BUILTIN_AGENTS, getAgentRuntimeConfig, type RuntimeContext } from '@lobechat/builtin-agents';
-import { Button } from '@lobehub/ui';
-import { Plus, Search, Store } from 'lucide-react';
+import { Button } from '@lobehub/ui/base-ui';
+import { Alert, App, Empty, Input, Tabs } from 'antd';
 import { createStaticStyles } from 'antd-style';
-import { App, Alert, Col, Empty, Input, Row, Skeleton, Tabs } from 'antd';
+import { Plus, Search, Store } from 'lucide-react';
 import { type FC, useCallback, useMemo, useState } from 'react';
 
 import { createUgsMarketModal } from '@/features/UgsMarket';
@@ -28,22 +28,22 @@ import { useAgentStore } from '@/store/agent';
 
 import ExpertCard from './ExpertCard';
 import ExpertDrawer from './ExpertDrawer';
-import TeamCard from './TeamCard';
 import {
   filterExpertsByKeyword,
   mergeExpertsAndUserAgents,
   selectCategoryCounts,
   selectExpertCardMeta,
-  selectExpertStats,
   selectExpertsByCategory,
+  selectExpertStats,
 } from './expertSelectors';
+import TeamCard from './TeamCard';
 import {
-  type ExpertCategory,
-  type ExpertMeta,
   EXPERT_CATEGORIES,
   EXPERT_CATEGORY_ORDER,
-  UGS_EXPERTS,
+  type ExpertCategory,
+  type ExpertMeta,
   UGS_EXPERT_TEAMS,
+  UGS_EXPERTS,
 } from './ugsExpertsData';
 
 type CategoryFilter = ExpertCategory | 'all';
@@ -327,14 +327,14 @@ const UgsExpertsPage: FC = () => {
       <Input
         allowClear
         className={styles.searchInput}
-        onChange={(e) => setKeyword(e.target.value)}
         placeholder="搜索专家"
         prefix={<Search size={14} />}
         size="middle"
         value={keyword}
+        onChange={(e) => setKeyword(e.target.value)}
       />
       {/* 专家市场：navigate 到 Lobe 社区助理商店（/community） */}
-      <Button icon={<Store size={16} />} onClick={handleOpenMarket} type="primary">
+      <Button icon={<Store size={16} />} type="primary" onClick={handleOpenMarket}>
         专家市场
       </Button>
       {/* 自定义专家：复用 Lobe createAgent，创建后自动出现在专家广场 */}
@@ -355,9 +355,9 @@ const UgsExpertsPage: FC = () => {
       <Tabs
         activeKey={activeCategory}
         items={categoryTabItems}
-        onChange={(k) => setActiveCategory(k as CategoryFilter)}
         size="small"
         style={{ marginBottom: 12 }}
+        onChange={(k) => setActiveCategory(k as CategoryFilter)}
       />
 
       {/* 专家卡片 Grid（auto-fill + minmax 保证列数稳定，宽度不抖动） */}
@@ -398,8 +398,8 @@ const UgsExpertsPage: FC = () => {
           <TeamCard
             key={team.teamId}
             loading={loadingTeamId === team.teamId}
-            onSummon={() => handleTeamSummon(team)}
             team={team}
+            onSummon={() => handleTeamSummon(team)}
           />
         ))}
       </div>
@@ -421,9 +421,9 @@ const UgsExpertsPage: FC = () => {
         {/* 用户自建助理数据加载状态 */}
         {agentsError && (
           <Alert
-            message="部分数据加载失败"
-            description="用户自建助理列表获取失败，请检查网络连接或稍后刷新。预置专家仍可正常使用。"
             showIcon
+            description="用户自建助理列表获取失败，请检查网络连接或稍后刷新。预置专家仍可正常使用。"
+            message="部分数据加载失败"
             style={{ marginBottom: 16 }}
             type="warning"
           />
@@ -446,6 +446,7 @@ const UgsExpertsPage: FC = () => {
         <ExpertDrawer
           expert={activeExpert}
           loading={activeExpert ? loadingExpertSlug === activeExpert.slug : false}
+          open={drawerOpen}
           onClose={() => setDrawerOpen(false)}
           onChat={() => {
             if (activeExpert) {
@@ -453,7 +454,6 @@ const UgsExpertsPage: FC = () => {
               handleChat(activeExpert);
             }
           }}
-          open={drawerOpen}
         />
       </div>
     </div>

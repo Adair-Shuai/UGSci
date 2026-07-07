@@ -162,13 +162,13 @@ const AppTheme = memo<AppThemeProps>(
         <ThemeProvider
           appearance={currentAppearence}
           className={cx(styles.app, styles.scrollbar, styles.scrollbarPolyfill)}
+          customToken={ugsciCustomToken}
+          defaultAppearance={currentAppearence}
+          defaultThemeMode={currentAppearence}
           customTheme={{
             neutralColor: neutralColor ?? defaultNeutralColor,
             primaryColor: primaryColor ?? defaultPrimaryColor,
           }}
-          customToken={ugsciCustomToken}
-          defaultAppearance={currentAppearence}
-          defaultThemeMode={currentAppearence}
           theme={{
             cssVar: { key: 'lobe-vars' },
             token: {

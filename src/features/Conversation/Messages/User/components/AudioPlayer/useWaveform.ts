@@ -13,7 +13,7 @@ const fallbackPeaks = (seed: string): number[] => {
   for (let i = 0; i < seed.length; i += 1) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
 
   return Array.from({ length: BAR_COUNT }, (_, i) => {
-    hash = (hash * 1_103_515_245 + 12_345) & 0x7fff_ffff;
+    hash = (hash * 1_103_515_245 + 12_345) & 0x7FFF_FFFF;
     const v = (hash % 1000) / 1000;
     // Taper the ends and bias toward mid heights so it reads as a waveform, not noise.
     const taper = Math.sin((i / (BAR_COUNT - 1)) * Math.PI);

@@ -13,14 +13,14 @@
 // - 能力市场弹窗：createUgsMarketModal('mcp', '能力市场')
 // - 添加能力：AddSkillButton（4 个子弹窗，含自定义 MCP）
 // - 能力卡片：ConnectorCard
-import { Button } from '@lobehub/ui';
-import { Search, Store } from 'lucide-react';
-import { createStaticStyles } from 'antd-style';
+import { Button } from '@lobehub/ui/base-ui';
 import { App, Badge, Input, Tabs } from 'antd';
+import { createStaticStyles } from 'antd-style';
+import { Search, Store } from 'lucide-react';
 import { type FC, useEffect, useMemo, useState } from 'react';
 
-import AddSkillButton from '@/features/UgsShared/AddSkillButton';
 import { createUgsMarketModal } from '@/features/UgsMarket';
+import AddSkillButton from '@/features/UgsShared/AddSkillButton';
 import PageHeader from '@/features/UgsShared/PageHeader';
 import { useFetchInstalledPlugins } from '@/hooks/useFetchInstalledPlugins';
 import { useToolStore } from '@/store/tool';
@@ -161,16 +161,16 @@ const UgsCapabilitiesPage: FC = () => {
       <Input
         allowClear
         className={styles.searchInput}
-        onChange={(e) => setKeyword(e.target.value)}
         placeholder="搜索工具"
         prefix={<Search size={14} />}
         size="middle"
         value={keyword}
+        onChange={(e) => setKeyword(e.target.value)}
       />
       <Button
         icon={<Store size={16} />}
-        onClick={() => createUgsMarketModal('mcp', '工具市场')}
         type="primary"
+        onClick={() => createUgsMarketModal('mcp', '工具市场')}
       >
         能力市场
       </Button>
@@ -221,6 +221,7 @@ const UgsCapabilitiesPage: FC = () => {
         {/* 双 Tab：常用能力 / 已安装 */}
         <Tabs
           activeKey={activeTab}
+          style={{ marginBottom: 16 }}
           items={[
             {
               children: <CommonTab keyword={keyword} />,
@@ -243,7 +244,6 @@ const UgsCapabilitiesPage: FC = () => {
             },
           ]}
           onChange={(k) => setActiveTab(k as MainTab)}
-          style={{ marginBottom: 16 }}
         />
       </div>
     </div>

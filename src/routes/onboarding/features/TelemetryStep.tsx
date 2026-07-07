@@ -78,11 +78,11 @@ const TelemetryStep = memo<TelemetryStepProps>(({ onNext }) => {
         </Text>
         <Text as={'p'}>
           <Trans
+            i18nKey="telemetry.desc"
+            ns="onboarding"
             components={{
               brand: <span style={{ color: cssVar.colorPrimary, fontWeight: 600 }} />,
             }}
-            i18nKey="telemetry.desc"
-            ns="onboarding"
           />
         </Text>
       </Flexbox>

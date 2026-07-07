@@ -8,8 +8,9 @@
  * - Token 篡改检测
  */
 
-import { describe, it, expect, beforeAll } from 'vitest';
-import { createTestApp, TEST_USER_ID, TEST_USER_B_ID, testToken } from './test-app';
+import { beforeAll,describe, expect, it } from 'vitest';
+
+import { createTestApp, TEST_USER_B_ID, TEST_USER_ID, testToken } from './test-app';
 
 describe('REST API HTTP — Authentication & Authorization', () => {
   let app: Awaited<ReturnType<typeof createTestApp>>;

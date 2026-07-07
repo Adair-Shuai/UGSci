@@ -1,7 +1,7 @@
 'use client';
 
-import { TITLE_BAR_HEIGHT } from '@lobechat/desktop-bridge';
 import { COPYRIGHT } from '@lobechat/business-const';
+import { TITLE_BAR_HEIGHT } from '@lobechat/desktop-bridge';
 import { Center, Flexbox, Text } from '@lobehub/ui';
 import { Divider } from 'antd';
 import { css, cx } from 'antd-style';
