@@ -9,7 +9,8 @@ describe('PluginStore', () => {
   it('should return the default index URL when no language is provided', () => {
     const pluginStore = new PluginStore();
     const url = pluginStore.getPluginIndexUrl();
-    expect(url).toBe(`${baseURL}/index.en-US.json`);
+    // UGS-MODIFY: DEFAULT_LANG is zh-CN
+    expect(url).toBe(`${baseURL}/index.zh-CN.json`);
   });
 
   it('should return the index URL for a supported language', () => {

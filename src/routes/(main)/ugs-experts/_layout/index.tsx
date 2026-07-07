@@ -1,6 +1,6 @@
 // UGS-MODIFY: UGS-015 储气库专家市场页 layout
 import { type FC } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet } from 'react-router';
 
 const UgsExpertsLayout: FC = () => {
   return <Outlet />;

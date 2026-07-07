@@ -4,7 +4,7 @@ import { Avatar, Block, Button, Flexbox, Skeleton, Text } from '@lobehub/ui';
 import { LogIn } from 'lucide-react';
 import React, { memo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import AuthCard from '@/features/AuthCard';
 import { useSession } from '@/libs/better-auth/auth-client';

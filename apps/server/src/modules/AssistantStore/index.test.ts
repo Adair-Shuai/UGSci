@@ -25,7 +25,8 @@ describe('AssistantStore', () => {
   it('should return the default index URL when no language is provided', () => {
     const agentMarket = new AssistantStore();
     const url = agentMarket['getAgentIndexUrl']();
-    expect(url).toBe(`${baseURL}/index.en-US.json`);
+    // UGS-MODIFY: DEFAULT_LANG is zh-CN
+    expect(url).toBe(`${baseURL}/index.zh-CN.json`);
   });
 
   it('should return the index URL for a not supported language', () => {
@@ -55,7 +56,8 @@ describe('AssistantStore', () => {
   it('should return the agent URL with default language when no language is provided', () => {
     const agentMarket = new AssistantStore();
     const url = agentMarket.getAgentUrl('agent-123');
-    expect(url).toBe(`${baseURL}/agent-123.en-US.json`);
+    // UGS-MODIFY: DEFAULT_LANG is zh-CN
+    expect(url).toBe(`${baseURL}/agent-123.zh-CN.json`);
   });
 
   it('should return the agent URL for a supported language', () => {

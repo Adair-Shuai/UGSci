@@ -182,11 +182,11 @@ describe('useModelDetailPanel', () => {
   });
 
   it('uses the enabled model list hook when no list is provided', () => {
-    useEnabledChatModelsMock.mockReturnValue(
-      createEnabledList('lobehub', basePricing, {
-        abilities: { reasoning: true },
-      }),
-    );
+useEnabledChatModelsMock.mockReturnValue(
+  createEnabledList('ugsci', basePricing, {
+    abilities: { reasoning: true },
+  }),
+);
 
     const { result } = renderModelDetailPanelHook({ enabledList: undefined });
 

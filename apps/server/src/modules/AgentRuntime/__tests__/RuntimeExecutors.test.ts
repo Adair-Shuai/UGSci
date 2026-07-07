@@ -4664,7 +4664,7 @@ describe('RuntimeExecutors', () => {
           messages: [{ content: 'Hello', role: 'user' }],
           model: 'gpt-4',
           parentMessageId: 'parent-msg-123',
-          provider: 'lobehub',
+          provider: BRANDING_PROVIDER,
           tools: [],
         },
         type: 'call_llm' as const,
