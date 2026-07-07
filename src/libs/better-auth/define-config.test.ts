@@ -45,6 +45,8 @@ vi.mock('better-auth/plugins', () => ({
   emailOTP: vi.fn(() => ({ id: 'email-otp' })),
   genericOAuth: vi.fn(() => ({ id: 'generic-oauth' })),
   magicLink: vi.fn(() => ({ id: 'magic-link' })),
+  // UGS-MODIFY: phoneNumber plugin for phone sign-in
+  phoneNumber: vi.fn(() => ({ id: 'phone-number' })),
 }));
 
 vi.mock('undici', () => ({

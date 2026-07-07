@@ -412,7 +412,10 @@ describe('toolEngineering', () => {
       type: 'default',
     } as unknown as ToolManifest;
 
-    it('should filter stdio MCP tools in non-desktop environment', () => {
+    // UGS-MODIFY: UGSci is a custom branding fork, stdio MCP is allowed in
+    // self-hosted web environment (isCustomBranding === true), so stdio MCP
+    // tools are NOT filtered on web.
+    it('should NOT filter stdio MCP tools in non-desktop environment (custom branding)', () => {
       mockInstalledPluginManifestList = () => [stdioMcpManifest];
       mockGetInstalledPluginById = (id: string) => () =>
         id === 'stdio-mcp-plugin'
@@ -427,7 +430,7 @@ describe('toolEngineering', () => {
         provider: 'openai',
       });
 
-      expect(result.enabledToolIds).not.toContain('stdio-mcp-plugin');
+      expect(result.enabledToolIds).toContain('stdio-mcp-plugin');
     });
 
     it('should NOT filter http MCP tools in non-desktop environment', () => {

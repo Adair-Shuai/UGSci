@@ -274,6 +274,10 @@ describe('systemStatusSelectors', () => {
       expect(items).toEqual([
         'tasks',
         'pages',
+        // UGS-MODIFY: UGS custom sidebar items
+        'ugs-capabilities',
+        'ugs-skills',
+        'ugs-experts',
         'private',
         'agent',
         'recents',
@@ -295,6 +299,10 @@ describe('systemStatusSelectors', () => {
       expect(items).toEqual([
         'tasks',
         'pages',
+        // UGS-MODIFY: UGS custom sidebar items
+        'ugs-capabilities',
+        'ugs-skills',
+        'ugs-experts',
         'private',
         'recents',
         'agent',

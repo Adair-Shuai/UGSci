@@ -53,6 +53,8 @@ interface MockStoreHook {
 }
 
 const createGlobalState = (readSlugs: string[] = []) => ({
+  // UGS-MODIFY: useCheckLatestVersion is called by useNewVersion hook
+  hasNewVersion: false,
   status: {
     readNotificationSlugs: readSlugs,
   },
@@ -65,6 +67,7 @@ const createGlobalState = (readSlugs: string[] = []) => ({
       },
     };
   }),
+  useCheckLatestVersion: vi.fn(),
 });
 
 const renderFooter = async ({

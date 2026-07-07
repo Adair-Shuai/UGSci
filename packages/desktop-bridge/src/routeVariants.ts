@@ -1,6 +1,7 @@
 // Shared route variants utilities for desktop and web builds
 
-export const DEFAULT_LANG = 'en-US';
+// UGS-MODIFY: default language changed from en-US to zh-CN
+export const DEFAULT_LANG = 'zh-CN';
 
 // Supported locales (keep aligned with web resources)
 export const locales = [

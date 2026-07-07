@@ -97,9 +97,11 @@ describe('RouteVariants', () => {
     });
 
     it('should handle malformed serialized string', () => {
+      // 'en-US' is missing the __isMobile suffix, but the locale part is
+      // valid so deserializeVariants returns it with isMobile=false.
       const serialized = 'en-US';
       const result = RouteVariants.deserializeVariants(serialized);
-      expect(result).toEqual(DEFAULT_VARIANTS);
+      expect(result).toEqual({ isMobile: false, locale: 'en-US' });
     });
 
     it('should handle isMobile value correctly for "0"', () => {

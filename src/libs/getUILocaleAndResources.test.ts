@@ -94,7 +94,8 @@ describe('getUILocaleAndResources', () => {
 
     const { getUILocaleAndResources: getWithFallback } = await import('./getUILocaleAndResources');
     const result = await getWithFallback('unknown-locale');
-    expect(result.locale).toBe('en-US');
+    // UGS-MODIFY: DEFAULT_LANG is zh-CN, so unknown locales fall back to zh-CN
+    expect(result.locale).toBe('zh-CN');
     expect(result.resources).toBeDefined();
   });
 });
