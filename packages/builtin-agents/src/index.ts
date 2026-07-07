@@ -103,6 +103,26 @@ export const SELF_ITERATION_AGENT_SLUGS = new Set<BuiltinAgentSlug>([
   BUILTIN_AGENT_SLUGS.skillManagement,
 ]);
 
+// UGS-MODIFY: UGS 储气库领域专家 slug 集合
+// 这些专家通过 getBuiltinAgent 创建时 virtual=true，但它们是用户可交互的领域专家，
+// 应该在 queryAgents（助理团成员列表、专家广场 availableAgents）中可见。
+// 与 inbox 的白名单处理方式一致（rank / listAgentsForBinding 均为 inbox 做了白名单）。
+export const UGS_EXPERT_SLUGS = new Set<BuiltinAgentSlug>([
+  BUILTIN_AGENT_SLUGS.ugsCapacity,
+  BUILTIN_AGENT_SLUGS.ugsDeliverability,
+  BUILTIN_AGENT_SLUGS.ugsParams,
+  BUILTIN_AGENT_SLUGS.ugsInjection,
+  BUILTIN_AGENT_SLUGS.ugsPeaking,
+  BUILTIN_AGENT_SLUGS.ugsAllocation,
+  BUILTIN_AGENT_SLUGS.ugsBpinn,
+  BUILTIN_AGENT_SLUGS.ugsPvt,
+  BUILTIN_AGENT_SLUGS.ugsRateTransient,
+  BUILTIN_AGENT_SLUGS.ugsLogging,
+  BUILTIN_AGENT_SLUGS.ugsSimulation,
+  BUILTIN_AGENT_SLUGS.ugsIntegrity,
+  BUILTIN_AGENT_SLUGS.ugsLiterature,
+]);
+
 /**
  * Get persist config for a builtin agent (for DB operations)
  * @param slug - The builtin agent slug

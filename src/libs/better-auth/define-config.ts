@@ -7,7 +7,7 @@ import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { verifyPassword as defaultVerifyPassword } from 'better-auth/crypto';
 import { type BetterAuthOptions } from 'better-auth/minimal';
 import { betterAuth } from 'better-auth/minimal';
-import { admin, emailOTP, genericOAuth, magicLink, phoneNumber } from 'better-auth/plugins';
+import { admin, emailOTP, genericOAuth, magicLink } from 'better-auth/plugins';
 import { type BetterAuthPlugin } from 'better-auth/types';
 import { EnvHttpProxyAgent, setGlobalDispatcher } from 'undici';
 
@@ -244,7 +244,6 @@ export function defineConfig(customOptions: CustomBetterAuthOptions) {
         image: 'avatar',
         // NOTE: use drizzle filed instead of db field, so use fullName instead of full_name
         name: 'fullName',
-        // UGS-MODIFY: UGS-005 phoneNumber field now matches drizzle field directly (renamed phone→phoneNumber)
       },
       modelName: 'users',
     },
@@ -272,8 +271,6 @@ export function defineConfig(customOptions: CustomBetterAuthOptions) {
       customRules: {
         '/request-password-reset': { max: 3, window: 60 },
         '/send-verification-email': { max: 3, window: 60 },
-        // UGS-MODIFY: rate limit email OTP sending to prevent abuse
-        '/email-otp/send-verification-otp': { max: 3, window: 60 },
       },
     },
     plugins: [
@@ -281,23 +278,7 @@ export function defineConfig(customOptions: CustomBetterAuthOptions) {
       emailWhitelist(),
       expo(),
       admin(),
-      // UGS-MODIFY: UGS-005 phone number login plugin
-      phoneNumber({
-        expiresIn: OTP_EXPIRES_IN,
-        otpLength: 6,
-        // Dev: log OTP to console. Prod: integrate SMS provider here.
-        sendOTP: async ({ phoneNumber: phone, code }) => {
-          if (process.env.NODE_ENV === 'development') {
-            console.info(`[UGS Phone OTP] ${phone}: ${code}`);
-          }
-          // TODO prod: integrate SMS provider (e.g. Twilio / 阿里云短信)
-        },
-        signUpOnVerification: {
-          getTempEmail: (phone) => `${phone}@ugs.local`,
-          getTempName: (phone) => phone,
-        },
-      }),
-      // UGS-MODIFY: Email OTP plugin for verification code login (web + mobile)
+      // Email OTP plugin for mobile verification
       emailOTP({
         expiresIn: OTP_EXPIRES_IN,
         otpLength: 6,
@@ -315,15 +296,10 @@ export function defineConfig(customOptions: CustomBetterAuthOptions) {
             userName: null,
           });
 
-          try {
-            await emailService.sendMail({
-              to: email,
-              ...template,
-            });
-          } catch (error) {
-            console.error('[UGS emailOTP] Failed to send verification email:', error);
-            throw error;
-          }
+          await emailService.sendMail({
+            to: email,
+            ...template,
+          });
         },
       }),
       passkey({

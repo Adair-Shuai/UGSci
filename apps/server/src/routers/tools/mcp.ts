@@ -1,4 +1,4 @@
-import { isDesktop } from '@lobechat/const';
+import { isCustomBranding, isDesktop } from '@lobechat/const';
 import {
   GetStreamableMcpServerManifestInputSchema,
   StreamableHTTPAuthSchema,
@@ -39,7 +39,8 @@ const stdioParamsSchema = z.object({
 const mcpClientParamsSchema = z.union([httpParamsSchema, stdioParamsSchema]);
 
 const checkStdioEnvironment = (params: z.infer<typeof mcpClientParamsSchema>) => {
-  if (params.type === 'stdio' && !isDesktop) {
+  // UGS-MODIFY: allow stdio MCP in self-hosted server environment
+  if (params.type === 'stdio' && !isDesktop && !isCustomBranding) {
     throw new TRPCError({
       code: 'BAD_REQUEST',
       message: 'Stdio MCP type is not supported in web environment.',

@@ -421,7 +421,7 @@ export default defineConfig({
       ],
     },
     watch: {
-      ignored: ['**/e2e/reports/**', '**/e2e/screenshots/**'],
-    },
+        ignored: ['**'],
+      },
   },
 });

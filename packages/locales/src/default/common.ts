@@ -196,6 +196,9 @@ export default {
 
   'cmdk.keywords.usage': 'usage statistics consumption quota',
 
+  'cmdk.keywords.ugsCapabilities': 'capabilities mcp neqsim pyrestoolbox tools',
+  'cmdk.keywords.ugsExperts': 'experts agents storage gas ugs',
+  'cmdk.keywords.ugsSkills': 'skills pvt material balance reservoir',
   'cmdk.keywords.video': 'video,generate,seedance,kling',
 
   'cmdk.memory': 'Memory',

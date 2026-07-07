@@ -69,7 +69,7 @@ const AgentList = memo<AgentListProps>(({ activeAgentId, error, onRetry, onSelec
           DEFAULT_INBOX_AVATAR,
         backgroundColor: inboxMeta?.backgroundColor || undefined,
         id: inboxAgentId,
-        title: inboxMeta?.title || 'Lobe AI',
+        title: inboxMeta?.title || 'UGS AI',
       });
       seen.add(inboxAgentId);
     }

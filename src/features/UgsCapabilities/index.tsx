@@ -162,24 +162,24 @@ const UgsCapabilitiesPage: FC = () => {
         allowClear
         className={styles.searchInput}
         onChange={(e) => setKeyword(e.target.value)}
-        placeholder="搜索能力"
+        placeholder="搜索工具"
         prefix={<Search size={14} />}
         size="middle"
         value={keyword}
       />
       <Button
         icon={<Store size={16} />}
-        onClick={() => createUgsMarketModal('mcp', '能力市场')}
+        onClick={() => createUgsMarketModal('mcp', '工具市场')}
         type="primary"
       >
         能力市场
       </Button>
       <AddSkillButton
-        customLabel="添加能力"
-        customTitle="添加能力"
+        customLabel="添加工具"
+        customTitle="添加工具"
         onPostInstall={() => {
           fetchConnectors();
-          message.success('能力已添加');
+          message.success('工具已添加');
         }}
       />
     </div>
@@ -189,10 +189,10 @@ const UgsCapabilitiesPage: FC = () => {
     <div className={styles.scrollContainer}>
       <div className={styles.page}>
         <PageHeader
-          description="每个能力代表一个 MCP Server 或 Tool Provider，点击卡片查看工具列表和配置"
+          description="每个工具代表一个 MCP Server 或 Tool Provider，点击卡片查看工具列表和配置"
           emoji="🔧"
           extra={headerExtra}
-          title="UGSci 能力中心"
+          title="UGSci 工具中心"
         />
 
         <div className={styles.statsGrid}>
@@ -225,7 +225,7 @@ const UgsCapabilitiesPage: FC = () => {
             {
               children: <CommonTab keyword={keyword} />,
               key: 'common',
-              label: '常用能力',
+              label: '常用工具',
             },
             {
               children: <InstalledTab keyword={keyword} />,

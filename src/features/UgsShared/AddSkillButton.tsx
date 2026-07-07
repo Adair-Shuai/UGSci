@@ -80,6 +80,7 @@ const AddSkillButton = ({ customLabel, customTitle, onPostInstall }: AddSkillBut
       <ImportFromGithubModal open={showGithubModal} onOpenChange={handleAnyClose} />
       <UploadSkillModal open={showUploadModal} onOpenChange={handleAnyClose} />
       <DropdownMenu
+        nativeButton
         placement="bottomRight"
         items={[
           {

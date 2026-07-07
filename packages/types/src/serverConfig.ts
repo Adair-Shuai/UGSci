@@ -34,6 +34,22 @@ export interface GlobalMemoryConfig {
   userMemory?: GlobalMemoryExtractionConfig;
 }
 
+/**
+ * UGS 预置 MCP 路径配置（服务端环境变量驱动，编译部署后可随时修改）
+ *
+ * 未配置的字段为 undefined → 对应 MCP 不自动安装。
+ */
+export interface UgsPresetMcpsConfig {
+  /** NeqSim Java 可执行文件路径 */
+  neqsimJavaBin?: string;
+  /** NeqSim jar 文件路径 */
+  neqsimJarPath?: string;
+  /** pyResToolbox fastmcp 可执行文件路径 */
+  pyrestoolboxBin?: string;
+  /** pyResToolbox server.py 文件路径 */
+  pyrestoolboxServerPath?: string;
+}
+
 export interface VisualUnderstandingConfig {
   model: string;
   provider: string;
@@ -84,6 +100,10 @@ export interface GlobalServerConfig {
   telemetry: {
     langfuse?: boolean;
   };
+  /**
+   * UGS 预置 MCP 路径配置（服务端环境变量驱动）
+   */
+  ugsPresetMcps?: UgsPresetMcpsConfig;
   visualUnderstanding?: VisualUnderstandingConfig;
 }
 

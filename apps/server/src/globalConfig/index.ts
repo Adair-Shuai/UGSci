@@ -10,6 +10,7 @@ import { imageEnv } from '@/envs/image';
 import { knowledgeEnv } from '@/envs/knowledge';
 import { langfuseEnv } from '@/envs/langfuse';
 import { toolsEnv } from '@/envs/tools';
+import { ugsEnv } from '@/envs/ugs';
 import { parseSSOProviders } from '@/libs/better-auth/utils/server';
 import { parseSystemAgent } from '@/server/globalConfig/parseSystemAgent';
 import { type GlobalServerConfig } from '@/types/serverConfig';
@@ -136,6 +137,13 @@ export const getServerGlobalConfig = async () => {
     },
     oAuthSSOProviders: getBetterAuthSSOProviders(),
     systemAgent: parseSystemAgent(appEnv.SYSTEM_AGENT),
+    // UGS 预置 MCP 路径配置（服务端环境变量驱动）
+    ugsPresetMcps: cleanObject({
+      neqsimJavaBin: ugsEnv.UGS_NEQSIM_JAVA_BIN,
+      neqsimJarPath: ugsEnv.UGS_NEQSIM_JAR_PATH,
+      pyrestoolboxBin: ugsEnv.UGS_PYRESTOOLBOX_BIN,
+      pyrestoolboxServerPath: ugsEnv.UGS_PYRESTOOLBOX_SERVER_PATH,
+    }),
     telemetry: {
       langfuse: langfuseEnv.ENABLE_LANGFUSE,
     },

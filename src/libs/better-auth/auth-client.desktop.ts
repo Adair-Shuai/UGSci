@@ -1,11 +1,8 @@
 import {
   adminClient,
-  emailOTPClient,
   genericOAuthClient,
   inferAdditionalFields,
   magicLinkClient,
-  // UGS-MODIFY: UGS-005 phone number client plugin
-  phoneNumberClient,
 } from 'better-auth/client/plugins';
 import { createAuthClient } from 'better-auth/react';
 
@@ -17,27 +14,15 @@ let _client: any = null;
 
 function getClient() {
   if (!_client) {
-    // UGS-MODIFY: cloud mode must NOT set baseURL — better-auth defaults to
-    // window.location.origin (app://renderer/), letting auth requests flow
-    // through BackendProxyProtocolManager to the correct cloud server.
-    // Setting baseURL to a raw http://localhost address bypasses the proxy
-    // and fails because no local server is listening.
-    const electronState = getElectronStoreState();
-    const mode = electronState?.dataSyncConfig?.storageMode;
-    const isCloud = mode === 'cloud';
-    const isLocalhost = electronState?.dataSyncConfig?.remoteServerUrl ? /localhost|127\.0\.0\.1|0\.0\.0\.0/.test(electronState.dataSyncConfig.remoteServerUrl) : false;
-    const baseURL = isCloud || isLocalhost ? undefined : electronSyncSelectors.remoteServerUrl(electronState);
+    const baseURL = electronSyncSelectors.remoteServerUrl(getElectronStoreState());
 
     _client = createAuthClient({
       baseURL,
       plugins: [
         adminClient(),
-        emailOTPClient(),
         inferAdditionalFields<typeof auth>(),
         genericOAuthClient(),
         magicLinkClient(),
-        // UGS-MODIFY: UGS-005 phone number client plugin
-        phoneNumberClient(),
       ],
     });
   }
@@ -59,7 +44,6 @@ function lazyProp(key: string): any {
 }
 
 export const changeEmail = lazyProp('changeEmail');
-export const emailOtp = lazyProp('emailOtp');
 export const linkSocial = lazyProp('linkSocial');
 export const oauth2 = lazyProp('oauth2');
 export const accountInfo = lazyProp('accountInfo');
@@ -72,5 +56,3 @@ export const signOut = lazyProp('signOut');
 export const signUp = lazyProp('signUp');
 export const unlinkAccount = lazyProp('unlinkAccount');
 export const useSession = lazyProp('useSession');
-// UGS-MODIFY: UGS-005 expose phoneNumber methods
-export const phoneNumber = lazyProp('phoneNumber');

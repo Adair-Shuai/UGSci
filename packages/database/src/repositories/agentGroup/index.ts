@@ -1,4 +1,4 @@
-import { BUILTIN_AGENT_SLUGS } from '@lobechat/builtin-agents';
+import { BUILTIN_AGENT_SLUGS, UGS_EXPERT_SLUGS } from '@lobechat/builtin-agents';
 import type { AgentGroupDetail, AgentGroupMember } from '@lobechat/types';
 import { cleanObject } from '@lobechat/utils';
 import { and, eq, inArray, not } from 'drizzle-orm';
@@ -483,6 +483,9 @@ export class AgentGroupRepository {
    * Check which agents are virtual before removing them from a group.
    * This allows the frontend to show a confirmation dialog for virtual agents.
    *
+   * UGS-MODIFY: UGS 储气库领域专家虽然 virtual=true，但它们是持久的内置专家，
+   * 从群组移除时不应被永久删除（与普通助理一样仅从群组移除）。
+   *
    * @param groupId - The chat group ID
    * @param agentIds - Array of agent IDs to check
    * @returns Object containing virtual and non-virtual agent lists
@@ -512,7 +515,8 @@ export class AgentGroupRepository {
     const nonVirtualAgentIds: string[] = [];
 
     for (const agent of agentDetails) {
-      if (agent.virtual) {
+      // UGS-MODIFY: UGS 内置专家虽 virtual=true 但不应在移除时被永久删除
+      if (agent.virtual && agent.slug && !UGS_EXPERT_SLUGS.has(agent.slug as any)) {
         const meta = normalizeInboxAgentMeta(
           { avatar: agent.avatar, title: agent.title },
           { slug: agent.slug },

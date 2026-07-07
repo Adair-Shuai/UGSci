@@ -1,4 +1,4 @@
-import { isDesktop } from '@lobechat/const';
+import { isCustomBranding, isDesktop } from '@lobechat/const';
 
 import { shouldEnableBuiltinSkill } from './skillFilters';
 import { shouldEnableTool } from './toolFilters';
@@ -32,10 +32,14 @@ export const isBuiltinSkillAvailableInCurrentEnv = (
   });
 };
 
+// UGS-MODIFY: allow stdio MCP in self-hosted web environment
 export const isInstalledPluginAvailableInCurrentEnv = (
   plugin: ToolAvailabilityInstalledPlugin,
   context: Omit<ToolAvailabilityContext, 'installedPlugins'> = {},
-) => (context.isDesktop ?? isDesktop) || plugin.customParams?.mcp?.type !== 'stdio';
+) =>
+  (context.isDesktop ?? isDesktop) ||
+  isCustomBranding ||
+  plugin.customParams?.mcp?.type !== 'stdio';
 
 export const isToolAvailableInCurrentEnv = (id: string, context: ToolAvailabilityContext = {}) => {
   if (!isBuiltinToolAvailableInCurrentEnv(id)) return false;
